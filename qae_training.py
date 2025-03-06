@@ -250,13 +250,16 @@ def train_qae_adam(data, config, num_epochs=100):
         for j in range(len(param_values)):
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
+            param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
+            encoder_bound = encoder.assign_parameters(param_dict)
+            decoder_bound = encoder.assign_parameters(param_dict)
             gradients[j] = (cost_function(
                 data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
             ) - current_cost) / gradient_width
 
         previous_param_values = param_values.copy()
-        print(np.mean(param_values-previous_param_values))
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
+        print('Mean param update: ' + str(np.mean(param_values-previous_param_values)))
 
         print(f"Iteration {t}: cost = {current_cost:.6f}")
 
