@@ -32,7 +32,7 @@ def create_embedding_circuit(num_qubits, embedding_gate):
             raise Exception("Invalid embedding gate: " + embedding_gate)
     return qc, input_params
 
-def add_entanglement_topology(qc, entanglement_topology, entanglement_gate):
+def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglement_gate):
     if entanglement_topology == 'full':
         for i in range(num_qubits):
             for j in range(i+1, num_qubits):
@@ -91,7 +91,7 @@ def create_qae_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     encoder = QuantumCircuit(num_qubits)
     params = []
     for layer in range(num_blocks):
-        add_entanglement_topology(encoder, entanglement_topology, entanglement_gate)
+        add_entanglement_topology(encoder, num_qubits, entanglement_topology, entanglement_gate)
         # add set of single qubit rotations
         for i in range(num_qubits):
             p = Parameter('Encoder Layer ' + str(layer) + ' Ry θ ' + str(i))
@@ -173,7 +173,7 @@ def trash_qubit_penalty(state, bottleneck_size):
 
 def cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight):
     """
-        (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
+    (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
     """
     total_cost = 0.0
     num_qubits = len(data[0])
@@ -220,6 +220,7 @@ def train_qae_adam(data, config, num_epochs=100):
 
     Returns trained_circuit, cost_history
     """
+    num_qubits = len(data[0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
     param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
