@@ -7,6 +7,7 @@ from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
+MAX_TRASH_QUBIT_PENALTY = 1e-10
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
@@ -178,15 +179,20 @@ def cost_function(data, embedder, encoder, decoder, input_params, bottleneck_siz
     total_cost = 0.0
     num_qubits = len(data[0])
     for sample in data:
-        ideal_qc = embedder.assign_parameters({p: sample[int(p.name[-1])] for p in input_params})
+        # sample_length = len(sample)
+        # for state in sample:
+        ideal_qc = embedder.assign_parameters({
+            # each input param ends in an index
+            p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
+        })
         ideal_state = Statevector.from_instruction(ideal_qc)
 
         bottleneck_state = ideal_state.evolve(encoder)
         reconstructed_state = bottleneck_state.evolve(decoder)
 
         reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
-        penalty = trash_qubit_penalty(bottleneck_state, bottleneck_size)
-        total_cost += reconstruction_cost + trash_qubit_penalty_weight * penalty
+        trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
+        total_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -253,7 +259,7 @@ def train_qae_adam(data, config, num_epochs=100):
             params_eps[j] += gradient_width
             param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
             encoder_bound = encoder.assign_parameters(param_dict)
-            decoder_bound = encoder.assign_parameters(param_dict)
+            decoder_bound = decoder.assign_parameters(param_dict)
             gradients[j] = (cost_function(
                 data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
             ) - current_cost) / gradient_width
@@ -279,7 +285,7 @@ if __name__ == '__main__':
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
     args = parser.parse_args()
-    input_data = np.array([[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.],[1,1,1,1],[2,3,1,4]])
+    input_data = np.array([[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.], [1,1,1,1],[2,3,1,4])
 
     # input_data = []
     # for
