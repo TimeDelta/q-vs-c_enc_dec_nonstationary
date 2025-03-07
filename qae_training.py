@@ -209,7 +209,7 @@ def train_qae_adam(data, config, num_epochs=100):
             use_rx \
             use_ry  >                independent booleans signifying which rotation gates
             use_rz /                     to include for quantum embedding of the data
-            num_blocks:              # [entanglement layer, rotation layer] repetitions in QAE
+            num_blocks:              # [entanglement layer, rotation layer] repetitions per 1/2 of QAE
             entanglement_topology:   for all entanglement layers
             entanglement_gate:  options are ['CX', 'CZ', 'RZX']
             embedding_gate:          options are ['RX', 'RY', 'RZ']

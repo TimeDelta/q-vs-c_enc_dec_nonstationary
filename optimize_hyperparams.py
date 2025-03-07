@@ -1,11 +1,12 @@
 import numpy as np
 import math
 from qae_training import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES, train_qae_adam
+MAX_NUM_BLOCKS = 5 # per half of QAE
 
 def sample_hyperparameters(num_qubits):
     return {
         'bottleneck_size': np.random.randint(1, num_qubits),
-        'num_blocks': np.random.randint(1, 6),
+        'num_blocks': np.random.randint(1, MAX_NUM_BLOCKS+1), # per 1/2 of QAE
         'learning_rate': 10 ** np.random.uniform(-4, -1),
         'penalty_weight': 10 ** np.random.uniform(-4, 0),
         'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
@@ -15,7 +16,7 @@ def sample_hyperparameters(num_qubits):
 
 def get_training_loss(data, config, allocated_epochs):
     trained_params, cost_history = train_qae_adam(input_data, config, allocated_epochs)
-    return cost_history[-1]
+    return 3./4 * cost_history[-1] + config['num_blocks'] / MAX_NUM_BLOCKS / 4.
 
 def hyperband_search(data, max_training_epochs=100, reduction_factor=3):
     """
