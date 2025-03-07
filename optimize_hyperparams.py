@@ -1,12 +1,12 @@
 import numpy as np
 import math
-from qae_training import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES, train_qae_adam
-MAX_NUM_BLOCKS = 5 # per half of QAE
+from qte_training import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES, train_qte_adam
+MAX_NUM_BLOCKS = 5 # per half of QTE
 
 def sample_hyperparameters(num_qubits):
     return {
         'bottleneck_size': np.random.randint(1, num_qubits),
-        'num_blocks': np.random.randint(1, MAX_NUM_BLOCKS+1), # per 1/2 of QAE
+        'num_blocks': np.random.randint(1, MAX_NUM_BLOCKS+1), # per 1/2 of QTE
         'learning_rate': 10 ** np.random.uniform(-4, -1),
         'penalty_weight': 10 ** np.random.uniform(-4, 0),
         'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
@@ -15,7 +15,7 @@ def sample_hyperparameters(num_qubits):
     }
 
 def get_training_loss(data, config, allocated_epochs):
-    trained_params, cost_history = train_qae_adam(input_data, config, allocated_epochs)
+    trained_params, cost_history = train_qte_adam(input_data, config, allocated_epochs)
     return 3./4 * cost_history[-1] + config['num_blocks'] / MAX_NUM_BLOCKS / 4.
 
 def hyperband_search(data, max_training_epochs=100, reduction_factor=3):
@@ -31,6 +31,7 @@ def hyperband_search(data, max_training_epochs=100, reduction_factor=3):
     total_budget = (max_bracket + 1) * max_training_epochs
     optimal_config = None
     optimal_loss = float('inf')
+
     num_qubits = len(data[0])
 
     for bracket in reversed(range(max_bracket + 1)):
@@ -62,7 +63,7 @@ def hyperband_search(data, max_training_epochs=100, reduction_factor=3):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Optimize the hyperparameters of the QAE training for this experiment."
+        description="Optimize the hyperparameters of the QTE training for this experiment."
     )
     # parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--reduction_factor", type=int, default=3, help="Factor by which successive configuration evals are reduced each round.")
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # args.data_directory
-    input_data = np.array([[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.],[1,1,1,1],[2,3,1,4]])
+    input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]])
     best_config, best_loss = hyperband_search(input_data, args.max_training_epochs, args.reduction_factor)
     print("\nBest hyperparameter configuration found:")
     print(best_config)

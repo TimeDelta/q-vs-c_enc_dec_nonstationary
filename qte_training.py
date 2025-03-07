@@ -3,11 +3,11 @@ from qiskit import QuantumCircuit
 from qiskit_aer import Aer
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
+import re
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
-MAX_TRASH_QUBIT_PENALTY = 1e-10
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
@@ -74,9 +74,9 @@ def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglemen
         else:
             raise Exception("Unknown entanglement gate: " + entanglement_gate)
 
-def create_qae_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
+def create_qte_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
     """
-    Build a parameterized QAE transformation (encoder) using multiple layers.
+    Build a parameterized QTE transformation (encoder) using multiple layers.
 
     For each block, we perform:
       - A layer of single-qubit rotations (we use Ry for simplicity).
@@ -87,7 +87,7 @@ def create_qae_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     (Each layer has 2 * num_qubits parameters: one set before the entangling layer and one set after.)
 
     The decoder is taken as the inverse of the entire encoder.
-    Returns qae_circuit, encoder, decoder_circuit, all_parameters
+    Returns qte_circuit, encoder, decoder_circuit, all_parameters
     """
     encoder = QuantumCircuit(num_qubits)
     params = []
@@ -118,7 +118,7 @@ def create_full_circuit(num_qubits, config):
         use_rx \
         use_ry  >                independent booleans signifying which rotation gates
         use_rz /                     to include for quantum embedding of the data
-        num_blocks:              # [entanglement layer, rotation layer] repetitions in QAE
+        num_blocks:              # [entanglement layer, rotation layer] repetitions in QTE
         entanglement_topology:   options are ['full', 'linear', 'circular']
         entanglement_gate:  options are ['CX', 'CZ', 'RZX']
         embedding_gate:          options are ['RX', 'RY', 'RZ']
@@ -132,12 +132,12 @@ def create_full_circuit(num_qubits, config):
     ent_topology = config.get('entanglement_topology', 'full')
     ent_gate_type = config.get('entanglement_gate', 'cx')
     bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
-    # create separate QC for QAE so that the decoder doesn't include the embedding method
+    # create separate QC for QTE so that the decoder doesn't include the embedding method
     # when adding the encoder's inverse
-    qae_circuit, encoder, decoder, trainable_params = create_qae_circuit(
+    qte_circuit, encoder, decoder, trainable_params = create_qte_circuit(
         bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type
     )
-    return embedding_qc.compose(qae_circuit), embedding_qc, encoder, decoder, input_params, trainable_params
+    return embedding_qc.compose(qte_circuit), embedding_qc, encoder, decoder, input_params, trainable_params
 
 def trash_qubit_penalty(state, bottleneck_size):
     """
@@ -172,27 +172,37 @@ def trash_qubit_penalty(state, bottleneck_size):
     penalty = sum(1 - p for p in sorted_marginals[:num_trash])
     return penalty
 
-def cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight):
+def cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2):
     """
     (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
     """
     total_cost = 0.0
-    num_qubits = len(data[0])
+    num_qubits = len(data[0][0])
     for sample in data:
-        # sample_length = len(sample)
-        # for state in sample:
-        ideal_qc = embedder.assign_parameters({
-            # each input param ends in an index
-            p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
-        })
-        ideal_state = Statevector.from_instruction(ideal_qc)
+        sample_length = len(sample)
+        if sample_length < 2:
+            continue # can't model transition
+        sample_cost = 0
+        for i in range(sample_length - 1):
+            current_state = sample[i]
+            next_state = sample[i+1]
 
-        bottleneck_state = ideal_state.evolve(encoder)
-        reconstructed_state = bottleneck_state.evolve(decoder)
+            # each input param name ends in an index
+            current_input_params = {p: current_state[i] for i, p in enumerate(input_params)}
+            next_input_params = {p: next_state[i] for i, p in enumerate(input_params)}
 
-        reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
-        trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-        total_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+            input_qc = embedder.assign_parameters(current_input_params)
+            input_state = Statevector.from_instruction(input_qc)
+            ideal_qc = embedder.assign_parameters(next_input_params)
+            ideal_state = Statevector.from_instruction(ideal_qc)
+
+            bottleneck_state = input_state.evolve(encoder)
+            predicted_state = bottleneck_state.evolve(decoder)
+
+            reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
+            trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            sample_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+        total_cost += sample_cost / (sample_length-1) # avg cost per transition
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -203,9 +213,9 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     new_params = params - lr * bias_corrected_moment1 / (np.sqrt(bias_corrected_moment2) + epsilon)
     return new_params, moment1, moment2
 
-def train_qae_adam(data, config, num_epochs=100):
+def train_qte_adam(data, config, num_epochs=100):
     """
-    Train the QAE by minimizing the cost function using ADAM. Note that the QAE will only enforce
+    Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
     the bottleneck via the cost function. This is done in order to balance efficiency w/ added
     flexibility for which qubits get thrown away.
 
@@ -215,7 +225,7 @@ def train_qae_adam(data, config, num_epochs=100):
             use_rx \
             use_ry  >                independent booleans signifying which rotation gates
             use_rz /                     to include for quantum embedding of the data
-            num_blocks:              # [entanglement layer, rotation layer] repetitions per 1/2 of QAE
+            num_blocks:              # [entanglement layer, rotation layer] repetitions per 1/2 of QTE
             entanglement_topology:   for all entanglement layers
             entanglement_gate:  options are ['CX', 'CZ', 'RZX']
             embedding_gate:          options are ['RX', 'RY', 'RZ']
@@ -277,7 +287,7 @@ def train_qae_adam(data, config, num_epochs=100):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Train a QAE over the given data."
+        description="Train a Quantum Transition Encoder over the given data."
     )
     # parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--bottleneck_size", type=int, default=0)
@@ -285,7 +295,7 @@ if __name__ == '__main__':
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
     args = parser.parse_args()
-    input_data = np.array([[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.], [1,1,1,1],[2,3,1,4])
+    input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
 
     # input_data = []
     # for
@@ -313,7 +323,7 @@ if __name__ == '__main__':
     }
     print(config)
 
-    trained_circuit, cost_history = train_qae_adam(input_data, config, num_epochs=10)
+    trained_circuit, cost_history = train_qte_adam(input_data, config, num_epochs=10)
 
     print("\nTrained parameters:", trained_circuit.draw())
     print("Final reconstruction cost:", cost_history[-1])
