@@ -4,10 +4,7 @@ from qiskit_aer import Aer
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
 import re
-
-ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
-ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
-EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
+from common import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
@@ -287,7 +284,7 @@ def train_qte_adam(data, config, num_epochs=100):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Train a Quantum Transition Encoder over the given data."
+        description="Train a Quantum Transition Encoder/Decoder over the given data."
     )
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--bottleneck_size", type=int, default=0)

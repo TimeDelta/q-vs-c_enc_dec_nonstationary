@@ -3,11 +3,8 @@ from qiskit import QuantumCircuit
 from qiskit_aer import Aer
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
-
-ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
-ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
-EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
-MAX_TRASH_QUBIT_PENALTY = 1e-10
+import re
+from common import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
@@ -179,20 +176,21 @@ def cost_function(data, embedder, encoder, decoder, input_params, bottleneck_siz
     total_cost = 0.0
     num_qubits = len(data[0])
     for sample in data:
-        # sample_length = len(sample)
-        # for state in sample:
-        ideal_qc = embedder.assign_parameters({
-            # each input param ends in an index
-            p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
-        })
-        ideal_state = Statevector.from_instruction(ideal_qc)
+        sample_cost = 0
+        for state in sample:
+            ideal_qc = embedder.assign_parameters({
+                # each input param ends in an index
+                p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
+            })
+            ideal_state = Statevector.from_instruction(ideal_qc)
 
-        bottleneck_state = ideal_state.evolve(encoder)
-        reconstructed_state = bottleneck_state.evolve(decoder)
+            bottleneck_state = ideal_state.evolve(encoder)
+            reconstructed_state = bottleneck_state.evolve(decoder)
 
-        reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
-        trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-        total_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+            reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
+            trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            sample_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+        total_cost += sample_cost / (sample_length) # avg cost per state
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -277,18 +275,24 @@ def train_qae_adam(data, config, num_epochs=100):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Train a QAE over the given data."
+        description="Train a Quantum Auto Encoder over the given data."
     )
-    # parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--bottleneck_size", type=int, default=0)
     parser.add_argument("--num_blocks", type=int, default=0)
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
+    parser.add_argument("--sample_length", type=int, default=0)
+    parser.add_argument("--dataset", type=str, defaul='FACED')
     args = parser.parse_args()
-    input_data = np.array([[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.], [1,1,1,1],[2,3,1,4])
+    # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
 
-    # input_data = []
-    # for
+    if args.dataset == 'FACED':
+        from data_importers import import_FACED
+        input_data = import_FACED(args.data_directory)
+    else:
+        raise Exception('Unknown dataset type: ' + args.dataset)
+
     num_qubits = len(input_data[0])
     bottleneck_size = args.bottleneck_size
     if bottleneck_size == 0:
