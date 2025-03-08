@@ -21,11 +21,12 @@ def import_FACED(data_directory):
         print(file)
         with open(file, "rb") as data:
             try:
-                eeg_data.append(pickle.load(data))
+                # only use EEG recording for 10th video (45 sec, In Bruges, PED, Negative, Sadness)
+                eeg_data.append(pickle.load(data)[9])
             except e as Exception:
                 raise e
-    input_data = np.stack(eeg_data, axis=0)
-    return input_data
+    # final shape should be (61, 32, 7500)
+    return np.stack(eeg_data, axis=0)
 
 def _filepath_regex(filepath, regex):
     if not os.path.exists(filepath):
