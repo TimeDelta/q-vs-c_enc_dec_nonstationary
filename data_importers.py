@@ -15,10 +15,9 @@ def import_FACED(data_directory):
     subjects_to_consider = [
         f for f in glob.glob(os.path.join(data_directory, "**/data.bdf"), recursive=True) if _filepath_regex(f, valid_subj_ids_re)
     ]
-    for file in :
+    for file in subjects_to_consider:
         try:
             raw_data = mne.io.read_raw_bdf(file, preload=True)
-            raw_data.drop_channels()
             eeg_data.append(raw_data)
         except e as Exception:
             raise e
