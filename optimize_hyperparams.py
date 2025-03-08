@@ -17,9 +17,9 @@ def sample_hyperparameters(num_qubits):
 
 def get_training_loss(data, type, config, allocated_epochs):
     if type.lower() == 'qae':
-        trained_params, cost_history = train_adam(input_data, config, allocated_epochs)
+        trained_params, cost_history = train_adam(input_data, qae_cost_function, config, allocated_epochs)
     elif type.lower() == 'qte':
-        trained_params, cost_history = train_adam(input_data, config, allocated_epochs)
+        trained_params, cost_history = train_adam(input_data, qtc_cost_function, config, allocated_epochs)
     else:
         raise Exception('Unknown type: ' + type)
     return 3./4 * cost_history[-1] + config['num_blocks'] / MAX_NUM_BLOCKS / 4.
