@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
     parser.add_argument("--reduction_factor", type=int, default=3, help="Factor by which successive configuration evals are reduced each round.")
     parser.add_argument("--max_training_epochs", type=int, default=100, help="Maximum number of epochs allocated to any configuration.")
-    parser.add_argument("--dataset", type=str, defaul='FACED')
+    parser.add_argument("--dataset", type=str, default='FACED')
     args = parser.parse_args()
     # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]])
 
