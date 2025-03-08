@@ -289,16 +289,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Train a Quantum Transition Encoder over the given data."
     )
-    # parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--bottleneck_size", type=int, default=0)
     parser.add_argument("--num_blocks", type=int, default=0)
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
+    parser.add_argument("--sample_length", type=int, default=0)
+    parser.add_argument("--dataset", type=str, defaul='FACED')
     args = parser.parse_args()
-    input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
+    # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
 
-    # input_data = []
-    # for
+    if args.dataset == 'FACED':
+        from data_importers import import_FACED
+        input_data = import_FACED(args.data_directory)
+    else:
+        raise Exception('Unknown dataset type: ' + args.dataset)
+
     num_qubits = len(input_data[0])
     bottleneck_size = args.bottleneck_size
     if bottleneck_size == 0:

@@ -65,13 +65,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Optimize the hyperparameters of the QTE training for this experiment."
     )
-    # parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--reduction_factor", type=int, default=3, help="Factor by which successive configuration evals are reduced each round.")
     parser.add_argument("--max_training_epochs", type=int, default=100, help="Maximum number of epochs allocated to any configuration.")
+    parser.add_argument("--dataset", type=str, defaul='FACED')
     args = parser.parse_args()
+    # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]])
 
-    # args.data_directory
-    input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]])
+    if args.dataset == 'FACED':
+        from data_importers import import_FACED
+        input_data = import_FACED(args.data_directory)
+    else:
+        raise Exception('Unknown dataset type: ' + args.dataset)
+
     best_config, best_loss = hyperband_search(input_data, args.max_training_epochs, args.reduction_factor)
     print("\nBest hyperparameter configuration found:")
     print(best_config)

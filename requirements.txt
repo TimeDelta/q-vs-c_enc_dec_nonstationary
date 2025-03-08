@@ -1,4 +1,5 @@
+mne
+numpy
 qiskit
 qiskit-aer
 qiskit[visualization]
-numpy
