@@ -11,8 +11,8 @@ EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
-    For each enabled type of 1-qubit rotation gate, add one to each qubit.
-    Returns input parameters
+    Apply rotation gate to each qubit for embedding of classical data.
+    Returns qc, input_params
     """
     input_params = []
     qc = QuantumCircuit(num_qubits)
