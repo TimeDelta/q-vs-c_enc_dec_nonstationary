@@ -1,8 +1,6 @@
 import numpy as np
 import math
-from common import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES
-from qte_training import train_qte_adam
-from qae_training import train_qae_adam
+from training import train_adam, qae_cost_function, qte_cost_function, ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES
 
 MAX_NUM_BLOCKS = 5 # per 1/2 of QTE
 
@@ -19,9 +17,9 @@ def sample_hyperparameters(num_qubits):
 
 def get_training_loss(data, type, config, allocated_epochs):
     if type.lower() == 'qae':
-        trained_params, cost_history = train_qae_adam(input_data, config, allocated_epochs)
+        trained_params, cost_history = train_adam(input_data, config, allocated_epochs)
     elif type.lower() == 'qte':
-        trained_params, cost_history = train_qte_adam(input_data, config, allocated_epochs)
+        trained_params, cost_history = train_adam(input_data, config, allocated_epochs)
     else:
         raise Exception('Unknown type: ' + type)
     return 3./4 * cost_history[-1] + config['num_blocks'] / MAX_NUM_BLOCKS / 4.
