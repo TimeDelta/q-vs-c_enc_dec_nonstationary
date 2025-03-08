@@ -2,6 +2,7 @@ import mne
 import glob
 import os
 import re
+import numpy as np
 
 def import_FACED(data_directory):
     """
