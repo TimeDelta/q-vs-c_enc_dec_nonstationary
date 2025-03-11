@@ -34,6 +34,7 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
     Returns:
       optimal_config, optimal_loss
     """
+    print(f'Performing hyperband search over {type.upper()} training hyperparameters')
     max_bracket = int(np.floor(np.log(max_training_epochs) / np.log(reduction_factor)))
     total_budget = (max_bracket + 1) * max_training_epochs
     optimal_config = None
@@ -47,11 +48,15 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
 
         print(f"Bracket {bracket}: Starting with {initial_num_configs} configurations, each with {initial_allocated_epochs} epochs.")
         configs = [sample_hyperparameters(num_qubits) for _ in range(initial_num_configs)]
+        print('Created configs')
 
         # successive reduction in num configs
         for round_index in range(bracket + 1):
+            print('Round ' + str(round_index))
             num_configs_this_round = int(np.floor(initial_num_configs * reduction_factor ** (-round_index)))
+            print('  calculated num configs this round')
             epochs_this_round = int(initial_allocated_epochs * reduction_factor ** (round_index))
+            print('  calculated epochs this round')
 
             round_losses = [get_training_loss(data, type, config, epochs_this_round) for config in configs]
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
@@ -75,13 +80,16 @@ if __name__ == '__main__':
     parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
     parser.add_argument("--reduction_factor", type=int, default=3, help="Factor by which successive configuration evals are reduced each round.")
     parser.add_argument("--max_training_epochs", type=int, default=100, help="Maximum number of epochs allocated to any configuration.")
-    parser.add_argument("--dataset", type=str, default='FACED')
+    parser.add_argument("--dataset", type=str, default='single_subject', help="Options: 'FACED', 'single_subject'")
     args = parser.parse_args()
     # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]])
 
     if args.dataset == 'FACED':
         from data_importers import import_FACED
         input_data = import_FACED(args.data_directory)
+    elif args.dataset.lower() == 'single_subject':
+        from data_importers import import_single_subject
+        input_data = import_single_subject(args.data_directory)
     else:
         raise Exception('Unknown dataset type: ' + args.dataset)
 

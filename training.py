@@ -1,6 +1,5 @@
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit_aer import Aer
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
 import re
@@ -155,6 +154,7 @@ def trash_qubit_penalty(state, bottleneck_size):
         penalty (float): cumulative penalty for the trash qubits
     """
     marginals = []
+    print('    calculating trash qubit penalty')
 
     # compute marginal probability for each qubit being in |0>
     for q in range(state.num_qubits):
@@ -181,19 +181,23 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     for sample in data:
         sample_cost = 0
         for state in sample:
-            ideal_qc = embedder.assign_parameters({
+            print('Emedding current state')
+            params = {
                 # each input param ends in an index
                 p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
-            })
+            }
+            ideal_qc = embedder.assign_parameters(params)
             ideal_state = Statevector.from_instruction(ideal_qc)
 
+            print('retrieving bottleneck state')
             bottleneck_state = ideal_state.evolve(encoder)
             reconstructed_state = bottleneck_state.evolve(decoder)
 
+            print('    calculating fidelity')
             reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
             trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
             sample_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
-        total_cost += sample_cost / (sample_length) # avg cost per state
+        total_cost += sample_cost / sample_length # avg cost per state
     return total_cost
 
 def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2):
@@ -277,12 +281,16 @@ def train_adam(data, cost_function, config, num_epochs=100):
 
     trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config)
 
+    print('  created untrained circuit')
+
     previous_param_values = param_values.copy()
     for t in range(1, num_epochs + 1):
+        print('  Epoch ' + str(t))
         param_dict = {param: value for param, value in zip(trainable_params, param_values)}
         encoder_bound = encoder.assign_parameters(param_dict)
         decoder_bound = decoder.assign_parameters(param_dict)
 
+        print('    calculating initial cost')
         current_cost = cost_function(
             data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
         )
@@ -320,14 +328,17 @@ if __name__ == '__main__':
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
     parser.add_argument("--sample_length", type=int, default=0)
-    parser.add_argument("--dataset", type=str, defaul='FACED')
+    parser.add_argument("--dataset", type=str, default='single_subject', help="Options: 'FACED', 'single_subject'")
     parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
     args = parser.parse_args()
     # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
 
-    if args.dataset == 'FACED':
+    if args.dataset.upper() == 'FACED':
         from data_importers import import_FACED
         input_data = import_FACED(args.data_directory)
+    elif args.dataset.lower() == 'single_subject':
+        from data_importers import import_single_subject
+        input_data = import_single_subject(args.data_directory)
     else:
         raise Exception('Unknown dataset type: ' + args.dataset)
 
