@@ -6,14 +6,14 @@ def differential_entropy(data, num_bins=None):
     data (np.ndarray): shape should be (num_features, sequence_length)
     num_bins (int or sequence)
     """
-    entropy_per_feature
+    entropy_per_feature = []
     for f in range(len(data[0])):
         if not num_bins: # default to Freedman-Diaconis Rule due to non-normal data
-            q75, q25 = np.percentile(data, [75 ,25])
+            q75, q25 = np.percentile(data[0][f], [75 ,25])
             IQR = q75 - q25
             bin_width = 2 * IQR / np.cbrt(len(data))
             num_bins = int(np.ceil((np.max(data) - np.min(data)) / bin_width))
-        hist, edges = np.histogramdd(data, bins=num_bins, density=True)
+        hist, edges = np.histogramdd(data[0][f], bins=num_bins, density=True)
 
         dimensions = data.shape[1]
 
@@ -24,7 +24,8 @@ def differential_entropy(data, num_bins=None):
 
         nonzero = hist > 0
         de = -np.sum(hist[nonzero] * np.log(hist[nonzero])) * bin_volume
-    return de
+        entropy_per_feature.append(de)
+    return entropy_per_feature
 
 def entanglement_entropy(state, subsystem):
     total_qubits = state.num_qubits
