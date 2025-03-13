@@ -5,7 +5,7 @@ import random
 import torch
 import torch.nn as nn
 
-from analysis import lempel_ziv_complexity_continuous, hurst_exponent
+from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
 
 class SimpleTransformerGenerator(nn.Module):
     def __init__(self, input_dim, model_dim, num_layers, num_heads, output_dim, max_seq_length):
@@ -50,10 +50,10 @@ def get_model_param_shapes(model):
         shapes.append(param.detach().cpu().numpy().shape)
     return shapes
 
-def objective(generated_params, model, param_shapes, length, target_lzc, target_he, target_mean, target_stdev):
+def objective(generated_params, model, param_shapes, length, target_lzc, target_he, target_hfd, target_mean, target_stdev):
     update_model_params(model, generated_params, param_shapes)
 
-    targets = np.array([target_lzc, target_he, target_mean, target_stdev], dtype=np.float32)
+    targets = np.array([target_lzc, target_he, target_hfd, target_mean, target_stdev], dtype=np.float32)
     # Reshape to (1, 1, input_dim) and repeat along the time axis to get (1, length, input_dim)
     targets = targets.reshape(1, 1, -1)
     targets = np.repeat(targets, length, axis=1)
@@ -68,23 +68,19 @@ def objective(generated_params, model, param_shapes, length, target_lzc, target_
     computed_lzc = lempel_ziv_complexity_continuous(generated_data)
 
     he_error = np.mean([np.abs(target_he - he) for he in hurst_exponent(generated_data)])
+    hfd_error = np.mean([np.abs(target_hfd - hfd) for hfd in higuchi_fractal_dimension(generated_data)])
     mean_error = np.mean([np.abs(target_mean - mean) / max(target_mean, mean) for mean in np.mean(generated_data, axis=0)])
     stdev_error = np.mean([np.abs(target_stdev - stdev) / max(target_stdev, stdev) for stdev in np.std(generated_data, axis=0)])
 
-    total_error = (
-        (target_lzc - computed_lzc) ** 2 +
-        he_error ** 2 +
-        mean_error ** 2 +
-        stdev_error ** 2
-    )
+    total_error = (target_lzc - computed_lzc)**2 + he_error**2 + hfd_error**2 + mean_error**2 + stdev_error**2
     return 1 - math.sqrt(total_error) / 4
 
 
-input_dim = 4
+input_dim = 5
 model_dim = 8
 num_layers = 2
 num_heads = 2
-num_output_features = 3
+num_output_features = 4
 max_seq_length = 50
 
 model = SimpleTransformerGenerator(input_dim, model_dim, num_layers, num_heads, num_output_features, max_seq_length)
@@ -105,12 +101,13 @@ while not es.stop():
     print('Iteration ' + str(iteration))
     target_lzc = random.random() * 100
     target_he = random.random()
+    target_hfd = random.random()
     target_mean = random.random() * 100
     target_stdev = random.random() * 100
     length = random.randint(10, max_seq_length)
 
     solutions = es.ask()
-    fitnesses = [objective(s, model, param_shapes, length, target_lzc, target_he, target_mean, target_stdev) for s in solutions]
+    fitnesses = [objective(s, model, param_shapes, length, target_lzc, target_he, target_hfd, target_mean, target_stdev) for s in solutions]
     es.tell(solutions, fitnesses)
     es.disp()
     iteration += 1
