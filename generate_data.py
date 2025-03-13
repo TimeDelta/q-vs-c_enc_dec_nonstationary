@@ -21,6 +21,27 @@ def get_random_fourier_series(num_samples, num_features):
         series[:, i] = feature_series / num_terms
     return series
 
+def blend_with_new_block(existing_series, new_block, taper_length):
+    """
+    linearly blend the last `taper_length` samples of existing_series with the first `taper_length` of new_block
+    """
+    if existing_series.shape[0] < taper_length:
+        raise ValueError("Existing series is too short to blend")
+
+    if isinstance(existing_series, torch.Tensor):
+        existing_series = existing_series.detach().cpu().numpy()
+    if isinstance(new_block, torch.Tensor):
+        new_block = new_block.detach().cpu().numpy()
+    overlap_existing = existing_series[-taper_length:]
+    overlap_new = new_block[:taper_length]
+
+    weight_existing = np.linspace(1, 0, taper_length)[:, None] # column vector
+    weight_new = np.linspace(0, 1, taper_length)[:, None]
+    blended_overlap = weight_existing * overlap_existing + weight_new * overlap_new
+
+    blended_series = np.concatenate((existing_series[:-taper_length], blended_overlap, new_block[taper_length:]), axis=0)
+    return blended_series
+
 def get_cosine_positional_embeddings(seq_len, input_size):
     """
     Original cosine positional embeddings from "Attention Is All You Need"
@@ -33,7 +54,7 @@ def get_cosine_positional_embeddings(seq_len, input_size):
     return pe
 
 class HierarchicalTransformerGenerator(nn.Module):
-    def __init__(self, input_dim, global_latent_dim, model_dim, num_encoder_layers, num_heads, output_dim, desired_seq_length):
+    def __init__(self, input_dim, global_latent_dim, num_encoder_layers, num_heads, output_dim, desired_seq_length):
         """
         Hierarchical generator that imposes a common underlying structure to the non-stationarity of the generated signal.
         Don't need to train the model because it is just used as a sequence sampler.
@@ -42,13 +63,13 @@ class HierarchicalTransformerGenerator(nn.Module):
         self.desired_seq_length = desired_seq_length
 
         self.global_fc = nn.Linear(input_dim, global_latent_dim)
-        positional_embeddings = get_cosine_positional_embeddings(desired_seq_length, model_dim)
+        positional_embeddings = get_cosine_positional_embeddings(desired_seq_length, desired_seq_length)
         self.register_buffer("time_embedding", positional_embeddings)
-        self.input_proj = nn.Linear(global_latent_dim + model_dim, model_dim)
+        self.input_proj = nn.Linear(global_latent_dim + desired_seq_length, desired_seq_length)
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=model_dim, nhead=num_heads)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=desired_seq_length, nhead=num_heads)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
-        self.output_proj = nn.Linear(model_dim, output_dim)
+        self.output_proj = nn.Linear(desired_seq_length, output_dim)
 
     def forward(self, inputs, seq_length=None):
         """
@@ -74,25 +95,32 @@ class HierarchicalTransformerGenerator(nn.Module):
 
 input_dim = 5
 global_latent_dim = 16
-model_dim = 100
 num_layers = 2
 num_heads = 2
 num_features_per_state = 8
-seq_length = 100
 num_series_to_generate = 1000
 
-model = HierarchicalTransformerGenerator(
-    input_dim, global_latent_dim, model_dim, num_layers, num_heads, num_features_per_state, seq_length
+
+num_blocks_per_series = 10
+num_samples_per_block = 50
+num_time_steps_to_taper = num_samples_per_block // 10
+generator = HierarchicalTransformerGenerator(
+    input_dim, global_latent_dim, num_layers, num_heads, num_features_per_state, num_samples_per_block
 )
 
 generated_sequences = []
 for i in range(num_series_to_generate):
     print('Generating series ' + str(i + 1))
-    inputs = torch.randn(input_dim, dtype=torch.float32)
-    print(inputs.shape)
-    generated_sequences.append(model.forward(inputs))
-print([s.detach().cpu().numpy().shape for s in generated_sequences])
-print(len(generated_sequences))
+    series = []
+    for _ in range(num_blocks_per_series):
+        inputs = torch.randn(input_dim, dtype=torch.float32)
+        # have to blend multiple series together to ensure non-stationarity
+        new_block = generator.forward(inputs)
+        if len(series) > 0:
+            series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+        else:
+            series = new_block
+    generated_sequences.append(series)
 
 print('Calculating complexity metrics for generated sequences ...')
 series_metrics = []
@@ -107,17 +135,15 @@ for series in generated_sequences:
 print('Determining which series to keep ...')
 num_bins_per_metric = 10
 
-all_metrics = np.array([[m['lzc'], m['he'], m['hfd']] for m, _ in generated_sequences])
+all_metrics = np.array([[m['lzc']] for m, _ in series_metrics])
 lzc_vals = all_metrics[:, 0]
-he_vals = all_metrics[:, 1]
-hfd_vals = all_metrics[:, 2]
 
 lzc_edges = np.linspace(np.min(lzc_vals), np.max(lzc_vals), num_bins_per_metric + 1)
-he_edges = np.linspace(np.min(he_vals), np.max(he_vals), num_bins_per_metric + 1)
-hfd_edges = np.linspace(np.min(hfd_vals), np.max(hfd_vals), num_bins_per_metric + 1)
+he_edges = np.linspace(0, 1, num_bins_per_metric + 1)
+hfd_edges = np.linspace(0, 1, num_bins_per_metric + 1)
 
 series_metric_grid = {}
-for metrics, series in generated_sequences:
+for metrics, series in series_metrics:
     lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
     lzc_bin = np.digitize(lzc, lzc_edges) - 1
     he_bin = np.digitize(he, he_edges) - 1
