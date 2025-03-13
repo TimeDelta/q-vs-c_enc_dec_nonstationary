@@ -92,23 +92,16 @@ def _hurst_exponent_1d(data, window_sizes):
     slope, _ = np.polyfit(logs, log_RS, 1)
     return slope
 
-def hurst_exponent(data, window_space_method='logspace'):
-    """
-    Parameters:
-        data (np.ndarray): shape should be (n_samples, n_features)
-        window_space_method (str): 'linspace' or 'logspace'
-
-    Returns: dictionary mapping each feature index to its Hurst exponent.
-    """
+def hurst_exponent(data):
     # compute separately for each feature (column)
     n_samples, n_features = data.shape
-    hurst_vals = {}
+    hurst_vals = []
     for f_i in range(n_features):
         col = data[:, f_i]
         # use logspace for mixed local / ranged correlation structure
         window_sizes = np.unique(np.floor(np.logspace(np.log10(10), np.log10(n_samples // 2), num=20)).astype(int))
         window_sizes = window_sizes[window_sizes > 0]
-        hurst_vals[f_i] = _hurst_exponent_1d(col, window_sizes)
+        hurst_vals.append(_hurst_exponent_1d(col, window_sizes))
     return hurst_vals
 
 def higuchi_fractal_dimension(data, kmax=10):
