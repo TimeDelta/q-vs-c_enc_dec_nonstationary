@@ -35,21 +35,32 @@ def entanglement_entropy(state, subsystem):
 
 # TODO: better method for deciding number of symbols
 def quantize_signal(data, num_symbols=30):
-    """
-    Returns: list of integer symbols representing the quantized signal
-    """
-    if data.ndim > 1:
-        # TODO: look into quantizing states as a whole (recursive binning maybe?) instead of per feature
-        # to avoid having to flatten here
-        print('!! WARNING !!: flattening multidimensional states')
-        data = data.ravel()
-    data_min, data_max = np.min(data), np.max(data)
-    if data_max == data_min: # edge case: all data equal -> avoid /0
-        quantized = np.zeros_like(data, dtype=int)
+    if data.ndim == 1:
+        data_min, data_max = np.min(data), np.max(data)
+        if data_max == data_min:
+            quantized = np.zeros_like(data, dtype=int)
+        else:
+            quantized = np.floor((data - data_min) / (data_max - data_min) * num_symbols).astype(int)
+            quantized[quantized == num_symbols] = num_symbols - 1 # enforce symbol bounds
+        return quantized.tolist()
+    elif data.ndim == 2:
+        n_samples, n_features = data.shape
+        quantized_features = []
+        for i in range(n_features): # quantize each feature separately
+            channel = data[:, i]
+            channel_min, channel_max = np.min(channel), np.max(channel)
+            if channel_max == channel_min:
+                quanta = np.zeros_like(channel, dtype=int)
+            else:
+                quanta = np.floor((channel - channel_min) / (channel_max - channel_min) * num_symbols).astype(int)
+                quanta[quanta == num_symbols] = num_symbols - 1
+            quantized_features.append(quanta)
+        quantized_features = np.stack(quantized_features, axis=1) # shape (n_samples, n_features)
+        # combine feeatures using mixed-radix encoding (treat each feature’s quantized value as a digit in a number with base equal to num_symbols)
+        composite_symbols = np.sum(quantized_features * (num_symbols ** np.arange(n_features)), axis=1)
+        return composite_symbols.tolist()
     else:
-        quantized = np.floor((data - data_min) / (data_max - data_min) * num_symbols).astype(int)
-        quantized[quantized == num_symbols] = num_symbols - 1  # handle edge case
-    return quantized.tolist()
+        raise ValueError("Data must be 1D or 2D.")
 
 def lempel_ziv_complexity_continuous(data, num_symbols=30):
     symbol_seq = quantize_signal(data, num_symbols)
