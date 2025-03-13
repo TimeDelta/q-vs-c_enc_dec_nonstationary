@@ -81,27 +81,31 @@ class HierarchicalTransformerGenerator(nn.Module):
 
 input_dim = 4
 global_latent_dim = 16
-num_layers = 2
-num_heads = 2
+max_num_layers = 10
+max_num_heads = 10
 num_features_per_state = 8
 num_series_per_dataset = 10
-num_blocks_per_series = 10
+orig_num_blocks_per_series = 10
 num_samples_per_block = 50
 num_time_steps_to_taper = num_samples_per_block // 10
 num_datasets = 100
 
 datasets = []
-required_length = num_blocks_per_series * num_samples_per_block
+required_length = orig_num_blocks_per_series * num_samples_per_block
 for d in range(num_datasets):
     print('Generating dataset ' + str(d + 1))
+    num_heads = d % max_num_heads + 1
+    while num_samples_per_block % num_heads != 0:
+        num_heads += 1
     generator = HierarchicalTransformerGenerator(
-        input_dim, global_latent_dim, num_layers, num_heads, num_features_per_state, num_samples_per_block
+        input_dim, global_latent_dim, d % max_num_layers + 1, num_heads, num_features_per_state, num_samples_per_block
     )
     generated_sequences = []
+    num_blocks_per_series = orig_num_blocks_per_series
     for i in range(num_series_per_dataset):
         print('  Generating series ' + str(i + 1))
-        num_blocks_per_series //= 2
-        num_blocks_per_series = max(num_blocks_per_series, 1)
+        num_blocks_per_series /= 1.5
+        num_blocks_per_series = int(max(num_blocks_per_series, 1))
         series = []
         for _ in range(num_blocks_per_series):
             inputs = torch.randn(input_dim, dtype=torch.float32)
