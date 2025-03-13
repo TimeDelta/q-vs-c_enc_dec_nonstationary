@@ -6,21 +6,6 @@ import torch.optim as optim
 
 from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
 
-def get_random_fourier_series(num_samples, num_features):
-    time_steps = np.linspace(0, 1, num_samples, endpoint=False)
-    series = np.zeros((num_samples, num_features))
-
-    for i in range(num_features):
-        num_terms = num_samples // 2
-        amplitudes = np.random.randn(num_terms)
-        phases = np.random.uniform(0, 2 * np.pi, num_terms)
-        freqs = np.arange(1, num_terms + 1)[:, np.newaxis] # as column vector
-
-        feature_series = np.sum(amplitudes[:, None] * np.cos(2 * np.pi * freqs * time_steps + phases[:, None]), axis=0)
-        # normalize amplitude due to sensitivity of LZC to large variance
-        series[:, i] = feature_series / num_terms
-    return series
-
 def blend_with_new_block(existing_series, new_block, taper_length):
     """
     linearly blend the last `taper_length` samples of existing_series with the first `taper_length` of new_block
@@ -90,20 +75,20 @@ class HierarchicalTransformerGenerator(nn.Module):
         combined = combined.transpose(0, 1)
         transformer_out = self.transformer_encoder(combined)
         transformer_out = transformer_out.transpose(0, 1) # back to (seq_length, model_dim)
+        noise = torch.randn_like(transformer_out) * .05
 
-        return self.output_proj(transformer_out) # shape: (seq_length, output_dim)
+        return self.output_proj(transformer_out + noise) # shape: (seq_length, output_dim)
 
-input_dim = 5
+input_dim = 4
 global_latent_dim = 16
 num_layers = 2
 num_heads = 2
 num_features_per_state = 8
 num_series_to_generate = 1000
-
-
 num_blocks_per_series = 10
-num_samples_per_block = 50
+num_samples_per_block = 20
 num_time_steps_to_taper = num_samples_per_block // 10
+
 generator = HierarchicalTransformerGenerator(
     input_dim, global_latent_dim, num_layers, num_heads, num_features_per_state, num_samples_per_block
 )
@@ -122,23 +107,28 @@ for i in range(num_series_to_generate):
             series = new_block
     generated_sequences.append(series)
 
-print('Calculating complexity metrics for generated sequences ...')
 series_metrics = []
+i = 0
 for series in generated_sequences:
+    print('Calculating complexity metrics for series ' + str(i))
     metrics = {
         'lzc': lempel_ziv_complexity_continuous(series),
         'he': np.mean(hurst_exponent(series)),
         'hfd': np.mean(higuchi_fractal_dimension(series))
     }
     series_metrics.append((metrics, series))
+    i += 1
 
 print('Determining which series to keep ...')
 num_bins_per_metric = 10
 
 all_metrics = np.array([[m['lzc']] for m, _ in series_metrics])
 lzc_vals = all_metrics[:, 0]
+min_lzc = np.min(lzc_vals)
+max_lzc = np.max(lzc_vals)
+print(min_lzc, max_lzc)
 
-lzc_edges = np.linspace(np.min(lzc_vals), np.max(lzc_vals), num_bins_per_metric + 1)
+lzc_edges = np.linspace(min_lzc, max_lzc, num_bins_per_metric + 1)
 he_edges = np.linspace(0, 1, num_bins_per_metric + 1)
 hfd_edges = np.linspace(0, 1, num_bins_per_metric + 1)
 
