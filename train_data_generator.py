@@ -60,7 +60,6 @@ def objective(generated_params, model, param_shapes, length, target_lzc, target_
 
     targets_tensor = torch.tensor(targets)
 
-    print('  Generating data for candidate')
     with torch.no_grad():
         generated = model(targets_tensor) # shape: (1, length, output_dim)
     generated_data = generated.squeeze(0).cpu().numpy() # shape: (length, output_dim)
@@ -78,7 +77,7 @@ def objective(generated_params, model, param_shapes, length, target_lzc, target_
 
 input_dim = 5
 model_dim = 8
-num_layers = 2
+num_layers = 1
 num_heads = 2
 num_output_features = 4
 max_seq_length = 50
@@ -93,7 +92,7 @@ from cma import sampler
 es = cma.CMAEvolutionStrategy(flat_params, .5, {
     'popsize': 20,
     'bounds': [-100, 100],
-    'CMA_sampler': sampler.GaussDiagonalSampler # default sampler too slow due to high dimensionality
+    # 'CMA_sampler': sampler.GaussDiagonalSampler # default sampler too slow due to high dimensionality
 }) # sigma = .5
 
 iteration = 0
