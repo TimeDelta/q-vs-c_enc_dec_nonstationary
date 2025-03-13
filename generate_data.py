@@ -1,4 +1,9 @@
+import math
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
 from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
 
 def get_random_fourier_series(num_samples, num_features):
@@ -16,27 +21,16 @@ def get_random_fourier_series(num_samples, num_features):
         series[:, i] = feature_series / num_terms
     return series
 
-def blend_with_new_block(existing_series, new_block, taper_length):
+def get_cosine_positional_embeddings(seq_len, input_size):
     """
-    linearly blend the last `taper_length` samples of existing_series with the first `taper_length` of new_block
+    Original cosine positional embeddings from "Attention Is All You Need"
     """
-    if existing_series.shape[0] < taper_length:
-        raise ValueError("Existing series is too short to blend")
-
-    overlap_existing = existing_series[-taper_length:]
-    overlap_new = new_block[:taper_length]
-
-    weight_existing = np.linspace(1, 0, taper_length)[:, None] # column vector
-    weight_new = np.linspace(0, 1, taper_length)[:, None]
-    blended_overlap = weight_existing * overlap_existing + weight_new * overlap_new
-
-    blended_series = np.concatenate((existing_series[:-taper_length], blended_overlap, new_block[taper_length:]), axis=0)
-    return blended_series
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
+    pe = torch.zeros(seq_len, input_size)
+    position = torch.arange(0, seq_len, dtype=torch.float32).unsqueeze(1)
+    div_term = torch.exp(torch.arange(0, input_size, 2, dtype=torch.float32) * (-math.log(10000.0) / input_size))
+    pe[:, 0::2] = torch.sin(position * div_term)
+    pe[:, 1::2] = torch.cos(position * div_term)
+    return pe
 
 class HierarchicalTransformerGenerator(nn.Module):
     def __init__(self, input_dim, global_latent_dim, model_dim, num_encoder_layers, num_heads, output_dim, desired_seq_length):
@@ -48,7 +42,8 @@ class HierarchicalTransformerGenerator(nn.Module):
         self.desired_seq_length = desired_seq_length
 
         self.global_fc = nn.Linear(input_dim, global_latent_dim)
-        self.time_embedding = nn.Parameter(torch.randn(desired_seq_length, model_dim))
+        positional_embeddings = get_cosine_positional_embeddings(desired_seq_length, model_dim)
+        self.register_buffer("time_embedding", positional_embeddings)
         self.input_proj = nn.Linear(global_latent_dim + model_dim, model_dim)
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=model_dim, nhead=num_heads)
@@ -57,103 +52,47 @@ class HierarchicalTransformerGenerator(nn.Module):
 
     def forward(self, inputs, seq_length=None):
         """
-        Generate sequence of shape (batch_size, desired_seq_length, output_dim)
+        Generate sequence of shape (desired_seq_length, output_dim)
         """
         if not seq_length:
             seq_length = self.desired_seq_length
-        batch_size = inputs.size(0)
 
-        global_latent = self.global_fc(inputs) # shape: (batch_size, global_latent_dim)
-        # Expand and repeat to shape: (batch_size, desired_seq_length, global_latent_dim)
-        global_latent = global_latent.unsqueeze(1).expand(-1, seq_length, -1)
+        global_latent = self.global_fc(inputs).unsqueeze(0).expand(seq_length, -1)
 
-        time_emb = self.time_embedding[:seq_length, :].unsqueeze(0).expand(batch_size, -1, -1)
+        time_emb = self.time_embedding[:seq_length, :]
 
         # concatenate global latent and time embedding along the feature dimension
         combined = torch.cat([global_latent, time_emb], dim=-1)
-        combined = self.input_proj(combined) # shape: (batch_size, desired_seq_length, model_dim)
+        combined = self.input_proj(combined) # shape: (seq_length, model_dim)
 
-        # requires input shape: (desired_seq_length, batch_size, model_dim)
+        # requires input shape: (seq_length, model_dim)
         combined = combined.transpose(0, 1)
         transformer_out = self.transformer_encoder(combined)
-        transformer_out = transformer_out.transpose(0, 1) # back to (batch_size, desired_seq_length, model_dim)
+        transformer_out = transformer_out.transpose(0, 1) # back to (seq_length, model_dim)
 
-        return self.output_proj(transformer_out) # shape: (batch_size, desired_seq_length, output_dim)
-
-    def constrained_decode(self, input_batches, beam_width=5):
-        candidates = [([], 0)]
-
-        for t in range(self.desired_seq_length):
-            new_candidates = []
-            for seq, count in candidates:
-                candidate_tokens = self.decode_step(input_batches, seq)
-                candidate_tokens = candidate_tokens.detach().cpu()
-
-                # if decode_step returns no candidates, keep the current candidate.
-                if candidate_tokens.size(0) == 0:
-                    new_candidates.append((seq, count))
-                    continue
-
-                for token in candidate_tokens:
-                    # token is a vector; compute its norm to decide if it's "nonzero"
-                    new_seq = seq + [token]
-                    new_count = count + (1 if torch.norm(token).item() > 0 else 0)
-                    new_candidates.append((new_seq, new_count))
-
-            # if no new candidates generated, fallback to previous candidates.
-            if not new_candidates:
-                new_candidates = candidates
-
-            # sort by how close the nonzero count is to the target length then prune
-            new_candidates.sort(key=lambda x: abs(x[1] - self.desired_seq_length))
-            candidates = new_candidates[:beam_width]
-
-            exact_candidates = [c for c in candidates if c[1] == self.desired_seq_length]
-            if exact_candidates:
-                exact_candidates.sort(key=lambda x: abs(x[1] - self.desired_seq_length))
-                return exact_candidates[0][0]
-        return None
-
-    def decode_step(self, inputs, seq_batch, beam_width=5, noise_scale=0.01):
-        """
-        Generates candidate token vectors for the next time step for each sequence in the batch.
-
-        Parameters:
-          seq_batch : list of list
-              A list of sequences (length=batch_size), each being a list of tokens generated so far.
-
-        Returns torch.Tensor of shape (batch_size, beam_width, output_dim) containing candidate tokens
-        """
-        batch_size = inputs.size(0)
-        # Assume all sequences in the batch have the same length; if empty, current_length=0.
-        current_length = len(seq_batch[0]) if seq_batch and len(seq_batch[0]) > 0 else 0
-        desired_length = current_length + 1
-
-        output = self.forward(inputs, seq_length=desired_length) # shape: (batch_size, desired_length, output_dim)
-        final_tokens = output[:, -1, :] # shape: (batch_size, output_dim)
-
-        candidates = final_tokens.unsqueeze(1).expand(batch_size, beam_width, -1) # shape: (batch_size, beam_width, output_dim)
-        noise = torch.randn_like(candidates) * noise_scale
-        candidates = candidates + noise
-        return candidates
+        return self.output_proj(transformer_out) # shape: (seq_length, output_dim)
 
 input_dim = 5
-global_latent_dim = 8
-model_dim = 16
+global_latent_dim = 16
+model_dim = 100
 num_layers = 2
 num_heads = 2
-num_features_per_state = 6
+num_features_per_state = 8
 seq_length = 100
-beam_width = 5
 num_series_to_generate = 1000
 
 model = HierarchicalTransformerGenerator(
     input_dim, global_latent_dim, model_dim, num_layers, num_heads, num_features_per_state, seq_length
 )
 
-batch_inputs = torch.tensor([np.random.randn(input_dim) * num_series_to_generate], dtype=torch.float32)
-generated_sequences = model.constrained_decode(batch_inputs)
-print(generated_sequences)
+generated_sequences = []
+for i in range(num_series_to_generate):
+    print('Generating series ' + str(i + 1))
+    inputs = torch.randn(input_dim, dtype=torch.float32)
+    print(inputs.shape)
+    generated_sequences.append(model.forward(inputs))
+print([s.detach().cpu().numpy().shape for s in generated_sequences])
+print(len(generated_sequences))
 
 print('Calculating complexity metrics for generated sequences ...')
 series_metrics = []
@@ -187,10 +126,9 @@ for metrics, series in generated_sequences:
     # only store first encountered series per cell
     if metrics_key not in series_metric_grid:
         series_metric_grid[metrics_key] = (metrics, series)
+        print(metrics)
+        filename = f"series_cell_{metrics_key[0]}_{metrics_key[1]}_{metrics_key[2]}.npy"
+        np.save(filename, series)
 
 print('Number of grid cells covered: ', len(series_metric_grid))
 print('Saving usable series to disk ...')
-for metrics, series in series_metric_grid:
-    print(metrics)
-    filename = f"series_cell_{key[0]}_{key[1]}_{key[2]}.npy"
-    np.save(filename, series)

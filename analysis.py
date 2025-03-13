@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from qiskit.quantum_info import partial_trace, entropy
 
 def differential_entropy(data, num_bins=None):
@@ -35,6 +36,8 @@ def entanglement_entropy(state, subsystem):
 
 # TODO: better method for deciding number of symbols
 def quantize_signal(data, num_symbols=30):
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
     if data.ndim == 1:
         data_min, data_max = np.min(data), np.max(data)
         if data_max == data_min:
