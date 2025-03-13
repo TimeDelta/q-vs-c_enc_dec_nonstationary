@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -79,6 +80,10 @@ class HierarchicalTransformerGenerator(nn.Module):
 
         return self.output_proj(transformer_out + noise) # shape: (seq_length, output_dim)
 
+base_dir = 'generated_datasets'
+if not os.path.exists(base_dir):
+    os.makedirs(base_dir)
+
 input_dim = 4
 global_latent_dim = 16
 max_num_layers = 10
@@ -94,12 +99,17 @@ datasets = []
 required_length = orig_num_blocks_per_series * num_samples_per_block
 for d in range(num_datasets):
     print('Generating dataset ' + str(d + 1))
+    dataset_dir = os.path.join(base_dir, f'dataset_{d+1}')
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+
     num_heads = d % max_num_heads + 1
     while num_samples_per_block % num_heads != 0:
         num_heads += 1
     generator = HierarchicalTransformerGenerator(
         input_dim, global_latent_dim, d % max_num_layers + 1, num_heads, num_features_per_state, num_samples_per_block
     )
+
     generated_sequences = []
     num_blocks_per_series = orig_num_blocks_per_series
     for i in range(num_series_per_dataset):
@@ -123,20 +133,21 @@ for d in range(num_datasets):
             series = np.concatenate((series, series), axis=0)
         series = series[:required_length]
         generated_sequences.append(series)
+        series_filename = os.path.join(dataset_dir, f'series_{i+1}.npy')
+        np.save(series_filename, series)
     datasets.append(generated_sequences)
 
 series_metrics = []
-i = 1
-for generated_sequences in datasets:
+for dataset_index, generated_sequences in enumerate(datasets):
     for series in generated_sequences:
-        print('Calculating complexity metrics for series ' + str(i))
+        print('Calculating complexity metrics for series ' + str(len(series_metrics) + 1))
         metrics = {
             'lzc': lempel_ziv_complexity_continuous(series),
             'he': np.mean(hurst_exponent(series)),
-            'hfd': np.mean(higuchi_fractal_dimension(series))
+            'hfd': np.mean(higuchi_fractal_dimension(series)),
+            'dataset': dataset_index + 1
         }
         series_metrics.append((metrics, series))
-        i += 1
 
 print('Determining which series to keep ...')
 num_bins_per_metric = 10
@@ -162,7 +173,7 @@ for metrics, series in series_metrics:
     if metrics_key not in series_metric_grid:
         series_metric_grid[metrics_key] = (metrics, series)
         print(metrics)
-        filename = f"series_cell_{metrics_key[0]}_{metrics_key[1]}_{metrics_key[2]}.npy"
+        filename = f'series_cell_{metrics_key[0]}_{metrics_key[1]}_{metrics_key[2]}_dataset{metrics["dataset"]}.npy'
         np.save(filename, series)
 
 print('Number of grid cells covered: ', len(series_metric_grid))
