@@ -88,6 +88,8 @@ print('initialized model')
 param_shapes = get_model_param_shapes(model)
 flat_params = np.concatenate([p.flatten() for p in [param.detach().cpu().numpy() for param in model.parameters()]])
 print(flat_params.shape)
+
+# could change to a gradient-based optimizer by randomly generating sequence and computing the complexity metrics then use as example
 from cma import sampler
 es = cma.CMAEvolutionStrategy(flat_params, .5, {
     'popsize': 20,
