@@ -71,7 +71,7 @@ def _hurst_exponent_1d(data, window_sizes):
     """
     RS = []
     for window in window_sizes:
-        n_segments = len(symbol_seq) // window
+        n_segments = len(data) // window
         RS_vals = []
         for i in range(n_segments):
             segment = data[i * window:(i + 1) * window]
