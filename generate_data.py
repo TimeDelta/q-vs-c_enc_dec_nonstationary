@@ -89,11 +89,11 @@ global_latent_dim = 16
 max_num_layers = 10
 max_num_heads = 10
 num_features_per_state = 8
-num_series_per_dataset = 10
+num_series_per_dataset = 25
 orig_num_blocks_per_series = 10
 num_samples_per_block = 50
 num_time_steps_to_taper = num_samples_per_block // 10
-num_datasets = 100
+num_datasets = 200
 
 datasets = []
 required_length = orig_num_blocks_per_series * num_samples_per_block
@@ -114,7 +114,7 @@ for d in range(num_datasets):
     num_blocks_per_series = orig_num_blocks_per_series
     for i in range(num_series_per_dataset):
         print('  Generating series ' + str(i + 1))
-        num_blocks_per_series /= 1.5
+        num_blocks_per_series /= (1 + 1/num_series_per_dataset)
         num_blocks_per_series = int(max(num_blocks_per_series, 1))
         series = []
         for _ in range(num_blocks_per_series):
