@@ -1,6 +1,7 @@
 import cma
 import numpy as np
 import math
+import random
 import torch
 import torch.nn as nn
 
@@ -90,30 +91,37 @@ def objective(generated_params, model, param_shapes, length, target_lzc, target_
 
 
 input_dim = 4
-model_dim = 16
+model_dim = 8
 num_layers = 2
 num_heads = 2
-num_features = 4
+num_output_features = 3
 max_seq_length = 50
 
-model = SimpleTransformerGenerator(input_dim, model_dim, num_layers, num_heads, num_features, max_seq_length)
+model = SimpleTransformerGenerator(input_dim, model_dim, num_layers, num_heads, num_output_features, max_seq_length)
 model.eval()
 print('initialized model')
 param_shapes = get_model_param_shapes(model)
 flat_params = np.concatenate([p.flatten() for p in [param.detach().cpu().numpy() for param in model.parameters()]])
-
-print('grabbed initial params')
-es = cma.CMAEvolutionStrategy(flat_params, .5, {'popsize': 20, 'bounds': [-100, 100]}) # sigma = .5
+print(flat_params.shape)
+from cma import sampler
+es = cma.CMAEvolutionStrategy(flat_params, .5, {
+    'popsize': 20,
+    'bounds': [-100, 100],
+    'CMA_sampler': sampler.GaussDiagonalSampler # default sampler too slow due to high dimensionality
+}) # sigma = .5
 
 iteration = 0
 while not es.stop():
     print('Iteration ' + str(iteration))
-    target_lzc = math.random(0, 100)
-    for f in num_features:
-        target_hes.append(math.random(0, 1))
-        target_means = math.random(0, 100)
-        target_stdevs = math.random(0, 100)
-    length = math.random(10, max_seq_length)
+    target_lzc = random.random() * 100
+    target_hes = []
+    target_means = []
+    target_stdevs = []
+    for _ in range(num_output_features):
+        target_hes.append(random.random())
+        target_means.append(random.random() * 100)
+        target_stdevs.append(random.random() * 100)
+    length = random.randint(10, max_seq_length)
 
     solutions = es.ask()
     fitnesses = [objective(s, model, param_shapes, length, target_lzc, target_hes, target_means, target_stdevs) for s in solutions]
