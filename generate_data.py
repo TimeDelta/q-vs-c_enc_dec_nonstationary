@@ -39,7 +39,8 @@ num_blocks_per_series = 10
 num_samples_per_block = 50
 num_time_steps_to_taper = num_samples_per_block // 10
 generated_data_series = []
-for _ in range(num_series_to_generate):
+for i in range(num_series_to_generate):
+    print('Generating data series ' + str(i) + f' ({i / num_series_to_generate}% complete)')
     series = []
     for _ in range(num_blocks_per_series):
         # have to blend multiple series together to ensure non-stationarity
@@ -55,6 +56,7 @@ for _ in range(num_series_to_generate):
     }
     generated_data_series.append((metrics, series))
 
+print('Determining which series to keep')
 num_bins_per_metric = 10
 
 all_metrics = np.array([[m['lzc'], m['he'], m['hfd']] for m, _ in generated_data_series])
@@ -77,6 +79,9 @@ for metrics, series in generated_data_series:
     if metrics_key not in series_metric_grid:
         series_metric_grid[metrics_key] = (metrics, series)
 
-print("Number of grid cells covered:", len(series_metric_grid))
+print('Number of grid cells covered: ', len(series_metric_grid))
+print('Saving usable series to disk ...')
 for metrics, series in series_metric_grid:
     print(metrics)
+    filename = f"series_cell_{key[0]}_{key[1]}_{key[2]}.npy"
+    np.save(filename, series)
