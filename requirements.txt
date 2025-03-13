@@ -1,3 +1,4 @@
+antropy
 cma
 mne
 numpy

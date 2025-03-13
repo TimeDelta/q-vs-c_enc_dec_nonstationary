@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from qiskit.quantum_info import partial_trace, entropy
+import antropy
 
 def differential_entropy(data, num_bins=None):
     """
@@ -124,34 +125,11 @@ def higuchi_fractal_dimension(data, kmax=10):
     hfds = []
     for feature in range(n_features):
         feature_series = data[:, feature]
-        Lk = np.zeros(kmax)
-
-        for k in range(1, kmax + 1):
-            Lm = []
-            for m in range(k):
-                length = 0.0
-                count = 0
-                max_i = int(np.floor((n_samples - m) / k))
-                for i in range(1, max_i):
-                    length += abs(feature_series[m + i*k] - feature_series[m + (i-1)*k])
-                    count += 1
-                if count > 0:
-                    norm_factor = (n_samples - 1) / (count * k)
-                    Lm.append(length * norm_factor)
-            if Lm:
-                Lk[k - 1] = np.mean(Lm)
-            else:
-                Lk[k - 1] = np.nan
-
-        # use only the k values with positive Lk to avoid log(0)
-        valid = Lk > 0
-        if np.sum(valid) < 2:
-            hfds.append(np.nan)
-        else:
-            logs = np.log(1.0 / np.arange(1, kmax + 1)[valid])
-            logLk = np.log(Lk[valid])
-            slope, _ = np.polyfit(logs, logLk, 1)
-            hfds.append(slope)
+        try:
+            hfd = antropy.higuchi_fd(feature_series, kmax=kmax)
+        except Exception as e:
+            hfd = np.nan
+        hfds.append(hfd)
     return hfds
 
 def per_patient(func, data, **kwargs):
