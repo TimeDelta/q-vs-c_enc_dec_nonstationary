@@ -84,40 +84,55 @@ global_latent_dim = 16
 num_layers = 2
 num_heads = 2
 num_features_per_state = 8
-num_series_to_generate = 1000
+num_series_per_dataset = 10
 num_blocks_per_series = 10
-num_samples_per_block = 20
+num_samples_per_block = 50
 num_time_steps_to_taper = num_samples_per_block // 10
+num_datasets = 100
 
-generator = HierarchicalTransformerGenerator(
-    input_dim, global_latent_dim, num_layers, num_heads, num_features_per_state, num_samples_per_block
-)
-
-generated_sequences = []
-for i in range(num_series_to_generate):
-    print('Generating series ' + str(i + 1))
-    series = []
-    for _ in range(num_blocks_per_series):
-        inputs = torch.randn(input_dim, dtype=torch.float32)
-        # have to blend multiple series together to ensure non-stationarity
-        new_block = generator.forward(inputs)
-        if len(series) > 0:
-            series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
-        else:
-            series = new_block
-    generated_sequences.append(series)
+datasets = []
+required_length = num_blocks_per_series * num_samples_per_block
+for d in range(num_datasets):
+    print('Generating dataset ' + str(d + 1))
+    generator = HierarchicalTransformerGenerator(
+        input_dim, global_latent_dim, num_layers, num_heads, num_features_per_state, num_samples_per_block
+    )
+    generated_sequences = []
+    for i in range(num_series_per_dataset):
+        print('  Generating series ' + str(i + 1))
+        num_blocks_per_series //= 2
+        num_blocks_per_series = max(num_blocks_per_series, 1)
+        series = []
+        for _ in range(num_blocks_per_series):
+            inputs = torch.randn(input_dim, dtype=torch.float32)
+            # have to blend multiple series together to ensure non-stationarity
+            new_block = generator.forward(inputs)
+            if len(series) > 0:
+                series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+            else:
+                series = new_block
+        if isinstance(series, torch.Tensor):
+            series = series.detach().cpu().numpy()
+        elif isinstance(series, list):
+            series = np.array(series)
+        while series.shape[0] < required_length:
+            series = np.concatenate((series, series), axis=0)
+        series = series[:required_length]
+        generated_sequences.append(series)
+    datasets.append(generated_sequences)
 
 series_metrics = []
-i = 0
-for series in generated_sequences:
-    print('Calculating complexity metrics for series ' + str(i))
-    metrics = {
-        'lzc': lempel_ziv_complexity_continuous(series),
-        'he': np.mean(hurst_exponent(series)),
-        'hfd': np.mean(higuchi_fractal_dimension(series))
-    }
-    series_metrics.append((metrics, series))
-    i += 1
+i = 1
+for generated_sequences in datasets:
+    for series in generated_sequences:
+        print('Calculating complexity metrics for series ' + str(i))
+        metrics = {
+            'lzc': lempel_ziv_complexity_continuous(series),
+            'he': np.mean(hurst_exponent(series)),
+            'hfd': np.mean(higuchi_fractal_dimension(series))
+        }
+        series_metrics.append((metrics, series))
+        i += 1
 
 print('Determining which series to keep ...')
 num_bins_per_metric = 10
