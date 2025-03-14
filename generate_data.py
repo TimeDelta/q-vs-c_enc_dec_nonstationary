@@ -18,14 +18,15 @@ def blend_with_new_block(existing_series, new_block, taper_length):
         existing_series = existing_series.detach().cpu().numpy()
     if isinstance(new_block, torch.Tensor):
         new_block = new_block.detach().cpu().numpy()
-    overlap_existing = existing_series[-taper_length:]
-    overlap_new = new_block[:taper_length]
+    existing_taper = existing_series[-taper_length:]
+    new_taper = new_block[:taper_length]
 
     weight_existing = np.linspace(1, 0, taper_length)[:, None] # column vector
     weight_new = np.linspace(0, 1, taper_length)[:, None]
-    blended_overlap = weight_existing * overlap_existing + weight_new * overlap_new
+    existing_taper *= weight_existing
+    new_taper *= weight_new
 
-    return np.concatenate((existing_series[:-taper_length], blended_overlap, new_block[taper_length:]), axis=0)
+    return np.concatenate((existing_series[:-taper_length], existing_taper, new_taper, new_block[taper_length:]), axis=0)
 
 def get_cosine_positional_embeddings(seq_len, input_size):
     """
@@ -89,11 +90,11 @@ global_latent_dim = 16
 max_num_layers = 10
 max_num_heads = 10
 num_features_per_state = 8
-num_series_per_dataset = 25
+num_series_per_dataset = 40
 orig_num_blocks_per_series = 10
 num_samples_per_block = 50
 num_time_steps_to_taper = num_samples_per_block // 10
-num_datasets = 200
+num_datasets = 250
 
 datasets = []
 required_length = orig_num_blocks_per_series * num_samples_per_block
@@ -121,13 +122,13 @@ for d in range(num_datasets):
             inputs = torch.randn(input_dim, dtype=torch.float32)
             # have to blend multiple series together to ensure non-stationarity
             new_block = generator.forward(inputs)
-            if isinstance(series, torch.Tensor):
-                series = series.detach().cpu().numpy()
-            if isinstance(new_block, torch.Tensor):
-                new_block = new_block.detach().cpu().numpy()
+            # if isinstance(series, torch.Tensor):
+            #     series = series.detach().cpu().numpy()
+            # if isinstance(new_block, torch.Tensor):
+            #     new_block = new_block.detach().cpu().numpy()
             if len(series) > 0:
-                # series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
-                series = np.concatenate((series, new_block), axis=0)
+                series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+                # series = np.concatenate((series, new_block), axis=0)
             else:
                 series = new_block
         if isinstance(series, torch.Tensor):
@@ -165,7 +166,7 @@ print(min_lzc, max_lzc)
 
 lzc_edges = np.linspace(min_lzc, max_lzc, num_bins_per_metric + 1)
 he_edges = np.linspace(0, 1, num_bins_per_metric + 1)
-hfd_edges = np.linspace(0, 1, num_bins_per_metric + 1)
+hfd_edges = np.linspace(1, 2, num_bins_per_metric + 1)
 
 series_metric_grid = {}
 for metrics, series in series_metrics:
