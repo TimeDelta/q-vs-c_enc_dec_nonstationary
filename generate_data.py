@@ -25,8 +25,7 @@ def blend_with_new_block(existing_series, new_block, taper_length):
     weight_new = np.linspace(0, 1, taper_length)[:, None]
     blended_overlap = weight_existing * overlap_existing + weight_new * overlap_new
 
-    blended_series = np.concatenate((existing_series[:-taper_length], blended_overlap, new_block[taper_length:]), axis=0)
-    return blended_series
+    return np.concatenate((existing_series[:-taper_length], blended_overlap, new_block[taper_length:]), axis=0)
 
 def get_cosine_positional_embeddings(seq_len, input_size):
     """
@@ -49,6 +48,7 @@ class HierarchicalTransformerGenerator(nn.Module):
         self.desired_seq_length = desired_seq_length
 
         self.global_fc = nn.Linear(input_dim, global_latent_dim)
+        # attempt to add nonstationarity
         positional_embeddings = get_cosine_positional_embeddings(desired_seq_length, desired_seq_length)
         self.register_buffer("time_embedding", positional_embeddings)
         self.input_proj = nn.Linear(global_latent_dim + desired_seq_length, desired_seq_length)
@@ -121,8 +121,13 @@ for d in range(num_datasets):
             inputs = torch.randn(input_dim, dtype=torch.float32)
             # have to blend multiple series together to ensure non-stationarity
             new_block = generator.forward(inputs)
+            if isinstance(series, torch.Tensor):
+                series = series.detach().cpu().numpy()
+            if isinstance(new_block, torch.Tensor):
+                new_block = new_block.detach().cpu().numpy()
             if len(series) > 0:
-                series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+                # series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+                series = np.concatenate((series, new_block), axis=0)
             else:
                 series = new_block
         if isinstance(series, torch.Tensor):
@@ -140,7 +145,7 @@ for d in range(num_datasets):
 series_metrics = []
 for dataset_index, generated_sequences in enumerate(datasets):
     for series in generated_sequences:
-        print('Calculating complexity metrics for series ' + str(len(series_metrics) + 1))
+        print('Calculating complexity metrics for series ' + str(len(series_metrics) + 1), ' (dataset ', dataset_index + 1, ')')
         metrics = {
             'lzc': lempel_ziv_complexity_continuous(series),
             'he': np.mean(hurst_exponent(series)),
@@ -165,16 +170,20 @@ hfd_edges = np.linspace(0, 1, num_bins_per_metric + 1)
 series_metric_grid = {}
 for metrics, series in series_metrics:
     lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
+    if np.isnan(he) or np.isnan(hfd):
+        print('WARNING: Invalid complexity metric value: ', he, hfd)
+        continue
     lzc_bin = np.digitize(lzc, lzc_edges) - 1
     he_bin = np.digitize(he, he_edges) - 1
     hfd_bin = np.digitize(hfd, hfd_edges) - 1
     metrics_key = (lzc_bin, he_bin, hfd_bin)
-    # only store first encountered series per cell
+    # only store first encountered series per cell (this also reduces the number of models needed to be trained
+    # since the series appear in order of dataset)
     if metrics_key not in series_metric_grid:
         series_metric_grid[metrics_key] = (metrics, series)
         print(metrics)
         filename = f'series_cell_{metrics_key[0]}_{metrics_key[1]}_{metrics_key[2]}_dataset{metrics["dataset"]}.npy'
-        np.save(filename, series)
+        np.save(os.path.join(base_dir, filename), series)
 
 print('Number of grid cells covered: ', len(series_metric_grid))
 print('Saving usable series to disk ...')

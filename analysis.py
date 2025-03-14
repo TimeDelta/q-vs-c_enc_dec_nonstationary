@@ -129,6 +129,7 @@ def higuchi_fractal_dimension(data, kmax=10):
             hfd = antropy.higuchi_fd(feature_series, kmax=kmax)
         except Exception as e:
             hfd = np.nan
+            print('HFD NaN for kmax of ', kmax, ':', feature_series.shape)
         hfds.append(hfd)
     return hfds
 
