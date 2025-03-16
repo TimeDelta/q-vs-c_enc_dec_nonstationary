@@ -367,9 +367,9 @@ if __name__ == '__main__':
     print(config)
 
     if args.type.lower() == 'qae':
-        trained_circuit, cost_history = train_adam(input_data, qte_cost_function, config, num_epochs=10)
-    elif args.type.lower() == 'qte':
         trained_circuit, cost_history = train_adam(input_data, qae_cost_function, config, num_epochs=10)
+    elif args.type.lower() == 'qte':
+        trained_circuit, cost_history = train_adam(input_data, qte_cost_function, config, num_epochs=10)
     else:
         raise Exception('Unknown type: ' + args.type)
 
