@@ -320,9 +320,9 @@ if __name__ == '__main__':
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--bottleneck_size", type=int, default=0)
     parser.add_argument("--num_blocks", type=int, default=0)
-    parser.add_argument("--learning_rate", type=int, default=0)
-    parser.add_argument("--penalty_weight", type=int, default=0)
-    parser.add_argument("--dataset", type=str, default='single_subject', help="Options: 'FACED', 'single_subject'")
+    parser.add_argument("--learning_rate", type=float, default=0)
+    parser.add_argument("--penalty_weight", type=float, default=0)
+    parser.add_argument("--dataset", type=str, default='generated', help="Options: 'FACED', 'single_subject', 'generated'")
     parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
     args = parser.parse_args()
     # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
@@ -333,6 +333,9 @@ if __name__ == '__main__':
     elif args.dataset.lower() == 'single_subject':
         from data_importers import import_single_subject
         input_data = import_single_subject(args.data_directory)
+    elif args.dataset.lower() == 'generated':
+        from data_importers import import_generated
+        input_data = import_generated(args.data_directory)
     else:
         raise Exception('Unknown dataset type: ' + args.dataset)
 
