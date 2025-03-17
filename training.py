@@ -154,7 +154,6 @@ def trash_qubit_penalty(state, bottleneck_size):
         penalty (float): cumulative penalty for the trash qubits
     """
     marginals = []
-    print('    calculating trash qubit penalty')
 
     # compute marginal probability for each qubit being in |0>
     for q in range(state.num_qubits):
@@ -177,27 +176,23 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
     """
     total_cost = 0.0
-    num_qubits = len(data[0])
-    for sample in data:
-        sample_cost = 0
-        for state in sample:
-            print('Emedding current state')
-            params = {
-                # each input param ends in an index
-                p: state[int(re.search(r'\d+$', p.name).group())]for p in input_params
-            }
+    i = 0
+    for series in data:
+        print('        Calculating loss for series ' + str(i+1))
+        series_cost = 0
+        for state in series:
+            params = {p: state[i] for i, p in enumerate(input_params)}
             ideal_qc = embedder.assign_parameters(params)
             ideal_state = Statevector.from_instruction(ideal_qc)
 
-            print('retrieving bottleneck state')
             bottleneck_state = ideal_state.evolve(encoder)
             reconstructed_state = bottleneck_state.evolve(decoder)
 
-            print('    calculating fidelity')
             reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
             trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            sample_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
-        total_cost += sample_cost / sample_length # avg cost per state
+            series_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+        total_cost += series_cost / len(series) # avg cost per state
+        i += 1
     return total_cost
 
 def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2):
@@ -205,15 +200,14 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
     """
     total_cost = 0.0
-    num_qubits = len(data[0][0])
-    for sample in data:
-        sample_length = len(sample)
-        if sample_length < 2:
+    for series in data:
+        series_length = len(series)
+        if series_length < 2:
             continue # can't model transition
-        sample_cost = 0
-        for i in range(sample_length - 1):
-            current_state = sample[i]
-            next_state = sample[i+1]
+        series_cost = 0
+        for i in range(series_length - 1):
+            current_state = series[i]
+            next_state = series[i+1]
 
             # each input param name ends in an index
             current_input_params = {p: current_state[i] for i, p in enumerate(input_params)}
@@ -229,8 +223,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
             trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            sample_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
-        total_cost += sample_cost / (sample_length-1) # avg cost per transition
+            series_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
+        total_cost += series_cost / (series_length-1) # avg cost per transition
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -265,7 +259,7 @@ def train_adam(data, cost_function, config, num_epochs=100):
 
     Returns trained_circuit, cost_history
     """
-    num_qubits = len(data[0])
+    num_qubits = len(data[0][0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
     param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
@@ -298,6 +292,7 @@ def train_adam(data, cost_function, config, num_epochs=100):
 
         gradients = np.zeros_like(param_values)
         for j in range(len(param_values)):
+            print('    calculating gradient for param ' + str(j+1))
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
             param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
@@ -327,7 +322,6 @@ if __name__ == '__main__':
     parser.add_argument("--num_blocks", type=int, default=0)
     parser.add_argument("--learning_rate", type=int, default=0)
     parser.add_argument("--penalty_weight", type=int, default=0)
-    parser.add_argument("--sample_length", type=int, default=0)
     parser.add_argument("--dataset", type=str, default='single_subject', help="Options: 'FACED', 'single_subject'")
     parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
     args = parser.parse_args()

@@ -8,7 +8,7 @@ import mne
 def import_generated(data_directory):
     data = []
     for file in glob.glob(os.path.join(data_directory, "*.npy")):
-        data.extend(np.load(file))
+        data.append(np.load(file))
     return np.stack(data, axis=0)
 
 
