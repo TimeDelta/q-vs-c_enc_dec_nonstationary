@@ -339,7 +339,7 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown dataset type: ' + args.dataset)
 
-    num_qubits = len(input_data[0])
+    num_qubits = len(input_data[0][0])
     bottleneck_size = args.bottleneck_size
     if bottleneck_size == 0:
         bottleneck_size = np.random.randint(1, num_qubits)
@@ -353,13 +353,13 @@ if __name__ == '__main__':
     if learning_rate == 0:
         learning_rate = 10 ** np.random.uniform(-4, -1)
     config = {
-        'bottleneck_size': bottleneck_size,
-        'num_blocks': num_blocks,
-        'learning_rate': learning_rate,
-        'penalty_weight': penalty_weight,
-        'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
-        'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
-        'embedding_gate': np.random.choice(EMBEDDING_ROTATION_GATES),
+        'bottleneck_size': num_qubits / 2,
+        'num_blocks': 1,
+        'learning_rate': .01,
+        'penalty_weight': .75,
+        'entanglement_topology': 'full',
+        'entanglement_gate': 'rzx',
+        'embedding_gate': 'rz',
     }
     print(config)
 
@@ -369,6 +369,11 @@ if __name__ == '__main__':
         trained_circuit, cost_history = train_adam(input_data, qte_cost_function, config, num_epochs=10)
     else:
         raise Exception('Unknown type: ' + args.type)
+
+    from qiskit import qpy
+    import os
+    with open(os.path.join(args.data_directory, args.type.lower() + "_trained_circuit.qpy"), "wb") as file:
+        qpy.dump(trained_circuit, file)
 
     print("\nTrained parameters:", trained_circuit.draw())
     print("Final reconstruction cost:", cost_history[-1])
