@@ -488,6 +488,7 @@ if __name__ == '__main__':
                     encoder_state = initial_state.evolve(encoder)
                     ent_entropy = entanglement_entropy(encoder_state, subsystem)
                     series_entanglement_entropy.append(ent_entropy)
+                entanglement_entropies.append(series_entanglement_entropy)
             entanglement_entropies = np.array(entanglement_entropies)
             fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_encoder_entanglement_entropy.npy')
             np.save(fname, entanglement_entropies)
