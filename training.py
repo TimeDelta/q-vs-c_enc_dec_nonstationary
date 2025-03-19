@@ -2,7 +2,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit import quantum_info as qi
-from qi import Statevector, state_fidelity, partial_trace, DensityMatrix, Statevector, Operator
+from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, DensityMatrix, Statevector, Operator
 import re
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
@@ -428,10 +428,10 @@ if __name__ == '__main__':
         for type in ['qae', 'qte']:
             print('Training ' + type.upper() + ' for dataset ' + str(d_i))
             if type == 'qae':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits =
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits = \
                     train_adam(training, validation, qae_cost_function, config, num_epochs=10)
             elif type == 'qte':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits =
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits = \
                     train_adam(training, validation, qte_cost_function, config, num_epochs=10)
             else:
                 raise Exception('Unknown type: ' + type)
