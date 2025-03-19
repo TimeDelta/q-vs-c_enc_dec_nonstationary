@@ -235,7 +235,7 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     new_params = params - lr * bias_corrected_moment1 / (np.sqrt(bias_corrected_moment2) + epsilon)
     return new_params, moment1, moment2
 
-def train_adam(data, cost_function, config, num_epochs=100):
+def train_adam(training_data, validation_data, cost_function, config, num_epochs=100):
     """
     Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
     the bottleneck via the cost function. This is done in order to balance efficiency w/ added
@@ -259,7 +259,7 @@ def train_adam(data, cost_function, config, num_epochs=100):
 
     Returns trained_circuit, cost_history
     """
-    num_qubits = len(data[0][0])
+    num_qubits = len(training_data[0][0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
     param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
@@ -286,94 +286,74 @@ def train_adam(data, cost_function, config, num_epochs=100):
 
         print('    calculating initial cost')
         current_cost = cost_function(
-            data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+            training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
         )
         cost_history.append(current_cost)
+        print('      ', current_cost)
 
         gradients = np.zeros_like(param_values)
         for j in range(len(param_values)):
-            print('    calculating gradient for param ' + str(j+1))
+            print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
             param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
             encoder_bound = encoder.assign_parameters(param_dict)
             decoder_bound = decoder.assign_parameters(param_dict)
             gradients[j] = (cost_function(
-                data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
             ) - current_cost) / gradient_width
 
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
-        print('Mean param update: ' + str(np.mean(param_values-previous_param_values)))
+        print('    Mean param update: ' + str(np.mean(param_values-previous_param_values)))
+        print(f'    cost = {current_cost:.6f}')
 
-        print(f"Iteration {t}: cost = {current_cost:.6f}")
+    print('  calculating validation cost')
+    validation_cost = cost_function(
+        validation_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+    )
 
     param_dict = {param: value for param, value in zip(trainable_params, param_values)}
     trained_circuit.assign_parameters(param_dict)
-    return trained_circuit, cost_history
+    return trained_circuit, cost_history, validation_cost
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Train a Quantum Transition Encoder/Decoder or a Quantum Auto Encoder over the given data."
+        description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over the given data."
     )
-    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
-    parser.add_argument("--bottleneck_size", type=int, default=0)
-    parser.add_argument("--num_blocks", type=int, default=0)
-    parser.add_argument("--learning_rate", type=float, default=0)
-    parser.add_argument("--penalty_weight", type=float, default=0)
-    parser.add_argument("--dataset", type=str, default='generated', help="Options: 'FACED', 'single_subject', 'generated'")
-    parser.add_argument("--type", type=str, default='qae', help="QAE or QTE (case-insensitive)")
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
     args = parser.parse_args()
-    # input_data = np.array([[[.5, 1., 1.5, 2.],[.8, .8, 1.3, 2.]], [[1,1,1,1],[2,3,1,4]]])
 
-    if args.dataset.upper() == 'FACED':
-        from data_importers import import_FACED
-        input_data = import_FACED(args.data_directory)
-    elif args.dataset.lower() == 'single_subject':
-        from data_importers import import_single_subject
-        input_data = import_single_subject(args.data_directory)
-    elif args.dataset.lower() == 'generated':
-        from data_importers import import_generated
-        input_data = import_generated(args.data_directory)
-    else:
-        raise Exception('Unknown dataset type: ' + args.dataset)
+    from data_importers import import_generated
+    dataset_partitions = import_generated(args.data_directory)
 
-    num_qubits = len(input_data[0][0])
-    bottleneck_size = args.bottleneck_size
-    if bottleneck_size == 0:
-        bottleneck_size = np.random.randint(1, num_qubits)
-    penalty_weight = args.penalty_weight
-    if penalty_weight == 0:
-        penalty_weight = 10 ** np.random.uniform(-4, 0)
-    num_blocks = args.num_blocks
-    if num_blocks == 0:
-        num_blocks = np.random.randint(1, 10)
-    learning_rate = args.learning_rate
-    if learning_rate == 0:
-        learning_rate = 10 ** np.random.uniform(-4, -1)
-    config = {
-        'bottleneck_size': num_qubits / 2,
-        'num_blocks': 1,
-        'learning_rate': .01,
-        'penalty_weight': .75,
-        'entanglement_topology': 'full',
-        'entanglement_gate': 'rzx',
-        'embedding_gate': 'rz',
-    }
-    print(config)
+    d_i = 1
+    for (training, validation) in dataset_partitions:
+        num_qubits = len(training[0][0])
+        config = {
+            'bottleneck_size': num_qubits / 2,
+            'num_blocks': 1,
+            'learning_rate': .1,
+            'penalty_weight': .75,
+            'entanglement_topology': 'full',
+            'entanglement_gate': 'rzx',
+            'embedding_gate': 'rz',
+        }
+        for type in ['qae', 'qte']:
+            print('Training ' + type.upper() + ' for dataset ' + str(d_i))
+            if type == 'qae':
+                trained_circuit, cost_history, validation_cost = train_adam(training, validation, qae_cost_function, config, num_epochs=10)
+            elif type == 'qte':
+                trained_circuit, cost_history, validation_cost  = train_adam(training, validation, qte_cost_function, config, num_epochs=10)
+            else:
+                raise Exception('Unknown type: ' + args.type)
 
-    if args.type.lower() == 'qae':
-        trained_circuit, cost_history = train_adam(input_data, qae_cost_function, config, num_epochs=10)
-    elif args.type.lower() == 'qte':
-        trained_circuit, cost_history = train_adam(input_data, qte_cost_function, config, num_epochs=10)
-    else:
-        raise Exception('Unknown type: ' + args.type)
+            print('  Final training cost:', cost_history[-1])
+            print('  Validation cost: ', validation_cost)
 
-    from qiskit import qpy
-    import os
-    with open(os.path.join(args.data_directory, args.type.lower() + "_trained_circuit.qpy"), "wb") as file:
-        qpy.dump(trained_circuit, file)
+            from qiskit import qpy
+            import os
+            with open(os.path.join(args.data_directory, f'dataset{d_i}_' + type + '_trained_circuit.qpy'), 'wb') as file:
+                qpy.dump(trained_circuit, file)
 
-    print("\nTrained parameters:", trained_circuit.draw())
-    print("Final reconstruction cost:", cost_history[-1])

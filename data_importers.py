@@ -5,12 +5,76 @@ import re
 import numpy as np
 import mne
 
-def import_generated(data_directory):
-    data = []
-    for file in glob.glob(os.path.join(data_directory, "*.npy")):
-        data.append(np.load(file))
-    return np.stack(data, axis=0)
+import os
+import numpy as np
+import re
+import os
+import numpy as np
+import hashlib
 
+def compute_series_hash(series):
+    """
+    SHA-256 hash for a numpy array
+    """
+    return hashlib.sha256(series.tobytes()).hexdigest()
+
+def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
+    """
+    Load training and validation partitions separately for each dataset. For each series file in a
+    dataset, compute its hash. If the hash is in the set of grid series hashes (loaded from
+    'grid_series_hashes.npy'), force that series into the validation set. The remaining series are
+    randomly split into training and validation.
+
+
+    Returns:
+      dict: Mapping each dataset index (parsed from directory name) to a tuple
+            (training_series, validation_series), with each series as a numpy array.
+    """
+    np.random.seed(seed)
+    partitions = {}
+
+    dataset_dirs = [d for d in os.listdir(generated_datasets_dir) if os.path.isdir(os.path.join(generated_datasets_dir, d))]
+    dataset_dirs.sort()
+
+    grid_hashes = [
+        compute_series_hash(np.load(os.path.join(generated_datasets_dir, f)))
+        for f in os.listdir(generated_datasets_dir) if f.startswith("series_cell_")
+    ]
+
+    for dataset_dir in dataset_dirs:
+        full_path = os.path.join(generated_datasets_dir, dataset_dir)
+        series_files = [f for f in os.listdir(full_path) if f.endswith('.npy')]
+        series_files.sort()
+        all_indices = np.arange(len(series_files))
+
+        forced_indices = []
+        non_forced_indices = []
+        # Load each file, compute its hash, and partition accordingly.
+        series_hashes = {}
+        for idx, f in enumerate(series_files):
+            series = np.load(os.path.join(full_path, f))
+            s_hash = compute_series_hash(series)
+            series_hashes[idx] = s_hash
+            if s_hash in grid_hashes:
+                forced_indices.append(idx)
+            else:
+                non_forced_indices.append(idx)
+
+        non_forced_indices = np.array(non_forced_indices, dtype=int)
+        np.random.shuffle(non_forced_indices)
+        num_train = int(np.floor(train_ratio * len(non_forced_indices)))
+        train_indices = non_forced_indices[:num_train]
+        val_indices = non_forced_indices[num_train:]
+
+        final_val_indices = np.concatenate([np.array(forced_indices, dtype=int), val_indices])
+
+        training_series = [np.load(os.path.join(full_path, series_files[i])) for i in train_indices]
+        validation_series = [np.load(os.path.join(full_path, series_files[i])) for i in final_val_indices]
+
+        dataset_index = int(dataset_dir.split('_')[-1])
+        partitions[dataset_index] = (training_series, validation_series)
+
+    return partitions
 
 def import_single_subject(data_directory):
     """
