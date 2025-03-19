@@ -1,8 +1,8 @@
+from functools import reduce
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit import quantum_info as qi
-from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, DensityMatrix, Statevector, Operator
+from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, DensityMatrix, Operator
 import re
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
@@ -179,8 +179,9 @@ def force_trash_qubits(bottleneck_state, bottleneck_size):
     This function computes the marginal probability (p0) for each qubit,
     selects the trash qubits dynamically (those with the lowest p0),
     and for each trash qubit applies a projection operator (|0><0| on that qubit)
-    to the density matrix of the full state. The resulting density matrix is renormalized,
-    and finally converted back to a Statevector.
+    to the density matrix of the full state. The resulting density matrix is renormalized
+    The use of the marginals to determine the trash qubits instead of the joint pdf is to
+    maintain scalability
     """
     marginals = []
     for q in range(bottleneck_state.num_qubits):
@@ -196,7 +197,6 @@ def force_trash_qubits(bottleneck_state, bottleneck_size):
     trash_qubit_indices = [q for (q, p0) in sorted_marginals[:num_trash]]
 
     dm_full = DensityMatrix(bottleneck_state)
-    n = bottleneck_state.num_qubits
 
     # For each trash qubit, apply the projection operator onto |0>
     # Note: Qiskit uses little-endian ordering for statevectors. That is,
@@ -209,19 +209,19 @@ def force_trash_qubits(bottleneck_state, bottleneck_size):
     for q in trash_qubit_indices:
         ops = []
         # build a list of operators for each qubit
-        for i in range(n):
-            if i == (n - 1 - q):
+        for i in range(bottleneck_state.num_qubits):
+            if i == (bottleneck_state.num_qubits - 1 - q):
                 ops.append(P0)
             else:
                 ops.append(I)
-        proj = qi.tensor(ops)
+        proj = reduce(np.kron, ops)
         dm_full = DensityMatrix(proj @ dm_full.data @ proj.conj().T)
         # renormalize to ensure a valid quantum state
         dm_full = dm_full / dm_full.trace()
 
-    return Statevector(dm_full.to_vector())
+    return dm_full
 
-def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0):
+def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
     from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
@@ -229,8 +229,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     (1 - fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
     total_cost = 0.0
-    series_index = 0
-    for series in data:
+    for (_, series) in data:
         series_cost = 0.0
         previous_error_vector = None
         for state in series:
@@ -256,15 +255,13 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             series_cost += 1 - state_fidelity(input_state, reconstructed_state)
 
-            previous_error_vector = target_state.data - reconstructed_state.data
+            previous_error_vector = input_state.data - reconstructed_state.data
 
         total_cost += series_cost / len(series) # avg cost per state (always same num series)
-        series_index += 1
-
     return total_cost
 
 
-def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0):
+def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0) -> float:
     """
     Scheduled sampling is incorporated via teacher_forcing_prob:
       - With probability teacher_forcing_prob, the next input state is taken from the ground truth.
@@ -274,7 +271,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     """
     total_cost = 0.0
     series_index = 0
-    for series in data:
+    for (_, series) in data:
         series_length = len(series)
         if series_length < 2:
             continue # can't model transition
@@ -337,7 +334,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
     Returns trained_circuit, cost_history
     """
-    num_qubits = len(training_data[0][0])
+    num_qubits = len(training_data[0][1][0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
     param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
@@ -413,7 +410,7 @@ if __name__ == '__main__':
     dataset_partitions = import_generated(args.data_directory)
 
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
-        num_qubits = len(training[0][0])
+        num_qubits = len(training[0][1][0])
         bottleneck_size = num_qubits // 2
         config = {
             'bottleneck_size': bottleneck_size,
@@ -439,41 +436,50 @@ if __name__ == '__main__':
             print('  Validation cost: ', validation_cost)
 
             # === Entropy computations ===
-            # joint differential entropy of the bottleneck state (full encoder output) using dynamic trash selection
-            dataset_bottleneck_joint_diff_ent = []
-            for series in validation:
-                series_bottleneck_array = [[] for _ in range(bottleneck_size)] # shape (bottleneck_size, sequence_length)
+            dataset_bottleneck_entropies = []
+            for (_, series) in validation:
+                series_entropies = []  # list to hold entropy values for each series in this dataset
+                for state_series in series:  # assume each "state_series" is a time series (list of states)
+                    time_step_entropies = []  # entropy at each time step in this series
+                    for state in state_series:
+                        params_dict = {p: state[i] for i, p in enumerate(input_params)}
+                        qc_init = embedder.assign_parameters(params_dict)
+                        initial_dm = DensityMatrix.from_instruction(qc_init)
+                        encoder_dm = initial_dm.evolve(encoder)
 
-                for state in series:
-                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
-                    qc_init = embedder.assign_parameters(params_dict)
-                    initial_state = Statevector.from_instruction(qc_init)
-                    encoder_state = initial_state.evolve(encoder)
+                        # Compute marginals for each qubit (here using probability of |0⟩ from the reduced density matrix)
+                        marginals = []
+                        for q in range(encoder_dm.num_qubits):
+                            trace_indices = list(range(encoder_dm.num_qubits))
+                            trace_indices.remove(q)
+                            reduced_dm = partial_trace(encoder_dm, trace_indices)
+                            marginals.append((q, np.real(reduced_dm.data[0, 0])))
 
-                    marginals = []
-                    for q in range(encoder_state.num_qubits):
-                        trace_indices = list(range(encoder_state.num_qubits))
-                        trace_indices.remove(q)
-                        density_matrix = partial_trace(encoder_state, trace_indices)
-                        marginals.append((q, np.real(density_matrix.data[0, 0])))
+                        # Sort qubits by the probability of |0⟩.
+                        sorted_marginals = sorted(marginals, key=lambda x: x[1])
+                        num_trash = encoder_dm.num_qubits - bottleneck_size
+                        # Keep the qubits with higher |0⟩ probability (i.e. those not in the trash).
+                        bottleneck_indices = sorted([q for q, _ in sorted_marginals[num_trash:]])
 
-                    sorted_marginals = sorted(marginals, key=lambda x: x[1])
-                    num_trash = encoder_state.num_qubits - bottleneck_size
-                    # exclude trash qubits in entropy calculation
-                    bottleneck_marginals = sorted(sorted_marginals[num_trash:], key=lambda x: x[0])
+                        keep_set = set(bottleneck_indices)
+                        trace_out = [i for i in range(encoder_dm.num_qubits) if i not in keep_set]
+                        bottleneck_dm = partial_trace(encoder_dm, trace_out)
 
-                    for (idx, p0) in bottleneck_marginals:
-                        series_bottleneck_array[idx].append(p0)
-                dataset_bottleneck_joint_diff_ent.append(joint_differential_entropy(np.array(series_bottleneck_array)))
-            dataset_bottleneck_joint_diff_ent = np.array(dataset_bottleneck_joint_diff_ent)
-            print('  Bottleneck joint differential entropy shape (num_features, num_time_steps):', dataset_bottleneck_joint_diff_ent.shape)
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_diff_entropy.npy')
-            np.save(fname, dataset_bottleneck_joint_diff_ent)
-            print(f'  Saved bottleneck joint differential entropy calculations to {fname}')
-            avg_bottleneck_entropy = np.mean(dataset_bottleneck_joint_diff_ent, axis=1)
-            print('  Average bottleneck joint differential entropy per series:', avg_bottleneck_entropy)
-            avg_bottleneck_entropy = np.mean(avg_bottleneck_entropy)
-            print(f'  Average bottleneck joint differential entropy:', avg_bottleneck_entropy)
+                        time_step_entropies.append(entropy(bottleneck_dm))
+                    series_entropies.append(np.array(time_step_entropies))
+                dataset_bottleneck_entropies.append(np.array(series_entropies))
+
+            dataset_bottleneck_entropies = np.array(dataset_bottleneck_entropies)
+            print('  Bottleneck VN entropy shape (datasets, series, time steps):', dataset_bottleneck_entropies.shape)
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_vn_entropies.npy')
+            np.save(fname, dataset_bottleneck_entropies)
+            print(f'  Saved bottleneck VN entropy calculations to {fname}')
+            avg_entropy_per_series = np.mean(dataset_bottleneck_entropies, axis=2)
+            print('Average bottleneck entropy per series (per dataset):', avg_entropy_per_series)
+            avg_entropy_per_dataset = np.mean(avg_entropy_per_series, axis=1)
+            print('Average bottleneck entropy per dataset:', avg_entropy_per_dataset)
+            overall_avg_entropy = np.mean(avg_entropy_per_dataset)
+            print(f'Overall average bottleneck entropy: {overall_avg_entropy}')
 
             # encoder entanglement entropy
             entanglement_entropies = []

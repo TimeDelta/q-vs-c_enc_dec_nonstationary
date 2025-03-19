@@ -28,10 +28,15 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
     Only datasets that have at least one series_i.npy file whose hash matches one of the grid_hashes
     are included in the final partitions.
 
+    At the end, adjust each dataset so that the validation partition has the same size,
+    by moving series from training to validation as needed.
+
     Returns:
       dict: Mapping each dataset index (parsed from directory name) to a tuple
-            (training_series, validation_series), with each series as a numpy array.
+            (training_series, validation_series), where each series is stored as a tuple
+            (series_index, numpy array). Downstream code can extract the series data via tuple[1].
     """
+    print('Importing generated data from ' + generated_datasets_dir)
     np.random.seed(seed)
     partitions = {}
 
@@ -86,13 +91,26 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
 
         # Combine forced validation indices with non-forced validation indices
         final_val_indices = sorted(np.concatenate([np.array(forced_indices, dtype=int), val_indices]))
-        print(f'  Series in validation partition for {dataset_dir}: {final_val_indices}')
 
-        training_series = [np.load(os.path.join(full_path, series_dict[idx])) for idx in train_indices]
-        validation_series = [np.load(os.path.join(full_path, series_dict[idx])) for idx in final_val_indices]
+        training_series = [(i, np.load(os.path.join(full_path, series_dict[i]))) for i in train_indices]
+        validation_series = [(i, np.load(os.path.join(full_path, series_dict[i]))) for i in final_val_indices]
 
         dataset_index = int(dataset_dir.split('_')[-1])
         partitions[dataset_index] = (training_series, validation_series)
+
+    # equalize validation partition sizes across datasets
+    max_validation_size = max(len(val) for (_, val) in partitions.values())
+    print('  Ensuring validation partitions are all of size', max_validation_size)
+    for key, (train_series, val_series) in partitions.items():
+        missing = max_validation_size - len(val_series)
+        if missing > 0:
+            # shuffle to avoid introducing bias from complexity pattern in data generation
+            np.random.shuffle(train_series)
+            moved = train_series[:missing]
+            train_series = train_series[missing:]
+            val_series = val_series + moved
+            partitions[key] = (train_series, val_series)
+        print(f'  Dataset {key} final validation series indices: {[idx for idx, _ in val_series]}')
 
     return partitions
 
