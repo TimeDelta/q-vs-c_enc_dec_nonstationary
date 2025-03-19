@@ -171,60 +171,88 @@ def trash_qubit_penalty(state, bottleneck_size):
     penalty = sum(1 - p for p in sorted_marginals[:num_trash])
     return penalty
 
-def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2):
+def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0):
     """
-    (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
+    With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
+    from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
+
+    (1 - fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
     total_cost = 0.0
-    i = 0
+    series_index = 0
     for series in data:
-        print('        Calculating loss for series ' + str(i+1))
-        series_cost = 0
+        print('        Calculating loss for series ' + str(series_index + 1))
+        series_cost = 0.0
+        previous_error_vector = None
         for state in series:
             params = {p: state[i] for i, p in enumerate(input_params)}
             ideal_qc = embedder.assign_parameters(params)
             ideal_state = Statevector.from_instruction(ideal_qc)
+            ideal_array = ideal_state.data
 
-            bottleneck_state = ideal_state.evolve(encoder)
+            if previous_error_vector is not None and np.random.rand() < (1-no_noise_prob):
+                sign = 1 if np.random.rand() < 0.5 else -1
+                perturbed_array = ideal_array + sign * previous_error_vector
+                # renormalize the perturbed vector to ensure valid quantum state
+                perturbed_array = perturbed_array / np.linalg.norm(perturbed_array)
+                input_state = Statevector(perturbed_array)
+            else:
+                input_state = ideal_state
+
+            # pass the (possibly perturbed) input state through the encoder and decoder
+            bottleneck_state = input_state.evolve(encoder)
             reconstructed_state = bottleneck_state.evolve(decoder)
 
-            reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
+            reconstruction_cost = 1 - state_fidelity(input_state, reconstructed_state)
             trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
-        total_cost += series_cost / len(series) # avg cost per state
-        i += 1
+            series_cost += reconstruction_cost + trash_penalty
+
+            previous_error_vector = target_state.data - reconstructed_state.data
+
+        total_cost += series_cost / len(series) # avg cost per state (always same num series)
+        series_index += 1
+
     return total_cost
 
-def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2):
+def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0):
     """
-    (1 - fidelity(ideal_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty().
+    Scheduled sampling is incorporated via teacher_forcing_prob:
+      - With probability teacher_forcing_prob, the next input state is taken from the ground truth.
+      - Otherwise, the model's predicted state is used as the next input.
+
+    (1 - fidelity(next_state, predicted_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
     total_cost = 0.0
+    series_index = 0
     for series in data:
+        print('        Calculating loss for series ' + str(series_index + 1))
         series_length = len(series)
         if series_length < 2:
             continue # can't model transition
-        series_cost = 0
+        series_cost = 0.0
+
+        # always use ground truth for first time step
+        initial_params = {p: series[0][i] for i, p in enumerate(input_params)}
+        qc_initial = embedder.assign_parameters(initial_params)
+        current_state = Statevector.from_instruction(qc_initial)
+
         for i in range(series_length - 1):
-            current_state = series[i]
-            next_state = series[i+1]
+            next_input_params = {p: series[i+1] for i, p in enumerate(input_params)}
+            next_state = Statevector.from_instruction(embedder.assign_parameters(next_input_params))
 
-            # each input param name ends in an index
-            current_input_params = {p: current_state[i] for i, p in enumerate(input_params)}
-            next_input_params = {p: next_state[i] for i, p in enumerate(input_params)}
-
-            input_qc = embedder.assign_parameters(current_input_params)
-            input_state = Statevector.from_instruction(input_qc)
-            ideal_qc = embedder.assign_parameters(next_input_params)
-            ideal_state = Statevector.from_instruction(ideal_qc)
-
-            bottleneck_state = input_state.evolve(encoder)
+            bottleneck_state = current_state.evolve(encoder)
             predicted_state = bottleneck_state.evolve(decoder)
 
-            reconstruction_cost = 1 - state_fidelity(ideal_state, reconstructed_state)
+            reconstruction_cost = 1 - state_fidelity(next_state, predicted_state)
             trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_cost += reconstruction_cost + trash_qubit_penalty_weight * trash_penalty
-        total_cost += series_cost / (series_length-1) # avg cost per transition
+            series_cost += reconstruction_cost + trash_penalty
+
+            if np.random.rand() < teacher_forcing_prob:
+                current_state = next_state
+            else:
+                current_state = predicted_state
+
+        total_cost += series_cost / (series_length-1) # avg cost per transition (always same num series)
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -292,6 +320,8 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         print('      ', current_cost)
 
         gradients = np.zeros_like(param_values)
+        # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
+        prob_own_noise = (t-1)/num_epochs
         for j in range(len(param_values)):
             print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
@@ -300,7 +330,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
             encoder_bound = encoder.assign_parameters(param_dict)
             decoder_bound = decoder.assign_parameters(param_dict)
             gradients[j] = (cost_function(
-                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, prob_own_noise
             ) - current_cost) / gradient_width
 
         previous_param_values = param_values.copy()
@@ -356,4 +386,3 @@ if __name__ == '__main__':
             import os
             with open(os.path.join(args.data_directory, f'dataset{d_i}_' + type + '_trained_circuit.qpy'), 'wb') as file:
                 qpy.dump(trained_circuit, file)
-
