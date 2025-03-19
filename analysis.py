@@ -6,17 +6,18 @@ import antropy
 def differential_entropy(data, num_bins=None):
     """
     data (np.ndarray): shape should be (num_features, sequence_length)
-    num_bins (int or sequence)
+    num_bins (int)
     """
     entropy_per_feature = []
-    for f in range(len(data[0])):
+    num_features = data.shape[0]
+    for f in range(num_features):
+        feature_data = data[f]
         if not num_bins: # default to Freedman-Diaconis Rule due to non-normal data
-            q75, q25 = np.percentile(data[0][f], [75 ,25])
+            q75, q25 = np.percentile(feature_data, [75 ,25])
             IQR = q75 - q25
-            bin_width = 2 * IQR / np.cbrt(len(data))
-            num_bins = int(np.ceil((np.max(data) - np.min(data)) / bin_width))
-        hist, edges = np.histogramdd(data[0][f], bins=num_bins, density=True)
-
+            bin_width = 2 * IQR / np.cbrt(len(feature_data))
+            num_bins = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
+        hist, edges = np.histogram(feature_data, bins=num_bins, density=True)
         dimensions = data.shape[1]
 
         # compute bin volumes, assuming uniform bin widths for simplicity (difference between
