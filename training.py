@@ -1,7 +1,8 @@
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.quantum_info import Statevector, state_fidelity, partial_trace
+from qiskit import quantum_info as qi
+from qi import Statevector, state_fidelity, partial_trace, DensityMatrix, Statevector, Operator
 import re
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
@@ -171,6 +172,55 @@ def trash_qubit_penalty(state, bottleneck_size):
     penalty = sum(1 - p for p in sorted_marginals[:num_trash])
     return penalty
 
+def force_trash_qubits(bottleneck_state, bottleneck_size):
+    """
+    Force the trash qubits in the bottleneck_state to |0> using a density matrix projection.
+
+    This function computes the marginal probability (p0) for each qubit,
+    selects the trash qubits dynamically (those with the lowest p0),
+    and for each trash qubit applies a projection operator (|0><0| on that qubit)
+    to the density matrix of the full state. The resulting density matrix is renormalized,
+    and finally converted back to a Statevector.
+    """
+    marginals = []
+    for q in range(bottleneck_state.num_qubits):
+        trace_indices = list(range(bottleneck_state.num_qubits))
+        trace_indices.remove(q)
+        dm = partial_trace(bottleneck_state, trace_indices)
+        p0 = np.real(dm.data[0, 0])
+        marginals.append((q, p0))
+
+    # automatically select trash qubits as the ones with lowest marginals
+    sorted_marginals = sorted(marginals, key=lambda x: x[1])
+    num_trash = bottleneck_state.num_qubits - bottleneck_size
+    trash_qubit_indices = [q for (q, p0) in sorted_marginals[:num_trash]]
+
+    dm_full = DensityMatrix(bottleneck_state)
+    n = bottleneck_state.num_qubits
+
+    # For each trash qubit, apply the projection operator onto |0>
+    # Note: Qiskit uses little-endian ordering for statevectors. That is,
+    # the rightmost bit in the binary representation corresponds to qubit 0.
+    # When constructing the full tensor-product projector, we prepare a list
+    # of 2×2 operators with P0 inserted at position (n-1 - q).
+    P0 = np.array([[1, 0],
+                   [0, 0]], dtype=complex)
+    I = np.eye(2, dtype=complex)
+    for q in trash_qubit_indices:
+        ops = []
+        # build a list of operators for each qubit
+        for i in range(n):
+            if i == (n - 1 - q):
+                ops.append(P0)
+            else:
+                ops.append(I)
+        proj = qi.tensor(ops)
+        dm_full = DensityMatrix(proj @ dm_full.data @ proj.conj().T)
+        # renormalize to ensure a valid quantum state
+        dm_full = dm_full / dm_full.trace()
+
+    return Statevector(dm_full.to_vector())
+
 def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0):
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
@@ -181,7 +231,6 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     total_cost = 0.0
     series_index = 0
     for series in data:
-        print('        Calculating loss for series ' + str(series_index + 1))
         series_cost = 0.0
         previous_error_vector = None
         for state in series:
@@ -201,11 +250,11 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             # pass the (possibly perturbed) input state through the encoder and decoder
             bottleneck_state = input_state.evolve(encoder)
+            bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
+
             reconstructed_state = bottleneck_state.evolve(decoder)
 
-            reconstruction_cost = 1 - state_fidelity(input_state, reconstructed_state)
-            trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_cost += reconstruction_cost + trash_penalty
+            series_cost += 1 - state_fidelity(input_state, reconstructed_state)
 
             previous_error_vector = target_state.data - reconstructed_state.data
 
@@ -213,6 +262,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         series_index += 1
 
     return total_cost
+
 
 def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0):
     """
@@ -225,7 +275,6 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     total_cost = 0.0
     series_index = 0
     for series in data:
-        print('        Calculating loss for series ' + str(series_index + 1))
         series_length = len(series)
         if series_length < 2:
             continue # can't model transition
@@ -241,11 +290,11 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             next_state = Statevector.from_instruction(embedder.assign_parameters(next_input_params))
 
             bottleneck_state = current_state.evolve(encoder)
+            bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
+
             predicted_state = bottleneck_state.evolve(decoder)
 
-            reconstruction_cost = 1 - state_fidelity(next_state, predicted_state)
-            trash_penalty = trash_qubit_penalty_weight * trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_cost += reconstruction_cost + trash_penalty
+            series_cost += 1 - state_fidelity(next_state, predicted_state)
 
             if np.random.rand() < teacher_forcing_prob:
                 current_state = next_state
@@ -254,6 +303,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
         total_cost += series_cost / (series_length-1) # avg cost per transition (always same num series)
     return total_cost
+
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
     moment1 = beta1 * moment1 + (1 - beta1) * gradients
@@ -348,21 +398,26 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     return trained_circuit, cost_history, validation_cost
 
 if __name__ == '__main__':
+    from qiskit import qpy
+    import os
     import argparse
+    from data_importers import import_generated
+    from analysis import differential_entropy, entanglement_entropy
+
     parser = argparse.ArgumentParser(
         description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over the given data."
     )
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
     args = parser.parse_args()
 
-    from data_importers import import_generated
     dataset_partitions = import_generated(args.data_directory)
 
     d_i = 1
     for (training, validation) in dataset_partitions:
         num_qubits = len(training[0][0])
+        bottleneck_size = num_qubits // 2
         config = {
-            'bottleneck_size': num_qubits / 2,
+            'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
             'learning_rate': .1,
             'penalty_weight': .75,
@@ -373,16 +428,76 @@ if __name__ == '__main__':
         for type in ['qae', 'qte']:
             print('Training ' + type.upper() + ' for dataset ' + str(d_i))
             if type == 'qae':
-                trained_circuit, cost_history, validation_cost = train_adam(training, validation, qae_cost_function, config, num_epochs=10)
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits =
+                    train_adam(training, validation, qae_cost_function, config, num_epochs=10)
             elif type == 'qte':
-                trained_circuit, cost_history, validation_cost  = train_adam(training, validation, qte_cost_function, config, num_epochs=10)
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits =
+                    train_adam(training, validation, qte_cost_function, config, num_epochs=10)
             else:
-                raise Exception('Unknown type: ' + args.type)
+                raise Exception('Unknown type: ' + type)
 
             print('  Final training cost:', cost_history[-1])
             print('  Validation cost: ', validation_cost)
 
+            # === Entropy computations ===
+            # joint differential entropy of the bottleneck state (full encoder output) using dynamic trash selection
+            dataset_bottleneck_joint_diff_ent = []
+            for series in validation:
+                series_bottleneck_array = [[] for _ in range(bottleneck_size)] # shape (bottleneck_size, sequence_length)
+
+                for state in series:
+                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
+                    qc_init = embedder.assign_parameters(params_dict)
+                    initial_state = Statevector.from_instruction(qc_init)
+                    encoder_state = initial_state.evolve(encoder)
+
+                    marginals = []
+                    for q in range(encoder_state.num_qubits):
+                        trace_indices = list(range(encoder_state.num_qubits))
+                        trace_indices.remove(q)
+                        density_matrix = partial_trace(encoder_state, trace_indices)
+                        marginals.append((q, np.real(density_matrix.data[0, 0])))
+
+                    sorted_marginals = sorted(marginals, key=lambda x: x[1])
+                    num_trash = encoder_state.num_qubits - bottleneck_size
+                    # exclude trash qubits in entropy calculation
+                    bottleneck_marginals = sorted(sorted_marginals[num_trash:], key=lambda x: x[0])
+
+                    for (idx, p0) in bottleneck_marginals:
+                        series_bottleneck_array[idx].append(p0)
+                dataset_bottleneck_joint_diff_ent.append(joint_differential_entropy(np.array(series_bottleneck_array)))
+            dataset_bottleneck_joint_diff_ent = np.array(dataset_bottleneck_joint_diff_ent)
+            print('  Bottleneck joint differential entropy shape (num_features, num_time_steps):', dataset_bottleneck_joint_diff_ent.shape)
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_diff_entropy.npy')
+            np.save(fname, dataset_bottleneck_joint_diff_ent)
+            print(f'  Saved bottleneck joint differential entropy calculations to {fname}')
+            avg_bottleneck_entropy = np.mean(dataset_bottleneck_joint_diff_ent, axis=1)
+            print('  Average bottleneck joint differential entropy per series:', avg_bottleneck_entropy)
+            avg_bottleneck_entropy = np.mean(avg_bottleneck_entropy)
+            print(f'  Average bottleneck joint differential entropy:', avg_bottleneck_entropy)
+
+            # encoder entanglement entropy
+            entanglement_entropies = []
+            subsystem = list(range(bottleneck_size))
+            for series in validation:
+                series_entanglement_entropy = []
+                for state in series:
+                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
+                    qc_init = embedder.assign_parameters(params_dict)
+                    initial_state = Statevector.from_instruction(qc_init)
+                    encoder_state = initial_state.evolve(encoder)
+                    ent_entropy = entanglement_entropy(encoder_state, subsystem)
+                    series_entanglement_entropy.append(ent_entropy)
+            entanglement_entropies = np.array(entanglement_entropies)
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_encoder_entanglement_entropy.npy')
+            np.save(fname, entanglement_entropies)
+            avg_entanglement_entropy = np.mean(entanglement_entropies)
+            print(f'  Average encoder entanglement entropy: {avg_entanglement_entropy:.6f}')
+
+            # Save the trained circuit
             from qiskit import qpy
-            import os
-            with open(os.path.join(args.data_directory, f'dataset{d_i}_' + type + '_trained_circuit.qpy'), 'wb') as file:
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
+            with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)
+            print(f"Saved trained circuit to {fname}")
+        d_i += 1

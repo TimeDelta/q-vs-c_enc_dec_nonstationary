@@ -3,32 +3,65 @@ import torch
 from qiskit.quantum_info import partial_trace, entropy
 import antropy
 
-def differential_entropy(data, num_bins=None):
+def differential_entropy(data):
     """
     data (np.ndarray): shape should be (num_features, sequence_length)
-    num_bins (int)
+    Uses Freedman-Diaconis Rule to determine num_bins due to non-normal data
     """
     entropy_per_feature = []
     num_features = data.shape[0]
     for f in range(num_features):
         feature_data = data[f]
-        if not num_bins: # default to Freedman-Diaconis Rule due to non-normal data
-            q75, q25 = np.percentile(feature_data, [75 ,25])
-            IQR = q75 - q25
-            bin_width = 2 * IQR / np.cbrt(len(feature_data))
-            num_bins = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
+        q75, q25 = np.percentile(feature_data, [75 ,25])
+        IQR = q75 - q25
+        bin_width = 2 * IQR / np.cbrt(len(feature_data))
+        num_bins = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
         hist, edges = np.histogram(feature_data, bins=num_bins, density=True)
         dimensions = data.shape[1]
 
-        # compute bin volumes, assuming uniform bin widths for simplicity (difference between
-        # first two bin edges)
-        bin_widths = [edges[i][1] - edges[i][0] for i in range(dimensions)]
-        bin_volume = np.prod(bin_widths)
+        widths_list = [np.diff(edge) for edge in edges]
+        # create a meshgrid to combine bin widths across dimensions
+        mesh = np.meshgrid(*widths_list, indexing='ij')
+        bin_volumes = np.ones_like(mesh[0])
+        for w in mesh:
+            bin_volumes *= w
 
-        nonzero = hist > 0
-        de = -np.sum(hist[nonzero] * np.log(hist[nonzero])) * bin_volume
+        bin_prob_mass = hist * bin_volumes
+
+        nonzero = bin_prob_mass > 0
+        de = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] * bin_volumes[nonzero]))
         entropy_per_feature.append(de)
     return entropy_per_feature
+
+def joint_differential_entropy(data):
+    """
+    data (np.ndarray): shape (sequence_length, num_features), where each column is a sample
+    """
+    num_features = data.shape[1]
+
+    bins = []
+    for d in range(num_features):
+        feature_data = samples[:, d]
+        q75, q25 = np.percentile(feature_data, [75, 25])
+        IQR = q75 - q25
+        bin_width = 2 * IQR / np.cbrt(len(feature_data))
+        nb = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
+        bins.append(nb)
+
+    hist, edges = np.histogramdd(samples, bins=bins, density=True)
+
+    widths_list = [np.diff(edge) for edge in edges]
+    # create a meshgrid to combine bin widths across dimensions
+    mesh = np.meshgrid(*widths_list, indexing='ij')
+    bin_volumes = np.ones_like(mesh[0])
+    for w in mesh:
+        bin_volumes *= w
+
+    bin_prob_mass = hist * bin_volumes
+
+    nonzero = bin_prob_mass > 0
+    joint_entropy = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] / bin_volumes[nonzero]))
+    return joint_entropy
 
 def entanglement_entropy(state, subsystem):
     total_qubits = state.num_qubits
