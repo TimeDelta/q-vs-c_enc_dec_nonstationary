@@ -9,7 +9,8 @@ from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_f
 
 def blend_with_new_block(existing_series, new_block, taper_length):
     """
-    linearly blend the last `taper_length` samples of existing_series with the first `taper_length` of new_block
+    Linearly taper the last `taper_length` states of existing_series and the first `taper_length` of new_block
+    then concatenate them
     """
     if existing_series.shape[0] < taper_length:
         raise ValueError("Existing series is too short to blend")
@@ -90,14 +91,14 @@ global_latent_dim = 16
 max_num_layers = 10
 max_num_heads = 10
 num_features_per_state = 8
-num_series_per_dataset = 40
-orig_num_blocks_per_series = 10
-num_samples_per_block = 50
-num_time_steps_to_taper = num_samples_per_block // 10
-num_datasets = 250
+num_series_per_dataset = 20
+orig_num_blocks_per_series = 5
+num_states_per_block = 20
+num_time_steps_to_taper = num_states_per_block // 10
+num_datasets = 500
 
 datasets = []
-required_length = orig_num_blocks_per_series * num_samples_per_block
+required_length = orig_num_blocks_per_series * num_states_per_block
 for d in range(num_datasets):
     print('Generating dataset ' + str(d + 1))
     dataset_dir = os.path.join(base_dir, f'dataset_{d+1}')
@@ -105,10 +106,10 @@ for d in range(num_datasets):
         os.makedirs(dataset_dir)
 
     num_heads = d % max_num_heads + 1
-    while num_samples_per_block % num_heads != 0:
+    while num_states_per_block % num_heads != 0:
         num_heads += 1
     generator = HierarchicalTransformerGenerator(
-        input_dim, global_latent_dim, d % max_num_layers + 1, num_heads, num_features_per_state, num_samples_per_block
+        input_dim, global_latent_dim, d % max_num_layers + 1, num_heads, num_features_per_state, num_states_per_block
     )
 
     generated_sequences = []
@@ -122,13 +123,8 @@ for d in range(num_datasets):
             inputs = torch.randn(input_dim, dtype=torch.float32)
             # have to blend multiple series together to ensure non-stationarity
             new_block = generator.forward(inputs)
-            # if isinstance(series, torch.Tensor):
-            #     series = series.detach().cpu().numpy()
-            # if isinstance(new_block, torch.Tensor):
-            #     new_block = new_block.detach().cpu().numpy()
             if len(series) > 0:
                 series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
-                # series = np.concatenate((series, new_block), axis=0)
             else:
                 series = new_block
         if isinstance(series, torch.Tensor):
@@ -187,4 +183,3 @@ for metrics, series in series_metrics:
         np.save(os.path.join(base_dir, filename), series)
 
 print('Number of grid cells covered: ', len(series_metric_grid))
-print('Saving usable series to disk ...')
