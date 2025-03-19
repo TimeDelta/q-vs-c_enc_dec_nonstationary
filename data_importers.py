@@ -20,11 +20,13 @@ def compute_series_hash(series):
 
 def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
     """
-    Load training and validation partitions separately for each dataset. For each series file in a
-    dataset, compute its hash. If the hash is in the set of grid series hashes (loaded from
-    'grid_series_hashes.npy'), force that series into the validation set. The remaining series are
-    randomly split into training and validation.
+    Load training and validation partitions separately for each dataset.
+    For each series file in a dataset, compute its hash. If the hash is in the set of grid
+    series hashes (loaded from files starting with 'series_cell_'), force that series into
+    the validation set. The remaining series are randomly split into training and validation.
 
+    Only datasets that have at least one series_i.npy file whose hash matches one of the grid_hashes
+    are included in the final partitions.
 
     Returns:
       dict: Mapping each dataset index (parsed from directory name) to a tuple
@@ -45,50 +47,55 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
 
     for dataset_dir in dataset_dirs:
         full_path = os.path.join(generated_datasets_dir, dataset_dir)
-        series_files = [f for f in os.listdir(full_path) if f.endswith('.npy')]
-        series_files.sort()
-        all_indices = np.arange(len(series_files))
 
-        for fname in os.listdir(data_directory):
-            match = series_num_pattern.search(fname)
-            if match:
-                series_index = int(match.group(1))
-                series_files.append((series_index, fname))
-            else:
-                raise Exception('Unable to parse series num from: ' + fname)
+        series_files = []
+        for fname in os.listdir(full_path):
+            if fname.endswith('.npy'):
+                match = series_num_pattern.search(fname)
+                if match:
+                    series_index = int(match.group(1))
+                    series_files.append((series_index, fname))
+                else:
+                    raise Exception('Unable to parse series num from: ' + fname)
 
-        # sort by parsed series index to ensure consistency and ease of correlation
         series_files.sort(key=lambda x: x[0])
+        series_dict = {index: fname for index, fname in series_files}
 
-        forced_indices = []
-        non_forced_indices = []
-        # Load each file, compute its hash, and partition accordingly.
-        series_hashes = {}
-        for idx, f in series_files:
-            series = np.load(os.path.join(full_path, f))
+        forced_indices = [] # must be in validation (grid hash match)
+        non_forced_indices = [] # will be randomly partitioned
+
+        # compute hash for each series file
+        for index, fname in series_files:
+            series = np.load(os.path.join(full_path, fname))
             s_hash = compute_series_hash(series)
-            series_hashes[idx] = s_hash
             if s_hash in grid_hashes:
-                forced_indices.append(idx)
+                forced_indices.append(index)
             else:
-                non_forced_indices.append(idx)
+                non_forced_indices.append(index)
 
+        # only include this dataset if at least one series hash matches a grid hash
+        if not forced_indices:
+            continue
+
+        # Randomly split non-forced series into training and validation partitions
         non_forced_indices = np.array(non_forced_indices, dtype=int)
         np.random.shuffle(non_forced_indices)
         num_train = int(np.floor(train_ratio * len(non_forced_indices)))
-        train_indices = non_forced_indices[:num_train].sorted()
-        val_indices = non_forced_indices[num_train:]
+        train_indices = sorted(non_forced_indices[:num_train])
+        val_indices = sorted(non_forced_indices[num_train:])
 
-        final_val_indices = np.concatenate([np.array(forced_indices, dtype=int), val_indices]).sorted()
-        print(f'  Series in validation partition for {dataset_dir}:', final_val_indices)
+        # Combine forced validation indices with non-forced validation indices
+        final_val_indices = sorted(np.concatenate([np.array(forced_indices, dtype=int), val_indices]))
+        print(f'  Series in validation partition for {dataset_dir}: {final_val_indices}')
 
-        training_series = [np.load(os.path.join(full_path, series_files[i])) for i in train_indices]
-        validation_series = [np.load(os.path.join(full_path, series_files[i])) for i in final_val_indices]
+        training_series = [np.load(os.path.join(full_path, series_dict[idx])) for idx in train_indices]
+        validation_series = [np.load(os.path.join(full_path, series_dict[idx])) for idx in final_val_indices]
 
         dataset_index = int(dataset_dir.split('_')[-1])
         partitions[dataset_index] = (training_series, validation_series)
 
     return partitions
+
 
 def import_single_subject(data_directory):
     """

@@ -412,8 +412,7 @@ if __name__ == '__main__':
 
     dataset_partitions = import_generated(args.data_directory)
 
-    d_i = 1
-    for (training, validation) in dataset_partitions:
+    for d_i, (training, validation) in sorted(dataset_partitions.items()):
         num_qubits = len(training[0][0])
         bottleneck_size = num_qubits // 2
         config = {
@@ -501,4 +500,3 @@ if __name__ == '__main__':
             with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)
             print(f"Saved trained circuit to {fname}")
-        d_i += 1
