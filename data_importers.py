@@ -36,6 +36,8 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
     dataset_dirs = [d for d in os.listdir(generated_datasets_dir) if os.path.isdir(os.path.join(generated_datasets_dir, d))]
     dataset_dirs.sort()
 
+    series_num_pattern = re.compile(r'series_(\d+)\.npy$')
+
     grid_hashes = [
         compute_series_hash(np.load(os.path.join(generated_datasets_dir, f)))
         for f in os.listdir(generated_datasets_dir) if f.startswith("series_cell_")
@@ -47,11 +49,22 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
         series_files.sort()
         all_indices = np.arange(len(series_files))
 
+        for fname in os.listdir(data_directory):
+            match = series_num_pattern.search(fname)
+            if match:
+                series_index = int(match.group(1))
+                series_files.append((series_index, fname))
+            else:
+                raise Exception('Unable to parse series num from: ' + fname)
+
+        # sort by parsed series index to ensure consistency and ease of correlation
+        series_files.sort(key=lambda x: x[0])
+
         forced_indices = []
         non_forced_indices = []
         # Load each file, compute its hash, and partition accordingly.
         series_hashes = {}
-        for idx, f in enumerate(series_files):
+        for idx, f in series_files:
             series = np.load(os.path.join(full_path, f))
             s_hash = compute_series_hash(series)
             series_hashes[idx] = s_hash
@@ -63,10 +76,11 @@ def import_generated(generated_datasets_dir, train_ratio=0.75, seed=42):
         non_forced_indices = np.array(non_forced_indices, dtype=int)
         np.random.shuffle(non_forced_indices)
         num_train = int(np.floor(train_ratio * len(non_forced_indices)))
-        train_indices = non_forced_indices[:num_train]
+        train_indices = non_forced_indices[:num_train].sorted()
         val_indices = non_forced_indices[num_train:]
 
-        final_val_indices = np.concatenate([np.array(forced_indices, dtype=int), val_indices])
+        final_val_indices = np.concatenate([np.array(forced_indices, dtype=int), val_indices]).sorted()
+        print(f'  Series in validation partition for {dataset_dir}:', final_val_indices)
 
         training_series = [np.load(os.path.join(full_path, series_files[i])) for i in train_indices]
         validation_series = [np.load(os.path.join(full_path, series_files[i])) for i in final_val_indices]
