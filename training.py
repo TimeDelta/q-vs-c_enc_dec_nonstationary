@@ -376,7 +376,6 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
         print('    Mean param update: ' + str(np.mean(param_values-previous_param_values)))
-        print(f'    cost = {current_cost:.6f}')
 
     print('  calculating validation cost')
     validation_cost = cost_function(
