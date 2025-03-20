@@ -2,7 +2,7 @@ import numpy as np
 import math
 from training import train_adam, qae_cost_function, qte_cost_function, ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES
 
-MAX_NUM_BLOCKS = 2 # per encoder AND per decoder
+MAX_NUM_BLOCKS = 1 # per encoder AND per decoder
 
 def sample_hyperparameters(num_qubits):
     return {
