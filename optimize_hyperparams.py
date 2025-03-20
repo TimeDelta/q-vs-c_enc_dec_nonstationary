@@ -15,6 +15,7 @@ def sample_hyperparameters(num_qubits):
     }
 
 def get_loss(data, type, config, allocated_epochs):
+    print(config)
     if type.lower() == 'qae':
         trained_params, cost_history, validation_cost, _, _, _ = \
             train_adam(data[0], data[1], qae_cost_function, config, allocated_epochs)
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
     parser.add_argument("--type", type=str, default='qte', help="QAE or QTE (case-insensitive)")
     parser.add_argument("--reduction_factor", type=int, default=3, help="Factor by which successive configuration evals are reduced each round.")
-    parser.add_argument("--max_training_epochs", type=int, default=25, help="Maximum number of epochs allocated to any configuration.")
+    parser.add_argument("--max_training_epochs", type=int, default=27, help="Maximum number of epochs allocated to any configuration.")
     args = parser.parse_args()
 
     from data_importers import import_generated
