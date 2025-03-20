@@ -2,6 +2,7 @@ from functools import reduce
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
+from qiskit.circuit.library import ZZFeatureMap
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, DensityMatrix, Operator
 import re
 
@@ -11,27 +12,12 @@ EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
 
 def create_embedding_circuit(num_qubits, embedding_gate):
     """
-    Apply rotation gate to each qubit for embedding of classical data.
     Returns qc, input_params
     """
-    input_params = []
-    qc = QuantumCircuit(num_qubits)
-    for i in range(num_qubits):
-        if embedding_gate.lower() == 'rx':
-            p = Parameter('Embedding Rx θ ' + str(i))
-            input_params.append(p)
-            qc.rx(p, i)
-        elif embedding_gate.lower() == 'ry':
-            p = Parameter('Embedding Ry θ ' + str(i))
-            input_params.append(p)
-            qc.ry(p, i)
-        elif embedding_gate.lower() == 'rz':
-            p = Parameter('Embedding Rz θ ' + str(i))
-            input_params.append(p)
-            qc.rz(p, i)
-        else:
-            raise Exception("Invalid embedding gate: " + embedding_gate)
-    return qc, input_params
+    feature_map = ZZFeatureMap(feature_dimension=num_qubits, reps=1, entanglement='full')
+    input_params = list(feature_map.parameters)
+    return feature_map, input_params
+
 
 def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglement_gate):
     if entanglement_topology == 'full':
