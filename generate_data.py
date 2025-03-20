@@ -142,7 +142,7 @@ for d in range(num_datasets):
 series_metrics = []
 for dataset_index, generated_sequences in enumerate(datasets):
     for series in generated_sequences:
-        print('Calculating complexity metrics for series ' + str(len(series_metrics) + 1), ' (dataset ', dataset_index + 1, ')')
+        print('Calculating complexity metrics for series ' + str(len(series_metrics) + 1), '(dataset ' + str(dataset_index + 1) + ')')
         metrics = {
             'lzc': lempel_ziv_complexity_continuous(series),
             'he': np.mean(hurst_exponent(series)),
@@ -158,7 +158,6 @@ all_metrics = np.array([[m['lzc']] for m, _ in series_metrics])
 lzc_vals = all_metrics[:, 0]
 min_lzc = np.min(lzc_vals)
 max_lzc = np.max(lzc_vals)
-print(min_lzc, max_lzc)
 
 lzc_edges = np.linspace(min_lzc, max_lzc, num_bins_per_metric + 1)
 he_edges = np.linspace(0, 1, num_bins_per_metric + 1)

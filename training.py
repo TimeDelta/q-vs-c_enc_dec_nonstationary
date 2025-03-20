@@ -18,7 +18,6 @@ def create_embedding_circuit(num_qubits, embedding_gate):
     input_params = list(feature_map.parameters)
     return feature_map, input_params
 
-
 def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglement_gate):
     if entanglement_topology == 'full':
         for i in range(num_qubits):
@@ -318,13 +317,9 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
       - cost_function: the function to use for calculating the cost
 
       - config: dict containing additional hyperparameters:
-            use_rx \
-            use_ry  >                independent booleans signifying which rotation gates
-            use_rz /                     to include for quantum embedding of the data
             num_blocks:              # [entanglement layer, rotation layer] repetitions per 1/2 of QTE
             entanglement_topology:   for all entanglement layers
-            entanglement_gate:  options are ['CX', 'CZ', 'RZX']
-            embedding_gate:          options are ['RX', 'RY', 'RZ']
+            entanglement_gate:       options are ['CX', 'CZ', 'RZX']
             learning_rate:
             bottleneck_size:         number of qubits for the latent space
             penalty_weight:          weight for the bottleneck penalty term
@@ -473,7 +468,7 @@ if __name__ == '__main__':
             np.save(fname, dataset_bottleneck_entropies)
             print(f'  Saved bottleneck VN entropy calculations to {fname}')
             avg_entropy_per_series = np.mean(dataset_bottleneck_entropies, axis=2)
-            print('Average bottleneck entropy per series (per dataset):', avg_entropy_per_series)
+            print('Average bottleneck entropy per series:', avg_entropy_per_series)
             avg_entropy_per_dataset = np.mean(avg_entropy_per_series, axis=1)
             print('Average bottleneck entropy per dataset:', avg_entropy_per_dataset)
             overall_avg_entropy = np.mean(avg_entropy_per_dataset)
