@@ -27,7 +27,8 @@ def get_loss(data, type, config, allocated_epochs):
         overfit_cost = abs(validation_cost - cost_history[-1]) / max(validation_cost, cost_history[-1])
         if overfit_cost > 1./3.: # throw away any configs that lead to obvious overfitting
             return float('inf')
-    return 3./4 * cost_history[-1] + (config['num_blocks']-1) / MAX_NUM_BLOCKS / 4.
+    # scale the cost by the % of max num of blocks used
+    return cost_history[-1] * ((config['num_blocks']-1.) / MAX_NUM_BLOCKS)
 
 def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
     """
