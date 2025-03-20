@@ -221,6 +221,18 @@ def force_trash_qubits(bottleneck_state, bottleneck_size):
 
     return dm_full
 
+def dm_to_statevector(dm):
+    """
+    Convert a (nearly pure) DensityMatrix dm to a Statevector.
+    This function computes the eigen-decomposition of dm.data and returns
+    the eigenvector corresponding to the largest eigenvalue.
+    """
+    evals, evecs = np.linalg.eig(dm.data)
+    idx = np.argmax(evals)
+    vec = evecs[:, idx]
+    vec = vec / np.linalg.norm(vec)
+    return Statevector(vec)
+
 def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
@@ -255,7 +267,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             series_cost += 1 - state_fidelity(input_state, reconstructed_state)
 
-            previous_error_vector = input_state.data - reconstructed_state.data
+            previous_error_vector = input_state.data - dm_to_statevector(reconstructed_state).data
 
         total_cost += series_cost / len(series) # avg cost per state (always same num series)
     return total_cost
