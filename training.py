@@ -272,7 +272,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         current_state = Statevector.from_instruction(qc_initial)
 
         for i in range(series_length - 1):
-            next_input_params = {p: series[j+1] for j, p in enumerate(input_params)}
+            next_state = series[i+1]
+            next_input_params = {p: next_state[j] for j, p in enumerate(input_params)}
             next_state = Statevector.from_instruction(embedder.assign_parameters(next_input_params))
 
             bottleneck_state = current_state.evolve(encoder)
