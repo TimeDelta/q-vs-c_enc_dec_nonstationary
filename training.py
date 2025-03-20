@@ -356,7 +356,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
         gradients = np.zeros_like(param_values)
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
-        prob_own_noise = (t-1)/num_epochs
+        prob_own_noise = 0 # (t-1)/num_epochs
         for j in range(len(param_values)):
             print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
