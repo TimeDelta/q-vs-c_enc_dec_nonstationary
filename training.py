@@ -353,6 +353,8 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         decoder_bound = decoder.assign_parameters(param_dict)
 
         print('    calculating initial cost')
+        # avoid also calculating the loss for (current param - epsilon) and use single
+        # initial cost evaluation for all parameters to speed up training
         current_cost = cost_function(
             training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
         )
