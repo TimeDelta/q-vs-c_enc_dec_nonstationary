@@ -8,9 +8,8 @@ import re
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
-EMBEDDING_ROTATION_GATES = ['rx', 'ry', 'rz']
 
-def create_embedding_circuit(num_qubits, embedding_gate):
+def create_embedding_circuit(num_qubits):
     """
     Returns qc, input_params
     """
@@ -59,7 +58,7 @@ def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglemen
         else:
             raise Exception("Unknown entanglement gate: " + entanglement_gate)
 
-def create_qte_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
+def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
     """
     Build a parameterized QTE transformation (encoder) using multiple layers.
 
@@ -100,26 +99,19 @@ def create_qte_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
 def create_full_circuit(num_qubits, config):
     """
     config is dict w/ additional hyperparameters:
-        use_rx \
-        use_ry  >                independent booleans signifying which rotation gates
-        use_rz /                     to include for quantum embedding of the data
-        num_blocks:              # [entanglement layer, rotation layer] repetitions in QTE
         entanglement_topology:   options are ['full', 'linear', 'circular']
-        entanglement_gate:  options are ['CX', 'CZ', 'RZX']
-        embedding_gate:          options are ['RX', 'RY', 'RZ']
+        entanglement_gate:       options are ['CX', 'CZ', 'RZX']
         penalty_weight:          weight for the bottleneck penalty term.
     Returns full_circuit, encoder_circuit, decoder_circuit, input_params, trainable_params
     """
-    embedding_gate = config.get('embedding_gate', 'rx')
-    embedding_qc, input_params = create_embedding_circuit(num_qubits, embedding_gate)
+    embedding_qc, input_params = create_embedding_circuit(num_qubits)
 
     num_blocks = config.get('num_blocks', 1)
     ent_topology = config.get('entanglement_topology', 'full')
     ent_gate_type = config.get('entanglement_gate', 'cx')
     bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
-    # create separate QC for QTE so that the decoder doesn't include the embedding method
     # when adding the encoder's inverse
-    qte_circuit, encoder, decoder, trainable_params = create_qte_circuit(
+    qte_circuit, encoder, decoder, trainable_params = create_qed_circuit(
         bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type
     )
     return embedding_qc.compose(qte_circuit), embedding_qc, encoder, decoder, input_params, trainable_params
@@ -325,7 +317,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
             penalty_weight:          weight for the bottleneck penalty term
       - num_epochs: number of training iterations
 
-    Returns trained_circuit, cost_history
+    Returns trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
     """
     num_qubits = len(training_data[0][1][0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
@@ -386,7 +378,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
     param_dict = {param: value for param, value in zip(trainable_params, param_values)}
     trained_circuit.assign_parameters(param_dict)
-    return trained_circuit, cost_history, validation_cost
+    return trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
 
 if __name__ == '__main__':
     from qiskit import qpy
@@ -402,6 +394,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dataset_partitions = import_generated(args.data_directory)
+    num_epochs = 50
 
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
         num_qubits = len(training[0][1][0])
@@ -418,11 +411,11 @@ if __name__ == '__main__':
         for type in ['qae', 'qte']:
             print('Training ' + type.upper() + ' for dataset ' + str(d_i))
             if type == 'qae':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits = \
-                    train_adam(training, validation, qae_cost_function, config, num_epochs=10)
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
+                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs)
             elif type == 'qte':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params, layer_circuits = \
-                    train_adam(training, validation, qte_cost_function, config, num_epochs=10)
+                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
+                    train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
             else:
                 raise Exception('Unknown type: ' + type)
 

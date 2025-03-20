@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from training import train_adam, qae_cost_function, qte_cost_function, ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_ROTATION_GATES
+from training import train_adam, qae_cost_function, qte_cost_function, ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES
 
 MAX_NUM_BLOCKS = 5 # per 1/2 of QTE
 
@@ -12,7 +12,6 @@ def sample_hyperparameters(num_qubits):
         'penalty_weight': 10 ** np.random.uniform(-4, 0),
         'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
         'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
-        'embedding_gate': np.random.choice(EMBEDDING_ROTATION_GATES),
     }
 
 def get_training_loss(data, type, config, allocated_epochs):
