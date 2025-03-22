@@ -16,6 +16,7 @@ def sample_hyperparameters(num_qubits):
 
 def get_loss(data, type, config, allocated_epochs):
     print(config)
+    np.random.seed(12984)
     if type.lower() == 'qae':
         trained_params, cost_history, validation_cost, _, _, _ = \
             train_adam(data[0], data[1], qae_cost_function, config, allocated_epochs)
