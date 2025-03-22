@@ -30,7 +30,8 @@ def get_loss(data, type, config, allocated_epochs):
             return float('inf')
     # scale the cost by the % of max num of blocks used
     # TODO: incorporate bottleneck size
-    return cost_history[-1] * ((config['num_blocks']-1.) / MAX_NUM_BLOCKS)
+    scale = float(config['num_blocks']) / float(MAX_NUM_BLOCKS)
+    return cost_history[-1] * scale
 
 def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
     """
@@ -55,7 +56,7 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
         initial_num_configs = int(np.ceil(total_budget / max_training_epochs / (bracket + 1) * reduction_factor ** bracket))
         initial_allocated_epochs = max_training_epochs * reduction_factor ** (-bracket)
 
-        print(f"Bracket {bracket}: Starting with {initial_num_configs} configurations, each with {initial_allocated_epochs} epochs.")
+        print(f"Bracket {max_bracket-bracket}: Starting with {initial_num_configs} configurations, each with {initial_allocated_epochs} epochs.")
         configs = [sample_hyperparameters(num_qubits) for _ in range(initial_num_configs)]
         print('Created configs')
 
@@ -63,9 +64,7 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
         for round_index in range(bracket + 1):
             print('Round ' + str(round_index))
             num_configs_this_round = int(np.floor(initial_num_configs * reduction_factor ** (-round_index)))
-            print('  calculated num configs this round')
             epochs_this_round = int(initial_allocated_epochs * reduction_factor ** (round_index))
-            print('  calculated epochs this round')
 
             round_losses = [get_loss(data, type, config, epochs_this_round) for config in configs]
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
