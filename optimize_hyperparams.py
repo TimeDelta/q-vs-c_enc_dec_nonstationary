@@ -63,10 +63,10 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
 
         # successive reduction in num configs
         for round_index in range(bracket + 1):
-            print('Round ' + str(round_index))
             num_configs_this_round = int(np.floor(initial_num_configs * reduction_factor ** (-round_index)))
             epochs_this_round = int(initial_allocated_epochs * reduction_factor ** (round_index))
 
+            print('Round', round_index, '-', num_configs_this_round, 'configs for', epochs_this_round, 'this round')
             round_losses = [get_loss(data, type, config, epochs_this_round) for config in configs]
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
 

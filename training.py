@@ -300,6 +300,7 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     new_params = params - lr * bias_corrected_moment1 / (np.sqrt(bias_corrected_moment2) + epsilon)
     return new_params, moment1, moment2
 
+# consider DARBO (https://arxiv.org/pdf/2303.14877) in the future due to high complexity and high nonstationarity of loss landscape
 def train_adam(training_data, validation_data, cost_function, config, num_epochs=100):
     """
     Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
