@@ -2,8 +2,6 @@ import math
 import numpy as np
 import os
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
 from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
 
@@ -29,100 +27,49 @@ def blend_with_new_block(existing_series, new_block, taper_length):
 
     return np.concatenate((existing_series[:-taper_length], existing_taper, new_taper, new_block[taper_length:]), axis=0)
 
-def get_cosine_positional_embeddings(seq_len, input_size):
-    """
-    Original cosine positional embeddings from "Attention Is All You Need"
-    """
-    pe = torch.zeros(seq_len, input_size)
-    position = torch.arange(0, seq_len, dtype=torch.float32).unsqueeze(1)
-    div_term = torch.exp(torch.arange(0, input_size, 2, dtype=torch.float32) * (-math.log(10000.0) / input_size))
-    pe[:, 0::2] = torch.sin(position * div_term)
-    pe[:, 1::2] = torch.cos(position * div_term)
-    return pe
+class GaussianSequenceGenerator:
+    def __init__(self, num_features, num_states):
+        self.num_features = num_features
+        self.num_states = num_states
 
-class HierarchicalTransformerGenerator(nn.Module):
-    def __init__(self, input_dim, global_latent_dim, num_encoder_layers, num_heads, output_dim, desired_seq_length):
-        """
-        Hierarchical generator that imposes a common underlying structure to the non-stationarity of the generated signal.
-        Don't need to train the model because it is just used as a sequence sampler.
-        """
-        super(HierarchicalTransformerGenerator, self).__init__()
-        self.desired_seq_length = desired_seq_length
-
-        self.global_fc = nn.Linear(input_dim, global_latent_dim)
-        # attempt to add nonstationarity
-        positional_embeddings = get_cosine_positional_embeddings(desired_seq_length, desired_seq_length)
-        self.register_buffer("time_embedding", positional_embeddings)
-        self.input_proj = nn.Linear(global_latent_dim + desired_seq_length, desired_seq_length)
-
-        encoder_layer = nn.TransformerEncoderLayer(d_model=desired_seq_length, nhead=num_heads)
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
-        self.output_proj = nn.Linear(desired_seq_length, output_dim)
-
-    def forward(self, inputs, seq_length=None):
-        """
-        Generate sequence of shape (desired_seq_length, output_dim)
-        """
-        if not seq_length:
-            seq_length = self.desired_seq_length
-
-        global_latent = self.global_fc(inputs).unsqueeze(0).expand(seq_length, -1)
-
-        time_emb = self.time_embedding[:seq_length, :]
-
-        # concatenate global latent and time embedding along the feature dimension
-        combined = torch.cat([global_latent, time_emb], dim=-1)
-        combined = self.input_proj(combined) # shape: (seq_length, model_dim)
-
-        # requires input shape: (seq_length, model_dim)
-        combined = combined.transpose(0, 1)
-        transformer_out = self.transformer_encoder(combined)
-        transformer_out = transformer_out.transpose(0, 1) # back to (seq_length, model_dim)
-        noise = torch.randn_like(transformer_out) * .05
-
-        return self.output_proj(transformer_out + noise) # shape: (seq_length, output_dim)
+    def forward(self, mean, stdev):
+        return np.random.normal(loc=mean, scale=stdev, size=(self.num_states, self.num_features)).astype(np.float32)
 
 base_dir = 'generated_datasets'
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
 
-input_dim = 4
-global_latent_dim = 16
-max_num_layers = 10
-max_num_heads = 10
 num_features_per_state = 4 # num_qubits
 num_series_per_dataset = 20
 orig_num_blocks_per_series = 5
 num_states_per_block = 20
 num_time_steps_to_taper = num_states_per_block // 10
 num_datasets = 500
+required_length = orig_num_blocks_per_series * num_states_per_block
 
 datasets = []
-required_length = orig_num_blocks_per_series * num_states_per_block
 for d in range(num_datasets):
     print('Generating dataset ' + str(d + 1))
     dataset_dir = os.path.join(base_dir, f'dataset_{d+1}')
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
 
-    num_heads = d % max_num_heads + 1
-    while num_states_per_block % num_heads != 0:
-        num_heads += 1
-    generator = HierarchicalTransformerGenerator(
-        input_dim, global_latent_dim, d % max_num_layers + 1, num_heads, num_features_per_state, num_states_per_block
-    )
-
+    generator = GaussianSequenceGenerator(num_features_per_state, num_states_per_block)
     generated_sequences = []
     num_blocks_per_series = orig_num_blocks_per_series
+    orig_mean = np.random.uniform(-10, 10, size=(num_features_per_state,))
+    upper_bounds = np.maximum(np.abs(orig_mean) / 2, 1)
+    orig_stdev = np.random.uniform(1, upper_bounds)
     for i in range(num_series_per_dataset):
         print('  Generating series ' + str(i + 1))
         num_blocks_per_series /= (1 + 1/num_series_per_dataset)
         num_blocks_per_series = int(max(num_blocks_per_series, 1))
         series = []
-        for _ in range(num_blocks_per_series):
-            inputs = torch.randn(input_dim, dtype=torch.float32)
+        for b in range(num_blocks_per_series):
             # have to blend multiple series together to ensure non-stationarity
-            new_block = generator.forward(inputs)
+            mean = orig_mean * (num_blocks_per_series-b+1)/num_blocks_per_series
+            stdev = orig_stdev * (num_blocks_per_series-b+1)/num_blocks_per_series
+            new_block = generator.forward(mean, stdev)
             if len(series) > 0:
                 series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
             else:
