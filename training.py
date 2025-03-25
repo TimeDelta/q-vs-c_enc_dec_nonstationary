@@ -1,5 +1,9 @@
 from functools import reduce
 import numpy as np
+import os
+import torch
+import torch.optim as optim
+
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import ZZFeatureMap
@@ -99,9 +103,10 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
 def create_full_circuit(num_qubits, config):
     """
     config is dict w/ additional hyperparameters:
+        num_blocks:
+        bottleneck_size:
         entanglement_topology:   options are ['full', 'linear', 'circular']
         entanglement_gate:       options are ['CX', 'CZ', 'RZX']
-        penalty_weight:          weight for the bottleneck penalty term.
     Returns full_circuit, encoder_circuit, decoder_circuit, input_params, trainable_params
     """
     embedding_qc, input_params = create_embedding_circuit(num_qubits)
@@ -110,7 +115,6 @@ def create_full_circuit(num_qubits, config):
     ent_topology = config.get('entanglement_topology', 'full')
     ent_gate_type = config.get('entanglement_gate', 'cx')
     bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
-    # when adding the encoder's inverse
     qte_circuit, encoder, decoder, trainable_params = create_qed_circuit(
         bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type
     )
@@ -210,87 +214,32 @@ def dm_to_statevector(dm):
     vec = vec / np.linalg.norm(vec)
     return Statevector(vec)
 
-def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
+
+PAULI_MATRICES = {
+    'rx': np.array([[0, 1], [1, 0]], dtype=complex),
+    'ry': np.array([[0, -1j], [1j, 0]], dtype=complex),
+    'rz': np.array([[1, 0], [0, -1]], dtype=complex)
+}
+
+def expand_operator(single_op, target, total_qubits):
     """
-    With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
-    from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
+    Expand a single-qubit operator to act on a multi-qubit Hilbert space.
 
-    (1 - fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
+    Args:
+        single_op (np.ndarray): 2x2 operator.
+        target (int): the qubit index the operator acts on.
+        total_qubits (int): total number of qubits.
+
+    Returns:
+        np.ndarray: Full operator of shape (2**total_qubits, 2**total_qubits).
     """
-    total_cost = 0.0
-    for (_, series) in data:
-        series_cost = 0.0
-        previous_error_vector = None
-        for state in series:
-            params = {p: state[i] for i, p in enumerate(input_params)}
-            ideal_qc = embedder.assign_parameters(params)
-            ideal_state = Statevector.from_instruction(ideal_qc)
-            ideal_array = ideal_state.data
-
-            if previous_error_vector is not None and np.random.rand() < (1-no_noise_prob):
-                sign = 1 if np.random.rand() < 0.5 else -1
-                perturbed_array = ideal_array + sign * previous_error_vector
-                # renormalize the perturbed vector to ensure valid quantum state
-                perturbed_array = perturbed_array / np.linalg.norm(perturbed_array)
-                input_state = Statevector(perturbed_array)
-            else:
-                input_state = ideal_state
-
-            # pass the (possibly perturbed) input state through the encoder and decoder
-            bottleneck_state = input_state.evolve(encoder)
-            bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
-
-            reconstructed_state = bottleneck_state.evolve(decoder)
-
-            series_cost += 1 - state_fidelity(input_state, reconstructed_state)
-
-            previous_error_vector = input_state.data - dm_to_statevector(reconstructed_state).data
-
-        total_cost += series_cost / len(series) # avg cost per state (always same num series)
-    return total_cost
-
-
-def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0) -> float:
-    """
-    Scheduled sampling is incorporated via teacher_forcing_prob:
-      - With probability teacher_forcing_prob, the next input state is taken from the ground truth.
-      - Otherwise, the model's predicted state is used as the next input.
-
-    (1 - fidelity(next_state, predicted_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
-    """
-    total_cost = 0.0
-    series_index = 0
-    for (_, series) in data:
-        series_length = len(series)
-        if series_length < 2:
-            continue # can't model transition
-        series_cost = 0.0
-
-        # always use ground truth for first time step
-        initial_params = {p: series[0][i] for i, p in enumerate(input_params)}
-        qc_initial = embedder.assign_parameters(initial_params)
-        current_state = Statevector.from_instruction(qc_initial)
-
-        for i in range(series_length - 1):
-            next_state = series[i+1]
-            next_input_params = {p: next_state[j] for j, p in enumerate(input_params)}
-            next_state = Statevector.from_instruction(embedder.assign_parameters(next_input_params))
-
-            bottleneck_state = current_state.evolve(encoder)
-            bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
-
-            predicted_state = bottleneck_state.evolve(decoder)
-
-            series_cost += 1 - state_fidelity(next_state, predicted_state)
-
-            if np.random.rand() < teacher_forcing_prob:
-                current_state = next_state
-            else:
-                current_state = predicted_state
-
-        total_cost += series_cost / (series_length-1) # avg cost per transition (always same num series)
-    return total_cost
-
+    op = 1
+    for i in range(total_qubits):
+        if i == target:
+            op = np.kron(op, single_op)
+        else:
+            op = np.kron(op, np.eye(2, dtype=complex))
+    return op
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
     moment1 = beta1 * moment1 + (1 - beta1) * gradients
@@ -301,83 +250,233 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     return new_params, moment1, moment2
 
 # consider DARBO (https://arxiv.org/pdf/2303.14877) in the future due to high complexity and high nonstationarity of loss landscape
-def train_adam(training_data, validation_data, cost_function, config, num_epochs=100):
+def train_adam(training_data, validation_data, model_type, config, num_epochs=100):
     """
-    Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
-    the bottleneck via the cost function. This is done in order to balance efficiency w/ added
-    flexibility for which qubits get thrown away.
+    Train the QTE (or QAE) by minimizing the cost function using ADAM with gradients
+    computed via adjoint differentiation computed layer-by-layer (i.e., per block) like backprop.
 
-    Parameters:
-      - cost_function: the function to use for calculating the cost
-
-      - config: dict containing additional hyperparameters:
-            num_blocks:              # [entanglement layer, rotation layer] repetitions per 1/2 of QTE
-            entanglement_topology:   for all entanglement layers
-            entanglement_gate:       options are ['CX', 'CZ', 'RZX']
-            learning_rate:
-            bottleneck_size:         number of qubits for the latent space
-            penalty_weight:          weight for the bottleneck penalty term
-      - num_epochs: number of training iterations
-
-    Returns trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
+    If config['model_type'] is 'qae', then each state is processed individually,
+    with target_state = current_state (i.e. reconstruct the same state).
+    If 'qte', then target_state is the next state in the series.
     """
     num_qubits = len(training_data[0][1][0])
-    num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
+    num_params = 4 * num_qubits * config['num_blocks']  # 2 layers per block
     param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
     moment1 = np.zeros_like(param_values)
     moment2 = np.zeros_like(param_values)
-    gradient_width = 1e-4
 
     bottleneck_size = int(config['bottleneck_size'])
     num_blocks = int(config['num_blocks'])
     learning_rate = float(config['learning_rate'])
     penalty_weight = float(config.get('penalty_weight', 1.0))
-    embedding_gate = config.get('embedding_gate', 'rx')
+    teacher_forcing_prob = config.get('teacher_forcing_prob', 1.0)
+    model_type = config.get('model_type', 'qte')  # 'qae' or 'qte'
 
     trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config)
-
     print('  created untrained circuit')
 
-    previous_param_values = param_values.copy()
+    # The circuit block used for gradient computation (encoder followed by decoder)
+    circuit_block = encoder.compose(decoder)
+
+    def adjoint_gradients_layerwise(cost_function, circuit, pvals, parameters, num_blocks, num_qubits, target_state):
+        """
+        Compute gradients for a given circuit block (encoder composed with decoder) in a layer-wise (per-block)
+        fashion, similar to backpropagation.
+
+        Parameters:
+          cost_function: function mapping a final state to a cost (assumed to be C = 1 - |<target|state>|^2)
+          circuit: a QuantumCircuit representing the block (encoder.compose(decoder))
+          pvals: current parameter values (numpy array)
+          parameters: list of trainable Parameter objects (in order) corresponding to pvals
+          num_blocks: number of blocks/layers in the circuit
+          num_qubits: number of qubits in the circuit
+          target_state: a Statevector for the desired target state
+
+        Returns:
+          gradients: numpy array of gradients for each parameter.
+
+        The analytic adjoint state is derived as follows:
+          Let f = <target|state>, then for cost C = 1 - |f|^2, we have
+             dC/d(state*) = - f * target.
+        """
+        total_qubits = circuit.num_qubits
+        params_per_block = 2 * num_qubits  # parameters per block
+
+        bound_circuit = circuit.assign_parameters({param: value for param, value in zip(parameters, pvals)})
+
+        forward_states = []   # will store state at block boundaries
+        block_gate_infos = [] # will store lists of (instruction, qargs, parameter index, parameter value) per block
+        current_block = []
+        param_counter = 0
+
+        # Forward pass: iterate over the already-bound circuit's instructions.
+        # Use the new API: each item in bound_circuit.data is a CircuitInstruction.
+        state = Statevector.from_label("0" * total_qubits)
+        for item in bound_circuit.data:
+            instr = item.operation
+            qargs = item.qubits
+            # If this instruction was parameterized originally, record it.
+            if instr.params and len(instr.params) > 0:
+                current_block.append((instr, qargs, param_counter, pvals[param_counter]))
+                param_counter += 1
+                if param_counter % params_per_block == 0:
+                    forward_states.append(state.data.copy())
+                    block_gate_infos.append(current_block)
+                    current_block = []
+            U = Operator(instr).data
+            state = state.evolve(U)
+
+        # Derive the analytic adjoint state.
+        # For cost C = 1 - |<target|state>|^2, let f = <target|state>, then:
+        #    dC/d(state*) = - f * target.
+        f = np.vdot(target_state.data, state.data)
+        adj_state = - f * target_state.data
+        norm_adj = np.linalg.norm(adj_state)
+        if norm_adj != 0:
+            adj_state = adj_state / norm_adj
+        else:
+            adj_state = np.ones_like(state.data, dtype=complex) / np.linalg.norm(np.ones_like(state.data, dtype=complex))
+
+        gradients = np.zeros_like(pvals)
+
+        # Backward pass: iterate over blocks in reverse order.
+        for b in reversed(range(len(block_gate_infos))):
+            for instr, qargs, idx, param_val in reversed(block_gate_infos[b]):
+                state_before = forward_states[b]  # state recorded at block boundary
+                # Here, instr is already bound.
+                U = Operator(instr).data
+                gate_name = instr.name.lower()
+                if gate_name in ['rx', 'ry', 'rz']:
+                    P = PAULI_MATRICES[gate_name]
+                    dU = (-1j/2) * np.dot(P, U)
+                    # Expand derivative operator to full Hilbert space.
+                    target_index = qargs[0].index if hasattr(qargs[0], "index") else qargs[0]
+                    D_full = expand_operator(dU, target_index, total_qubits)
+                    grad_contrib = np.real(np.vdot(adj_state, np.dot(D_full, state_before)))
+                    gradients[idx] = grad_contrib
+                else:
+                    gradients[idx] = 0
+                # Update the adjoint state.
+                target_index = qargs[0].index if hasattr(qargs[0], "index") else qargs[0]
+                U_full = expand_operator(U, target_index, total_qubits)
+                adj_state = np.dot(np.conjugate(U_full.T), adj_state)
+        return gradients
+
+    # Training loop:
+    total_gradients = np.zeros_like(param_values)
+    total_transition_cost = 0.0
+    total_transitions = 0
+
     for t in range(1, num_epochs + 1):
-        print('  Epoch ' + str(t))
-        param_dict = {param: value for param, value in zip(trainable_params, param_values)}
-        encoder_bound = encoder.assign_parameters(param_dict)
-        decoder_bound = decoder.assign_parameters(param_dict)
+        print('  Epoch', t)
+        epoch_gradients = np.zeros_like(param_values)
+        epoch_cost = 0.0
+        count = 0
 
-        print('    calculating initial cost')
-        # avoid also calculating the loss for (current param - epsilon) and use single
-        # initial cost evaluation for all parameters to speed up training
-        current_cost = cost_function(
-            training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
-        )
-        cost_history.append(current_cost)
-        print('      ', current_cost)
+        # Loop over each series in training data.
+        for (_, series) in training_data:
+            series_length = len(series)
+            if series_length < 1:
+                continue
 
-        gradients = np.zeros_like(param_values)
-        # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
-        prob_own_noise = 0 # (t-1)/num_epochs
-        for j in range(len(param_values)):
-            print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
-            params_eps = param_values.copy()
-            params_eps[j] += gradient_width
-            param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
-            encoder_bound = encoder.assign_parameters(param_dict)
-            decoder_bound = decoder.assign_parameters(param_dict)
-            gradients[j] = (cost_function(
-                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1-prob_own_noise
-            ) - current_cost) / gradient_width
+            if model_type.lower() == 'qae':
+                for state in series:
+                    params = {p: state[i] for i, p in enumerate(input_params)}
+                    qc_state = embedder.assign_parameters(params)
+                    current_state = Statevector.from_instruction(qc_state)
+                    target_state = current_state
+                    def cost_state(pvals):
+                        param_dict = {param: value for param, value in zip(trainable_params, pvals)}
+                        encoder_bound = encoder.assign_parameters(param_dict)
+                        decoder_bound = decoder.assign_parameters(param_dict)
+                        predicted_state = current_state.evolve(encoder_bound).evolve(decoder_bound)
+                        return 1 - state_fidelity(current_state, predicted_state)
+                    epoch_gradients += adjoint_gradients_layerwise(
+                        cost_state, circuit_block, param_values, trainable_params, config['num_blocks'], num_qubits, target_state
+                    )
+                    epoch_cost += cost_state(param_values)
+                    count += 1
+            elif model_type.lower() == 'qte':
+                # For QTE, process transitions.
+                # Always use ground truth for the first time step.
+                params = {p: series[0][i] for i, p in enumerate(input_params)}
+                qc_initial = embedder.assign_parameters(params)
+                current_state = Statevector.from_instruction(qc_initial)
+                for i in range(series_length - 1):
+                    next_state = series[i+1]
+                    next_params = {p: next_state[j] for j, p in enumerate(input_params)}
+                    qc_next = embedder.assign_parameters(next_params)
+                    target_state = Statevector.from_instruction(qc_next)
+                    def cost_trans(pvals):
+                        param_dict = {param: value for param, value in zip(trainable_params, pvals)}
+                        encoder_bound = encoder.assign_parameters(param_dict)
+                        decoder_bound = decoder.assign_parameters(param_dict)
+                        predicted_state = current_state.evolve(encoder_bound).evolve(decoder_bound)
+                        return 1 - state_fidelity(target_state, predicted_state)
+                    epoch_gradients += adjoint_gradients_layerwise(
+                        cost_trans, circuit_block, param_values, trainable_params, config['num_blocks'], num_qubits, target_state
+                    )
+                    epoch_cost += cost_trans(param_values)
+                    count += 1
+                    # Teacher forcing update.
+                    if np.random.rand() < teacher_forcing_prob:
+                        current_state = target_state
+                    else:
+                        encoder_bound = encoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                        decoder_bound = decoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                        current_state = current_state.evolve(encoder_bound).evolve(decoder_bound)
+                else:
+                    raise Exception('Unknown model_type: ' + model_type)
+        if count > 0:
+            avg_gradients = epoch_gradients / count
+            avg_cost = epoch_cost / count
+        else:
+            avg_gradients = epoch_gradients
+            avg_cost = 0
+        cost_history.append(avg_cost)
+        print("    Avg cost:", avg_cost)
+        prev_params = param_values.copy()
+        param_values, moment1, moment2 = adam_update(param_values, avg_gradients, moment1, moment2, t, learning_rate)
+        print("    Mean param update:", np.mean(param_values - prev_params))
 
-        previous_param_values = param_values.copy()
-        param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
-        print('    Mean param update: ' + str(np.mean(param_values-previous_param_values)))
-
-    print('  calculating validation cost')
-    validation_cost = cost_function(
-        validation_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
-    )
-
+    print("  calculating validation cost")
+    val_cost = 0.0
+    transitions = 0
+    for (_, series) in validation_data:
+        series_length = len(series)
+        if series_length < 1:
+            continue
+        if model_type == 'qae':
+            for state in series:
+                params = {p: state[i] for i, p in enumerate(input_params)}
+                qc_state = embedder.assign_parameters(params)
+                current_state = Statevector.from_instruction(qc_state)
+                encoder_bound = encoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                decoder_bound = decoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                predicted_state = current_state.evolve(encoder_bound).evolve(decoder_bound)
+                val_cost += 1 - state_fidelity(current_state, predicted_state)
+                transitions += 1
+        else:
+            params = {p: series[0][i] for i, p in enumerate(input_params)}
+            qc_initial = embedder.assign_parameters(params)
+            current_state = Statevector.from_instruction(qc_initial)
+            for i in range(series_length - 1):
+                next_state = series[i+1]
+                next_params = {p: next_state[j] for j, p in enumerate(input_params)}
+                qc_next = embedder.assign_parameters(next_params)
+                target_state = Statevector.from_instruction(qc_next)
+                encoder_bound = encoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                decoder_bound = decoder.assign_parameters({p: v for p, v in zip(trainable_params, param_values)})
+                predicted_state = current_state.evolve(encoder_bound).evolve(decoder_bound)
+                val_cost += 1 - state_fidelity(target_state, predicted_state)
+                transitions += 1
+                if np.random.rand() < teacher_forcing_prob:
+                    current_state = target_state
+                else:
+                    current_state = predicted_state
+    validation_cost = val_cost / transitions
+    print('  Validation Cost:', validation_cost)
     param_dict = {param: value for param, value in zip(trainable_params, param_values)}
     trained_circuit.assign_parameters(param_dict)
     return trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
@@ -387,7 +486,7 @@ if __name__ == '__main__':
     import os
     import argparse
     from data_importers import import_generated
-    from analysis import differential_entropy, entanglement_entropy
+    from analysis import differential_entropy, entanglement_entropy, entropy
 
     parser = argparse.ArgumentParser(
         description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over the given data."
@@ -410,19 +509,13 @@ if __name__ == '__main__':
             'entanglement_gate': 'rzx',
             'embedding_gate': 'rz',
         }
-        for type in ['qae', 'qte']:
-            print('Training ' + type.upper() + ' for dataset ' + str(d_i))
-            if type == 'qae':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
-                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs)
-            elif type == 'qte':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
-                    train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
-            else:
-                raise Exception('Unknown type: ' + type)
+        for model_type in ['qae', 'qte']:
+            print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
+            trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
+                train_adam(training, validation, model_type, config, num_epochs=num_epochs)
 
             print('  Final training cost:', cost_history[-1])
-            print('  Validation cost: ', validation_cost)
+            print('  Validation cost:', validation_cost)
 
             # === Entropy computations ===
             dataset_bottleneck_entropies = []
@@ -489,9 +582,8 @@ if __name__ == '__main__':
             avg_entanglement_entropy = np.mean(entanglement_entropies)
             print(f'  Average encoder entanglement entropy: {avg_entanglement_entropy:.6f}')
 
-            # Save the trained circuit
             from qiskit import qpy
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{type}_trained_circuit.qpy')
             with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)
             print(f"Saved trained circuit to {fname}")
