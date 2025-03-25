@@ -365,7 +365,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
             param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
             encoder_bound = encoder.assign_parameters(param_dict)
             decoder_bound = decoder.assign_parameters(param_dict)
-            gradients[j] = -(cost_function(
+            gradients[j] = (cost_function(
                 training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1-prob_own_noise
             ) - current_cost) / gradient_width
 
