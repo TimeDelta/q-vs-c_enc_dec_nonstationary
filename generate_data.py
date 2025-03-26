@@ -41,11 +41,11 @@ if not os.path.exists(base_dir):
 
 num_features_per_state = 4 # num_qubits
 num_series_per_dataset = 20
-orig_num_blocks_per_series = 5
+num_blocks_per_series = 5
 num_states_per_block = 20
 num_time_steps_to_taper = num_states_per_block // 10
 num_datasets = 500
-required_length = orig_num_blocks_per_series * num_states_per_block
+required_length = num_blocks_per_series * num_states_per_block
 
 datasets = []
 for d in range(num_datasets):
@@ -56,14 +56,12 @@ for d in range(num_datasets):
 
     generator = GaussianSequenceGenerator(num_features_per_state, num_states_per_block)
     generated_sequences = []
-    num_blocks_per_series = orig_num_blocks_per_series
     orig_mean = np.random.uniform(-10, 10, size=(num_features_per_state,))
     upper_bounds = np.maximum(np.abs(orig_mean) / 2, 1)
     orig_stdev = np.random.uniform(1, upper_bounds)
+
     for i in range(num_series_per_dataset):
         print('  Generating series ' + str(i + 1))
-        num_blocks_per_series /= (1 + 1/num_series_per_dataset)
-        num_blocks_per_series = int(max(num_blocks_per_series, 1))
         series = []
         for b in range(num_blocks_per_series):
             # have to blend multiple series together to ensure non-stationarity
@@ -84,6 +82,8 @@ for d in range(num_datasets):
         generated_sequences.append(series)
         series_filename = os.path.join(dataset_dir, f'series_{i+1}.npy')
         np.save(series_filename, series)
+    num_blocks_per_series /= (1 + 1/num_datasets)
+    num_blocks_per_series = int(max(num_blocks_per_series, 1))
     datasets.append(generated_sequences)
 
 series_metrics = []
