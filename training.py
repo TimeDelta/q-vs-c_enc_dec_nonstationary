@@ -8,7 +8,7 @@ import re
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 
-def create_embedding_circuit(num_qubits):
+def create_embedding_circuit(num_qubits, embedding_gate):
     """
     Apply rotation gate to each qubit for embedding of classical data.
     Returns qc, input_params
@@ -119,7 +119,7 @@ def create_full_circuit(num_qubits, config):
         penalty_weight:          weight for the bottleneck penalty term.
     Returns full_circuit, encoder_circuit, decoder_circuit, input_params, trainable_params
     """
-    embedding_qc, input_params = create_embedding_circuit(num_qubits)
+    embedding_qc, input_params = create_embedding_circuit(num_qubits, config.get('embedding_gate', 'rz'))
 
     num_blocks = config.get('num_blocks', 1)
     ent_topology = config.get('entanglement_topology', 'full')
@@ -348,7 +348,6 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     num_blocks = int(config['num_blocks'])
     learning_rate = float(config['learning_rate'])
     penalty_weight = float(config.get('penalty_weight', 1.0))
-    embedding_gate = config.get('embedding_gate', 'rx')
 
     trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config)
 
