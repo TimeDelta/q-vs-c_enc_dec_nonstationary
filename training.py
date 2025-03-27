@@ -427,35 +427,32 @@ if __name__ == '__main__':
             # === Entropy computations ===
             dataset_bottleneck_entropies = []
             for (_, series) in validation:
-                series_entropies = []  # list to hold entropy values for each series in this dataset
-                for state_series in series:  # assume each "state_series" is a time series (list of states)
-                    time_step_entropies = []  # entropy at each time step in this series
-                    for state in state_series:
-                        params_dict = {p: state[i] for i, p in enumerate(input_params)}
-                        qc_init = embedder.assign_parameters(params_dict)
-                        initial_dm = DensityMatrix.from_instruction(qc_init)
-                        encoder_dm = initial_dm.evolve(encoder)
+                series_entropies = []
+                for state in series:
+                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
+                    qc_init = embedder.assign_parameters(params_dict)
+                    initial_dm = DensityMatrix.from_instruction(qc_init)
+                    encoder_dm = initial_dm.evolve(encoder)
 
-                        # Compute marginals for each qubit (here using probability of |0⟩ from the reduced density matrix)
-                        marginals = []
-                        for q in range(encoder_dm.num_qubits):
-                            trace_indices = list(range(encoder_dm.num_qubits))
-                            trace_indices.remove(q)
-                            reduced_dm = partial_trace(encoder_dm, trace_indices)
-                            marginals.append((q, np.real(reduced_dm.data[0, 0])))
+                    # Compute marginals for each qubit (here using probability of |0⟩ from the reduced density matrix)
+                    marginals = []
+                    for q in range(encoder_dm.num_qubits):
+                        trace_indices = list(range(encoder_dm.num_qubits))
+                        trace_indices.remove(q)
+                        reduced_dm = partial_trace(encoder_dm, trace_indices)
+                        marginals.append((q, np.real(reduced_dm.data[0, 0])))
 
-                        # Sort qubits by the probability of |0⟩.
-                        sorted_marginals = sorted(marginals, key=lambda x: x[1])
-                        num_trash = encoder_dm.num_qubits - bottleneck_size
-                        # Keep the qubits with higher |0⟩ probability (i.e. those not in the trash).
-                        bottleneck_indices = sorted([q for q, _ in sorted_marginals[num_trash:]])
+                    # Sort qubits by the probability of |0⟩.
+                    sorted_marginals = sorted(marginals, key=lambda x: x[1])
+                    num_trash = encoder_dm.num_qubits - bottleneck_size
+                    # Keep the qubits with higher |0⟩ probability (i.e. those not in the trash).
+                    bottleneck_indices = sorted([q for q, _ in sorted_marginals[num_trash:]])
 
-                        keep_set = set(bottleneck_indices)
-                        trace_out = [i for i in range(encoder_dm.num_qubits) if i not in keep_set]
-                        bottleneck_dm = partial_trace(encoder_dm, trace_out)
+                    keep_set = set(bottleneck_indices)
+                    trace_out = [i for i in range(encoder_dm.num_qubits) if i not in keep_set]
+                    bottleneck_dm = partial_trace(encoder_dm, trace_out)
 
-                        time_step_entropies.append(entropy(bottleneck_dm))
-                    series_entropies.append(np.array(time_step_entropies))
+                    series_entropies.append(entropy(bottleneck_dm))
                 dataset_bottleneck_entropies.append(np.array(series_entropies))
 
             dataset_bottleneck_entropies = np.array(dataset_bottleneck_entropies)
