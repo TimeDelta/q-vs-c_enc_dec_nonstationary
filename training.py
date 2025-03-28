@@ -8,25 +8,25 @@ import re
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 
-def create_embedding_circuit(num_qubits, embedding_gate):
+def create_embedding_circuit(num_qubits, embedding_gate, include_time_step=False):
     """
     Apply rotation gate to each qubit for embedding of classical data.
     Returns qc, input_params
     """
     input_params = []
+    num_qubits = num_qubits+1 if include_time_step else num_qubits
     qc = QuantumCircuit(num_qubits)
     for i in range(num_qubits):
+        if include_time_step and i == num_qubits-1:
+            p = Parameter('t')
+        else:
+            p = Parameter('Embedding Rθ ' + str(i))
+        input_params.append(p)
         if embedding_gate.lower() == 'rx':
-            p = Parameter('Embedding Rx θ ' + str(i))
-            input_params.append(p)
             qc.rx(p, i)
         elif embedding_gate.lower() == 'ry':
-            p = Parameter('Embedding Ry θ ' + str(i))
-            input_params.append(p)
             qc.ry(p, i)
         elif embedding_gate.lower() == 'rz':
-            p = Parameter('Embedding Rz θ ' + str(i))
-            input_params.append(p)
             qc.rz(p, i)
         else:
             raise Exception("Invalid embedding gate: " + embedding_gate)
@@ -75,7 +75,7 @@ def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglemen
 
 def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
     """
-    Build a parameterized QTE transformation (encoder) using multiple layers.
+    Build a parameterized encoder using multiple layers.
 
     For each block, we perform:
       - A layer of single-qubit rotations (we use Ry for simplicity).
@@ -111,7 +111,7 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     params.extend(decoder.parameters)
     return encoder.compose(decoder), encoder, decoder, params
 
-def create_full_circuit(num_qubits, config):
+def create_full_circuit(num_qubits, config, include_time_step=False):
     """
     config is dict w/ additional hyperparameters:
         entanglement_topology:   options are ['full', 'linear', 'circular']
@@ -119,7 +119,7 @@ def create_full_circuit(num_qubits, config):
         penalty_weight:          weight for the bottleneck penalty term.
     Returns full_circuit, encoder_circuit, decoder_circuit, input_params, trainable_params
     """
-    embedding_qc, input_params = create_embedding_circuit(num_qubits, config.get('embedding_gate', 'rz'))
+    embedding_qc, input_params = create_embedding_circuit(num_qubits, config.get('embedding_gate', 'rz'), include_time_step)
 
     num_blocks = config.get('num_blocks', 1)
     ent_topology = config.get('entanglement_topology', 'full')
@@ -225,6 +225,18 @@ def dm_to_statevector(dm):
     vec = vec / np.linalg.norm(vec)
     return Statevector(vec)
 
+def without_t_gate(qc: QuantumCircuit) -> QuantumCircuit:
+    """
+    Copy without the 't' parameter
+    """
+    new_qc = QuantumCircuit(qc.num_qubits)
+    for instr in qc.data:
+        # skip any step that depends on t
+        if any(str(param) == 't' for param in instr.operation.params):
+            continue
+        new_qc.append(instr.operation, instr.qubits, instr.clbits)
+    return new_qc
+
 def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
@@ -236,20 +248,24 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     for (_, series) in data:
         series_cost = 0.0
         previous_error_vector = None
-        for state in series:
-            params = {p: state[i] for i, p in enumerate(input_params)}
-            ideal_qc = embedder.assign_parameters(params)
+        for t, state in enumerate(series):
+            params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
+            params['t'] = t/len(series)
+            input_qc = embedder.assign_parameters(params)
+            input_state = Statevector.from_instruction(input_qc)
+            input_array = input_state.data
+            params.pop('t')
+            ideal_qc = without_t_gate(embedder).assign_parameters(params)
             ideal_state = Statevector.from_instruction(ideal_qc)
-            ideal_array = ideal_state.data
 
             if previous_error_vector is not None and np.random.rand() < (1-no_noise_prob):
                 sign = 1 if np.random.rand() < 0.5 else -1
-                perturbed_array = ideal_array + sign * previous_error_vector
+                perturbed_array = input_array + sign * previous_error_vector
                 # renormalize the perturbed vector to ensure valid quantum state
                 perturbed_array = perturbed_array / np.linalg.norm(perturbed_array)
                 input_state = Statevector(perturbed_array)
             else:
-                input_state = ideal_state
+                input_state = input_state
 
             # pass the (possibly perturbed) input state through the encoder and decoder
             bottleneck_state = input_state.evolve(encoder)
@@ -257,9 +273,9 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             reconstructed_state = bottleneck_state.evolve(decoder)
 
-            series_cost += 1 - state_fidelity(input_state, reconstructed_state)
+            series_cost += 1 - state_fidelity(ideal_state, reconstructed_state)
 
-            previous_error_vector = input_state.data - dm_to_statevector(reconstructed_state).data
+            previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
 
         total_cost += series_cost / len(series) # avg cost per state (always same num series)
     return total_cost
@@ -316,7 +332,7 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     return new_params, moment1, moment2
 
 # consider DARBO (https://arxiv.org/pdf/2303.14877) in the future due to high complexity and high nonstationarity of loss landscape
-def train_adam(training_data, validation_data, cost_function, config, num_epochs=100):
+def train_adam(training_data, validation_data, cost_function, config, num_epochs=100, include_time_step=False):
     """
     Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
     the bottleneck via the cost function. This is done in order to balance efficiency w/ added
@@ -349,7 +365,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     learning_rate = float(config['learning_rate'])
     penalty_weight = float(config.get('penalty_weight', 1.0))
 
-    trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config)
+    trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config, include_time_step)
 
     print('  created untrained circuit')
 
@@ -428,7 +444,7 @@ if __name__ == '__main__':
             print('Training ' + type.upper() + ' for dataset ' + str(d_i))
             if type == 'qae':
                 trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
-                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs)
+                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs, include_time_step=True)
             elif type == 'qte':
                 trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
                     train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
