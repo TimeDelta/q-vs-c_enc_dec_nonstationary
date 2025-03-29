@@ -434,10 +434,10 @@ if __name__ == '__main__':
         config = {
             'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
-            'learning_rate': .1,
+            'learning_rate': 0.07988347663039558,
             'penalty_weight': .75,
             'entanglement_topology': 'full',
-            'entanglement_gate': 'rzx',
+            'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
         for type in ['qae', 'qte']:
