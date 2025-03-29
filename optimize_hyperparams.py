@@ -25,6 +25,7 @@ def get_loss(data, type, config, allocated_epochs):
             train_adam(data[0], data[1], qte_cost_function, config, allocated_epochs)
     else:
         raise Exception('Unknown type: ' + type)
+    print(' ', validation_cost)
     if allocated_epochs >= 10:
         overfit_cost = abs(validation_cost - cost_history[-1]) / max(validation_cost, cost_history[-1])
         if overfit_cost > 1./3.: # throw away any configs that lead to obvious overfitting
@@ -66,7 +67,7 @@ def hyperband_search(data, type, max_training_epochs=100, reduction_factor=3):
             num_configs_this_round = int(np.floor(initial_num_configs * reduction_factor ** (-round_index)))
             epochs_this_round = int(initial_allocated_epochs * reduction_factor ** (round_index))
 
-            print('Round', round_index, '-', num_configs_this_round, 'configs for', epochs_this_round, 'this round')
+            print('Round', round_index, '-', num_configs_this_round, 'configs for', epochs_this_round, ' epochs this round')
             round_losses = [get_loss(data, type, config, epochs_this_round) for config in configs]
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
 
