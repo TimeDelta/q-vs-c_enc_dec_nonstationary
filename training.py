@@ -359,7 +359,11 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
-        print('    Mean param update: ' + str(np.mean(param_values-previous_param_values)))
+        print(f'    Min param update: {np.min(param_values-previous_param_values)}')
+        print(f'    Mean param update: {np.mean(param_values-previous_param_values)}')
+        print(f'    Std dev param update: {np.std(param_values-previous_param_values)}')
+        print(f'    Median param update: {np.median(param_values-previous_param_values)}')
+        print(f'    Max param update: {np.max(param_values-previous_param_values)}')
 
     print('  calculating validation costs')
     validation_costs = []
