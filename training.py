@@ -112,7 +112,7 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     for layer in range(num_blocks):
         add_entanglement_topology(decoder, num_qubits, entanglement_topology, entanglement_gate)
         # add set of single qubit rotations
-        for i in range(0, num_qubits-1): # don't use time step in decoder
+        for i in range(0, num_qubits):
             p = Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i))
             decoder.ry(p, i)
     params.extend(decoder.parameters)
