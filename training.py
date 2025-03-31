@@ -134,9 +134,30 @@ def create_full_circuit(num_qubits, config, include_time_step=False):
     ent_gate_type = config.get('entanglement_gate', 'cx')
     bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
     qte_circuit, encoder, decoder, trainable_params = create_qed_circuit(
-        bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type
+        bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type, include_time_step
     )
     return embedding_qc.compose(qte_circuit), embedding_qc, encoder, decoder, input_params, trainable_params
+
+def avg_per_qubit_fidelity(ideal_state, reconstructed_state):
+    """
+    1 - (average fidelity over individual qubits)
+    """
+    if not isinstance(ideal_state, DensityMatrix):
+        ideal_state = DensityMatrix(ideal_state)
+    if not isinstance(reconstructed_state, DensityMatrix):
+        reconstructed_state = DensityMatrix(reconstructed_state)
+
+    num_qubits = int(np.log2(ideal_state.dim))
+
+    fidelities = []
+    for i in range(num_qubits):
+        trace_out = [j for j in range(num_qubits) if j != i]
+        reduced_ideal = partial_trace(ideal_state, trace_out)
+        reduced_recon = partial_trace(reconstructed_state, trace_out)
+        fidel = state_fidelity(reduced_ideal, reduced_recon)
+        fidelities.append(fidel)
+
+    return 1 - np.mean(fidelities)
 
 def trash_qubit_penalty(state, bottleneck_size):
     """
@@ -210,7 +231,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             reconstructed_state = bottleneck_state.evolve(decoder)
 
             # global fidelity is fine here because we're only using 4 qubits but this should change to a local fn in future
-            series_cost += 1 - state_fidelity(ideal_state, reconstructed_state)
+            series_cost += 1 - avg_per_qubit_fidelity(ideal_state, reconstructed_state)
 
             previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
 
@@ -248,7 +269,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             predicted_state = bottleneck_state.evolve(decoder)
 
-            series_cost += 1 - state_fidelity(next_state, predicted_state)
+            series_cost += 1 - avg_per_qubit_fidelity(next_state, predicted_state)
 
             if np.random.rand() < teacher_forcing_prob:
                 current_state = next_state
@@ -287,11 +308,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     Returns trained_circuit, cost_history, validation_costs, embedder, encoder, input_params
     """
     num_qubits = len(training_data[0][1][0])
-    num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
-    param_values = np.random.uniform(0., np.pi, size=num_params)
     cost_history = []
-    moment1 = np.zeros_like(param_values)
-    moment2 = np.zeros_like(param_values)
     gradient_width = 1e-4
 
     bottleneck_size = int(config['bottleneck_size'])
@@ -300,6 +317,9 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     penalty_weight = float(config.get('penalty_weight', 1.0))
 
     trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config, include_time_step)
+    param_values = np.random.uniform(0., np.pi, size=len(trainable_params))
+    moment1 = np.zeros_like(param_values)
+    moment2 = np.zeros_like(param_values)
 
     print('  created untrained circuit')
 
