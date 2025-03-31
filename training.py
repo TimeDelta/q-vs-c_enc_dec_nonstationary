@@ -384,16 +384,24 @@ if __name__ == '__main__':
         for model_type in ['qae', 'qte']:
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             if model_type == 'qae':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
+                trained_circuit, cost_history, validation_costs, embedder, encoder, input_params = \
                     train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs, include_time_step=True)
             elif model_type == 'qte':
-                trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
+                trained_circuit, cost_history, validation_costs, embedder, encoder, input_params = \
                     train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
             else:
                 raise Exception('Unknown model_type: ' + model_type)
 
-            print('  Final training cost:', cost_history[-1])
-            print('  Validation cost per series:', validation_cost)
+            print('  Training cost history:', cost_history)
+            cost_history = np.array(cost_history)
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_cost_history.npy')
+            np.save(fname, cost_history)
+            print('  Saved cost history')
+            print('  Validation cost per series:', validation_costs)
+            validation_costs = np.array(validation_costs)
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_validation_costs.npy')
+            np.save(fname, validation_costs)
+            print('  Saved validation cost per series')
 
             # === Entropy computations ===
             dataset_enc_entangle_entropies = []
@@ -424,17 +432,15 @@ if __name__ == '__main__':
                 print('    Shape (datasets, series, time steps):', dataset_metrics.shape)
                 np.save(fname, dataset_metrics)
                 print('    Saved', fname)
-                avg_per_series = np.mean(dataset_metrics, axis=2)
+                avg_per_series = np.mean(dataset_metrics, axis=0)
                 print('    Average per series:', avg_per_series)
-                avg_per_dataset = np.mean(avg_entropy_per_series, axis=1)
+                avg_per_dataset = np.mean(avg_per_series, axis=0)
                 print('    Average per dataset:', avg_per_dataset)
                 overall_avg = np.mean(avg_per_dataset)
                 print('    Overall average:', overall_avg)
 
             dataset_enc_entangle_entropies = np.array(dataset_enc_entangle_entropies)
             save_and_print_averages(dataset_enc_entangle_entropies, 'Bottleneck entanglement entropies')
-
-            # TODO: add saving of training loss history and loss over each series in validation set
 
             # Save the trained circuit
             fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
