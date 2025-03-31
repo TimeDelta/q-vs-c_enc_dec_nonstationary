@@ -305,8 +305,6 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
     previous_param_values = param_values.copy()
     for t in range(1, num_epochs + 1):
-        if t > 1:
-            continue
         print('  Epoch ' + str(t))
         param_dict = {param: value for param, value in zip(trainable_params, param_values)}
         encoder_params = {k: v for k,v in param_dict.items() if k in encoder.parameters}
@@ -327,8 +325,6 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
         prob_own_noise = 0 # (t-1)/num_epochs
         for j in range(len(param_values)):
-            if j > 0:
-                continue
             print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
