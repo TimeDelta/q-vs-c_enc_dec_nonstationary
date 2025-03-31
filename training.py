@@ -73,7 +73,7 @@ def add_entanglement_topology(qc, num_qubits, entanglement_topology, entanglemen
         else:
             raise Exception("Unknown entanglement gate: " + entanglement_gate)
 
-def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate):
+def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_topology, entanglement_gate, include_time_step=False):
     """
     Build a parameterized encoder using multiple layers.
 
@@ -88,6 +88,8 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     The decoder is taken as the inverse of the entire encoder.
     Returns qte_circuit, encoder, decoder_circuit, all_parameters
     """
+    if include_time_step:
+        num_qubits += 1
     encoder = QuantumCircuit(num_qubits)
     params = []
     for layer in range(num_blocks):
@@ -103,13 +105,18 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     # compressing and reconstructing the data. Instead, in this design, the circuit
     # structure (and subsequent training loss) is expected to force the encoder to
     # focus its information into 'bottleneck_size' qubits.
-    decoder = encoder.inverse()
-    decoder_params = {
-        p: Parameter(p.name.replace("Encoder", "Decoder")) for p in decoder.parameters
-    }
-    decoder.assign_parameters(decoder_params)
+    if include_time_step:
+        num_qubits -= 1
+    decoder = QuantumCircuit(num_qubits)
+    for layer in range(num_blocks):
+        add_entanglement_topology(decoder, num_qubits, entanglement_topology, entanglement_gate)
+        # add set of single qubit rotations
+        for i in range(0, num_qubits-1): # don't use time step in decoder
+            p = Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i))
+            decoder.ry(p, i)
     params.extend(decoder.parameters)
-    return encoder.compose(decoder), encoder, decoder, params
+    full_circuit = encoder.compose(decoder, qubits=range(num_qubits))
+    return full_circuit, encoder, decoder, params
 
 def create_full_circuit(num_qubits, config, include_time_step=False):
     """
@@ -125,7 +132,6 @@ def create_full_circuit(num_qubits, config, include_time_step=False):
     ent_topology = config.get('entanglement_topology', 'full')
     ent_gate_type = config.get('entanglement_gate', 'cx')
     bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
-    # when adding the encoder's inverse
     qte_circuit, encoder, decoder, trainable_params = create_qed_circuit(
         bottleneck_size, num_qubits, num_blocks, ent_topology, ent_gate_type
     )
@@ -229,12 +235,18 @@ def without_t_gate(qc: QuantumCircuit) -> QuantumCircuit:
     """
     Copy without the 't' parameter
     """
-    new_qc = QuantumCircuit(qc.num_qubits)
+    new_qc = QuantumCircuit(qc.num_qubits - 1)
+    qubit_map = {old: new for old, new in zip(qc.qubits[:qc.num_qubits - 1], new_qc.qubits)}
     for instr in qc.data:
         # skip any step that depends on t
         if any(str(param) == 't' for param in instr.operation.params):
             continue
-        new_qc.append(instr.operation, instr.qubits, instr.clbits)
+        try:
+            # only seems to happen intermittently
+            new_qubits = [qubit_map[q] for q in instr.qubits]
+        except KeyError:
+            continue # instruction involves a qubit that was dropped
+        new_qc.append(instr.operation, new_qubits, instr.clbits)
     return new_qc
 
 def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
@@ -250,11 +262,12 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         previous_error_vector = None
         for t, state in enumerate(series):
             params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
-            params['t'] = t/len(series)
+            t_param = input_params[-1]
+            params[t_param] = t/len(series)
             input_qc = embedder.assign_parameters(params)
             input_state = Statevector.from_instruction(input_qc)
             input_array = input_state.data
-            params.pop('t')
+            params.pop(t_param)
             ideal_qc = without_t_gate(embedder).assign_parameters(params)
             ideal_state = Statevector.from_instruction(ideal_qc)
 
@@ -269,10 +282,12 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             # pass the (possibly perturbed) input state through the encoder and decoder
             bottleneck_state = input_state.evolve(encoder)
+            bottleneck_state = partial_trace(bottleneck_state, [len(encoder.qubits)-1])
             bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
 
             reconstructed_state = bottleneck_state.evolve(decoder)
 
+            # global fidelity is fine here because we're only using 4 qubits but this should change to a local fn in future
             series_cost += 1 - state_fidelity(ideal_state, reconstructed_state)
 
             previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
@@ -350,7 +365,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
             penalty_weight:          weight for the bottleneck penalty term
       - num_epochs: number of training iterations
 
-    Returns trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
+    Returns trained_circuit, cost_history, validation_costs, embedder, encoder, input_params
     """
     num_qubits = len(training_data[0][1][0])
     num_params = 4 * num_qubits * config['num_blocks'] # 2 layers per block, num_blocks is per encoder & decoder
@@ -371,10 +386,14 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
     previous_param_values = param_values.copy()
     for t in range(1, num_epochs + 1):
+        if t > 1:
+            continue
         print('  Epoch ' + str(t))
         param_dict = {param: value for param, value in zip(trainable_params, param_values)}
-        encoder_bound = encoder.assign_parameters(param_dict)
-        decoder_bound = decoder.assign_parameters(param_dict)
+        encoder_params = {k: v for k,v in param_dict.items() if k in encoder.parameters}
+        decoder_params = {k: v for k,v in param_dict.items() if k in decoder.parameters}
+        encoder_bound = encoder.assign_parameters(encoder_params)
+        decoder_bound = decoder.assign_parameters(decoder_params)
 
         print('    calculating initial cost')
         # avoid also calculating the loss for (current param - epsilon) and use single
@@ -389,12 +408,16 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
         prob_own_noise = 0 # (t-1)/num_epochs
         for j in range(len(param_values)):
+            if j > 0:
+                continue
             print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
             param_dict = {param: value for param, value in zip(trainable_params, params_eps)}
-            encoder_bound = encoder.assign_parameters(param_dict)
-            decoder_bound = decoder.assign_parameters(param_dict)
+            encoder_params = {k: v for k,v in param_dict.items() if k in encoder.parameters}
+            decoder_params = {k: v for k,v in param_dict.items() if k in decoder.parameters}
+            encoder_bound = encoder.assign_parameters(encoder_params)
+            decoder_bound = decoder.assign_parameters(decoder_params)
             gradients[j] = (cost_function(
                 training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1-prob_own_noise
             ) - current_cost) / gradient_width
@@ -403,14 +426,17 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
         print('    Mean param update: ' + str(np.mean(param_values-previous_param_values)))
 
-    print('  calculating validation cost')
-    validation_cost = cost_function(
-        validation_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
-    )
+    print('  calculating validation costs')
+    validation_costs = []
+    for (i, series) in validation_data:
+        cost = cost_function(
+            [(i, series)], embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+        )
+        validation_costs.append((i, cost))
 
     param_dict = {param: value for param, value in zip(trainable_params, param_values)}
     trained_circuit.assign_parameters(param_dict)
-    return trained_circuit, cost_history, validation_cost, embedder, encoder, input_params
+    return trained_circuit, cost_history, validation_costs, embedder, encoder_bound, input_params
 
 if __name__ == '__main__':
     from qiskit import qpy
@@ -440,84 +466,62 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for type in ['qae', 'qte']:
-            print('Training ' + type.upper() + ' for dataset ' + str(d_i))
-            if type == 'qae':
+        for model_type in ['qae', 'qte']:
+            print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
+            if model_type == 'qae':
                 trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
                     train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs, include_time_step=True)
-            elif type == 'qte':
+            elif model_type == 'qte':
                 trained_circuit, cost_history, validation_cost, embedder, encoder, input_params = \
                     train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
             else:
-                raise Exception('Unknown type: ' + type)
+                raise Exception('Unknown model_type: ' + model_type)
 
             print('  Final training cost:', cost_history[-1])
-            print('  Validation cost: ', validation_cost)
+            print('  Validation cost per series:', validation_cost)
 
             # === Entropy computations ===
-            dataset_bottleneck_entropies = []
+            dataset_enc_entangle_entropies = []
             for (_, series) in validation:
-                series_entropies = []
-                for state in series:
-                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
+                enc_entangle_entropies = []
+                for t, state in enumerate(series):
+                    if model_type == 'qae':
+                        params_dict = {p: state[i] for i, p in enumerate(input_params[:-1])}
+                        t_param = input_params[-1]
+                        params_dict[t_param] = t/len(series)
+                    else:
+                        params_dict = {p: state[i] for i, p in enumerate(input_params)}
                     qc_init = embedder.assign_parameters(params_dict)
                     initial_dm = DensityMatrix.from_instruction(qc_init)
                     encoder_dm = initial_dm.evolve(encoder)
 
-                    # Compute marginals for each qubit (here using probability of |0⟩ from the reduced density matrix)
-                    marginals = []
-                    for q in range(encoder_dm.num_qubits):
-                        trace_indices = list(range(encoder_dm.num_qubits))
-                        trace_indices.remove(q)
-                        reduced_dm = partial_trace(encoder_dm, trace_indices)
-                        marginals.append((q, np.real(reduced_dm.data[0, 0])))
+                    if model_type == 'qae': # remove the time step qubit
+                        encoder_dm = partial_trace(encoder_dm, [num_qubits-1])
+                    bottleneck_dm = force_trash_qubits(encoder_dm, bottleneck_size)
 
-                    # Sort qubits by the probability of |0⟩.
-                    sorted_marginals = sorted(marginals, key=lambda x: x[1])
-                    num_trash = encoder_dm.num_qubits - bottleneck_size
-                    # Keep the qubits with higher |0⟩ probability (i.e. those not in the trash).
-                    bottleneck_indices = sorted([q for q, _ in sorted_marginals[num_trash:]])
+                    enc_entangle_entropies.append(entanglement_entropy(bottleneck_dm))
+                dataset_enc_entangle_entropies.append(np.array(enc_entangle_entropies))
 
-                    keep_set = set(bottleneck_indices)
-                    trace_out = [i for i in range(encoder_dm.num_qubits) if i not in keep_set]
-                    bottleneck_dm = partial_trace(encoder_dm, trace_out)
+            def save_and_print_averages(dataset_metrics, metric_desc):
+                print(f'  {metric_desc}:')
+                metric_desc = metric_desc.lower().replace_all(' ', '_')
+                fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_{metric_desc}.npy')
+                print('    Shape (datasets, series, time steps):', dataset_metrics.shape)
+                np.save(fname, dataset_metrics)
+                print('    Saved', fname)
+                avg_per_series = np.mean(dataset_metrics, axis=2)
+                print('    Average per series:', avg_per_series)
+                avg_per_dataset = np.mean(avg_entropy_per_series, axis=1)
+                print('    Average per dataset:', avg_per_dataset)
+                overall_avg = np.mean(avg_per_dataset)
+                print('    Overall average:', overall_avg)
 
-                    series_entropies.append(entropy(bottleneck_dm))
-                dataset_bottleneck_entropies.append(np.array(series_entropies))
+            dataset_enc_entangle_entropies = np.array(dataset_enc_entangle_entropies)
+            save_and_print_averages(dataset_enc_entangle_entropies, 'Bottleneck entanglement entropies')
 
-            dataset_bottleneck_entropies = np.array(dataset_bottleneck_entropies)
-            print('  Bottleneck VN entropy shape (datasets, series, time steps):', dataset_bottleneck_entropies.shape)
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_vn_entropies.npy')
-            np.save(fname, dataset_bottleneck_entropies)
-            print(f'  Saved bottleneck VN entropy calculations to {fname}')
-            avg_entropy_per_series = np.mean(dataset_bottleneck_entropies, axis=2)
-            print('Average bottleneck entropy per series:', avg_entropy_per_series)
-            avg_entropy_per_dataset = np.mean(avg_entropy_per_series, axis=1)
-            print('Average bottleneck entropy per dataset:', avg_entropy_per_dataset)
-            overall_avg_entropy = np.mean(avg_entropy_per_dataset)
-            print(f'Overall average bottleneck entropy: {overall_avg_entropy}')
-
-            # encoder entanglement entropy
-            entanglement_entropies = []
-            subsystem = list(range(bottleneck_size))
-            for series in validation:
-                series_entanglement_entropy = []
-                for state in series:
-                    params_dict = {p: state[i] for i, p in enumerate(input_params)}
-                    qc_init = embedder.assign_parameters(params_dict)
-                    initial_state = Statevector.from_instruction(qc_init)
-                    encoder_state = initial_state.evolve(encoder)
-                    ent_entropy = entanglement_entropy(encoder_state, subsystem)
-                    series_entanglement_entropy.append(ent_entropy)
-                entanglement_entropies.append(series_entanglement_entropy)
-            entanglement_entropies = np.array(entanglement_entropies)
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_encoder_entanglement_entropy.npy')
-            np.save(fname, entanglement_entropies)
-            avg_entanglement_entropy = np.mean(entanglement_entropies)
-            print(f'  Average encoder entanglement entropy: {avg_entanglement_entropy:.6f}')
+            # TODO: add saving of training loss history and loss over each series in validation set
 
             # Save the trained circuit
-            from qiskit import qpy
             fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
             with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)

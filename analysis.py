@@ -63,10 +63,13 @@ def joint_differential_entropy(data):
     joint_entropy = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] / bin_volumes[nonzero]))
     return joint_entropy
 
-def entanglement_entropy(state, subsystem):
-    total_qubits = state.num_qubits
-    trace_out = [i for i in range(total_qubits) if i not in subsystem]
-    reduced_state = partial_trace(state, trace_out)
+def entanglement_entropy(state, subsystem=None):
+    if subsystem:
+        total_qubits = state.num_qubits
+        trace_out = [i for i in range(total_qubits) if i not in subsystem]
+        reduced_state = partial_trace(state, trace_out)
+    else:
+        reduced_state = state
     return entropy(reduced_state, base=2)
 
 # TODO: better method for deciding number of symbols
