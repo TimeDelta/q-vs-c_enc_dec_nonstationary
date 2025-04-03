@@ -3,6 +3,48 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector, partial_trace, DensityMatrix
 
+def soft_reset_trash_qubits(bottleneck_state, bottleneck_size, reset_strength=0.5):
+    """
+    Push the trash qubits in the bottleneck_state more towards |0>
+
+    For each trash qubit (determined by lowest marginal p0),
+    the density matrix is updated as:
+        ρ_new = (1 - reset_strength) * ρ + reset_strength * (P0 ρ P0)
+    where P0 = |0><0| on the appropriate qubit.
+    """
+    marginals = []
+    for q in range(bottleneck_state.num_qubits):
+        trace_indices = list(range(bottleneck_state.num_qubits))
+        trace_indices.remove(q)
+        dm = partial_trace(bottleneck_state, trace_indices)
+        p0 = np.real(dm.data[0, 0])
+        marginals.append((q, p0))
+
+    sorted_marginals = sorted(marginals, key=lambda x: x[1])
+    num_trash = bottleneck_state.num_qubits - bottleneck_size
+    trash_qubit_indices = [q for (q, p0) in sorted_marginals[:num_trash]]
+
+    dm_full = DensityMatrix(bottleneck_state)
+
+    P0 = np.array([[1, 0],
+                   [0, 0]], dtype=complex)
+    I = np.eye(2, dtype=complex)
+
+    for q in trash_qubit_indices:
+        ops = []
+        for i in range(bottleneck_state.num_qubits):
+            if i == (bottleneck_state.num_qubits - 1 - q):
+                ops.append(P0)
+            else:
+                ops.append(I)
+        proj = reduce(np.kron, ops)
+        hard_reset_state = proj @ dm_full.data @ proj.conj().T
+        new_data = (1 - reset_strength) * dm_full.data + reset_strength * hard_reset_state
+        dm_full = DensityMatrix(new_data)
+        dm_full = dm_full / dm_full.trace()
+
+    return dm_full
+
 def force_trash_qubits(bottleneck_state, bottleneck_size):
     """
     Force the trash qubits in the bottleneck_state to |0> using a density matrix projection.
