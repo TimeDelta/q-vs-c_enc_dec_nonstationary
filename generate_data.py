@@ -2,6 +2,7 @@ import math
 import numpy as np
 import os
 import torch
+from fbm import fbm
 
 from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
 
@@ -27,13 +28,24 @@ def blend_with_new_block(existing_series, new_block, taper_length):
 
     return np.concatenate((existing_series[:-taper_length], existing_taper, new_taper, new_block[taper_length:]), axis=0)
 
-class GaussianSequenceGenerator:
+class FractionalGaussianSequenceGenerator:
+    """
+    Generates a time series where each feature is produced by fractional Gaussian noise with a specified Hurst exponent.
+    """
     def __init__(self, num_features, num_states):
         self.num_features = num_features
         self.num_states = num_states
 
-    def forward(self, mean, stdev):
-        return np.random.normal(loc=mean, scale=stdev, size=(self.num_states, self.num_features)).astype(np.float32)
+    def forward(self, mean, stdev, hurst_target):
+        # generates one-dimensional fractional Brownian motion
+        series = []
+        for f in range(self.num_features):
+            # fbm() returns an array of length n+1: subtract first value so series starts at 0
+            FBM = fbm(n=self.num_states-1, hurst=hurst_target, length=1, method='daviesharte')
+            FBM = FBM - FBM[0]
+            # scale and shift the series by stdev and mean for feature f
+            series.append(mean[f] + stdev[f] * FBM)
+        return np.stack(series, axis=-1).astype(np.float32)
 
 base_dir = 'generated_datasets'
 if not os.path.exists(base_dir):
@@ -46,28 +58,34 @@ num_states_per_block = 20
 num_time_steps_to_taper = num_states_per_block // 10
 num_datasets = 500
 required_length = num_blocks_per_series * num_states_per_block
+dset_hurst_min = .9
+dset_hurst_max = 1
 
 datasets = []
+generator = FractionalGaussianSequenceGenerator(num_features_per_state, num_states_per_block)
 for d in range(num_datasets):
     print('Generating dataset ' + str(d + 1))
     dataset_dir = os.path.join(base_dir, f'dataset_{d+1}')
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
 
-    generator = GaussianSequenceGenerator(num_features_per_state, num_states_per_block)
     generated_sequences = []
     orig_mean = np.random.uniform(-10, 10, size=(num_features_per_state,))
     upper_bounds = np.maximum(np.abs(orig_mean) / 2, 1)
     orig_stdev = np.random.uniform(1, upper_bounds)
+    dset_hurst_min -= (1/num_datasets) * dset_hurst_min
+    dset_hurst_max -= (1/num_datasets) * dset_hurst_max
 
     for i in range(num_series_per_dataset):
+        hurst_target = np.random.uniform(dset_hurst_min, dset_hurst_max)
         print('  Generating series ' + str(i + 1))
         series = []
         for b in range(num_blocks_per_series):
             # have to blend multiple series together to ensure non-stationarity
-            mean = orig_mean * (num_blocks_per_series-b+1)/num_blocks_per_series
-            stdev = orig_stdev * (num_blocks_per_series-b+1)/num_blocks_per_series
-            new_block = generator.forward(mean, stdev)
+            percentage = math.sin((num_blocks_per_series - b + 1) / num_blocks_per_series * math.pi - math.pi/2)
+            mean = orig_mean * percentage * np.linspace(.5, 1, num_features_per_state)
+            stdev = orig_stdev * percentage * np.linspace(.5, 1, num_features_per_state)
+            new_block = generator.forward(mean, stdev, hurst_target)
             if len(series) > 0:
                 series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
             else:
