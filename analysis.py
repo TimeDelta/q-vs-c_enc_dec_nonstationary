@@ -63,14 +63,28 @@ def joint_differential_entropy(data):
     joint_entropy = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] / bin_volumes[nonzero]))
     return joint_entropy
 
-def entanglement_entropy(state, subsystem=None):
-    if subsystem:
-        total_qubits = state.num_qubits
-        trace_out = [i for i in range(total_qubits) if i not in subsystem]
+def von_neumann_entropy(dm, log_base=2) -> float:
+    dm_eigenvalues = np.linalg.eigvalsh(dm.data)
+    dm_eigenvalues = dm_eigenvalues[dm_eigenvalues > 1e-12] # for stability
+    return -np.sum(dm_eigenvalues * np.log(dm_eigenvalues)) / np.log(log_base)
+
+def entanglement_entropy(state):
+    """
+    Computes the Meyer-Wallach global entanglement measure for an n-qubit pure state as
+    (2/n) * sum_{r=1}^{n} [1 - Tr(dm_r^2)]
+    where dm_r is the reduced density matrix of qubit r
+    """
+    n = state.num_qubits
+    total = 0.0
+
+    for r in range(n):
+        trace_out = [i for i in range(n) if i != r]
         reduced_state = partial_trace(state, trace_out)
-    else:
-        reduced_state = state
-    return entropy(reduced_state, base=2)
+        # purity = Tr(dm_r^2); (1 - purity) is linear entropy of this qubit
+        total += (1 - reduced_state.purity())
+
+    # Meyer-Wallach normalizes by the number of qubits
+    return (2 / n) * total
 
 # TODO: better method for deciding number of symbols
 def quantize_signal(data, num_symbols=30):
@@ -97,7 +111,7 @@ def quantize_signal(data, num_symbols=30):
                 quanta[quanta == num_symbols] = num_symbols - 1
             quantized_features.append(quanta)
         quantized_features = np.stack(quantized_features, axis=1) # shape (n_samples, n_features)
-        # combine feeatures using mixed-radix encoding (treat each feature’s quantized value as a digit in a number with base equal to num_symbols)
+        # combine features using mixed-radix encoding (treat each feature’s quantized value as a digit in a number with base equal to num_symbols)
         composite_symbols = np.sum(quantized_features * (num_symbols ** np.arange(n_features)), axis=1)
         return composite_symbols.tolist()
     else:

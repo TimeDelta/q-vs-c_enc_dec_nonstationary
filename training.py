@@ -4,7 +4,7 @@ from qiskit.circuit import Parameter
 from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, DensityMatrix, Operator
 import re
 
-from utility import force_trash_qubits, dm_to_statevector, without_t_gate
+from utility import soft_reset_trash_qubits, force_trash_qubits, dm_to_statevector, without_t_gate
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
@@ -366,6 +366,11 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         print(f'    Max param update: {np.max(param_values-previous_param_values)}')
 
     print('  calculating validation costs')
+    param_dict = {param: value for param, value in zip(trainable_params, param_values)}
+    encoder_params = {k: v for k,v in param_dict.items() if k in encoder.parameters}
+    decoder_params = {k: v for k,v in param_dict.items() if k in decoder.parameters}
+    encoder_bound = encoder.assign_parameters(encoder_params)
+    decoder_bound = decoder.assign_parameters(decoder_params)
     validation_costs = []
     for (i, series) in validation_data:
         cost = cost_function(
@@ -382,7 +387,7 @@ if __name__ == '__main__':
     import os
     import argparse
     from data_importers import import_generated
-    from analysis import differential_entropy, entanglement_entropy
+    from analysis import entanglement_entropy, von_neumann_entropy
 
     parser = argparse.ArgumentParser(
         description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over the given data."
@@ -391,7 +396,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 50
+    num_epochs = 25
 
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
         num_qubits = len(training[0][1][0])
@@ -399,7 +404,7 @@ if __name__ == '__main__':
         config = {
             'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
-            'learning_rate': 0.07988347663039558,
+            'learning_rate': 0.08,
             'penalty_weight': .75,
             'entanglement_topology': 'full',
             'entanglement_gate': 'cz',
@@ -429,8 +434,10 @@ if __name__ == '__main__':
 
             # === Entropy computations ===
             dataset_enc_entangle_entropies = []
-            for (_, series) in validation:
+            dataset_enc_vn_entropies = []
+            for (s_i, series) in validation:
                 enc_entangle_entropies = []
+                enc_vn_entropies = []
                 for t, state in enumerate(series):
                     if model_type == 'qae':
                         params_dict = {p: state[i] for i, p in enumerate(input_params[:-1])}
@@ -444,29 +451,30 @@ if __name__ == '__main__':
 
                     if model_type == 'qae': # remove the time step qubit
                         encoder_dm = partial_trace(encoder_dm, [num_qubits-1])
-                    bottleneck_dm = force_trash_qubits(encoder_dm, bottleneck_size)
+                    bottleneck_dm = soft_reset_trash_qubits(encoder_dm, bottleneck_size)
 
                     enc_entangle_entropies.append(entanglement_entropy(bottleneck_dm))
-                dataset_enc_entangle_entropies.append(np.array(enc_entangle_entropies))
+                    enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
+                    if enc_entangle_entropies[-1] > enc_vn_entropies[-1]:
+                        difference = enc_entangle_entropies[-1] - enc_vn_entropies[-1]
+                        print(f'WARNING: entanglement entropy > full VN entropy for dataset {d_i} series {s_i} state {t} by {difference}')
+                dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
+                dataset_enc_vn_entropies.append(np.concatenate(([s_i], enc_vn_entropies)))
 
             def save_and_print_averages(dataset_metrics, metric_desc):
                 print(f'  {metric_desc}:')
                 metric_desc = metric_desc.lower().replace(' ', '_')
                 fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_{metric_desc}.npy')
-                print('    Shape (datasets, series, time steps):', dataset_metrics.shape)
+                print('    Shape (series, time steps[+1 for series index]):', dataset_metrics.shape)
                 np.save(fname, dataset_metrics)
                 print('    Saved', fname)
-                avg_per_series = np.mean(dataset_metrics, axis=0)
-                print('    Average per series:', avg_per_series)
-                avg_per_dataset = np.mean(avg_per_series, axis=0)
-                print('    Average per dataset:', avg_per_dataset)
-                overall_avg = np.mean(avg_per_dataset)
-                print('    Overall average:', overall_avg)
 
             dataset_enc_entangle_entropies = np.array(dataset_enc_entangle_entropies)
             save_and_print_averages(dataset_enc_entangle_entropies, 'Bottleneck entanglement entropies')
 
-            # Save the trained circuit
+            dataset_enc_vn_entropies = np.array(dataset_enc_vn_entropies)
+            save_and_print_averages(dataset_enc_vn_entropies, 'Bottleneck full VN entropies')
+
             fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
             with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)
