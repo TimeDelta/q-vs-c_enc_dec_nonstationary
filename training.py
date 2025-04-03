@@ -197,7 +197,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
     from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
 
-    (1 - fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
+    (1 - average_per_qubit_fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
     total_cost = 0.0
     for (_, series) in data:
@@ -230,12 +230,11 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             reconstructed_state = bottleneck_state.evolve(decoder)
 
-            # global fidelity is fine here because we're only using 4 qubits but this should change to a local fn in future
             series_cost += 1 - avg_per_qubit_fidelity(ideal_state, reconstructed_state)
 
             previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
 
-        total_cost += series_cost / len(series) # avg cost per state (always same num series)
+        total_cost += series_cost / len(series) # avg cost per state (always same num states per series)
     return total_cost
 
 def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0) -> float:
