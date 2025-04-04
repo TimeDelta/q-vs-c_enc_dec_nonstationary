@@ -44,19 +44,19 @@ class FractionalGaussianSequenceGenerator:
             FBM = fbm(n=self.num_states-1, hurst=hurst_target, length=1, method='daviesharte')
             FBM = FBM - FBM[0]
             # scale and shift the series by stdev and mean for feature f
-            series.append(mean[f] + stdev[f] * FBM)
+            series.append(mean[f] + stdev[f] * np.tanh(FBM))
         return np.stack(series, axis=-1).astype(np.float32)
 
 base_dir = 'generated_datasets'
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
 
-num_features_per_state = 4 # num_qubits
+num_features_per_state = 8 # num_qubits
 num_series_per_dataset = 20
 num_blocks_per_series = 5
 num_states_per_block = 20
 num_time_steps_to_taper = num_states_per_block // 10
-num_datasets = 500
+num_datasets = 250
 required_length = num_blocks_per_series * num_states_per_block
 dset_hurst_min = .9
 dset_hurst_max = 1
@@ -75,10 +75,13 @@ for d in range(num_datasets):
     orig_stdev = np.random.uniform(1, upper_bounds)
     dset_hurst_min -= (1/num_datasets) * dset_hurst_min
     dset_hurst_max -= (1/num_datasets) * dset_hurst_max
+    print('  target hurst exponent min:', dset_hurst_min)
+    print('  target hurst exponent max:', dset_hurst_max)
 
     for i in range(num_series_per_dataset):
-        hurst_target = np.random.uniform(dset_hurst_min, dset_hurst_max)
         print('  Generating series ' + str(i + 1))
+        hurst_target = np.random.uniform(dset_hurst_min, dset_hurst_max)
+        print('    chosen target hurst exponent:', hurst_target)
         series = []
         for b in range(num_blocks_per_series):
             # have to blend multiple series together to ensure non-stationarity
