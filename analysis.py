@@ -309,9 +309,11 @@ if __name__ == '__main__':
         for model_type, data in data_dict.items():
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
-            # Plot points for this model type in its color
             plt.scatter(x_vals, y_vals, color=colors[model_type], label=model_type.upper())
-            # Annotate each point with dataset and series index
+            coeffs = np.polyfit(x_vals, y_vals, 1)
+            poly_eqn = np.poly1d(coeffs)
+            x_fit = np.linspace(min(x_vals), max(x_vals), 100)
+            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--')
             for xi, yi, d in zip(x_vals, y_vals, data):
                 plt.annotate('', (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=8)
         plt.xlabel(x_label)
@@ -328,12 +330,13 @@ if __name__ == '__main__':
         for model_type, data in data_dict.items():
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
-            # Plot aggregated points for this model type in its color (using squares)
             plt.scatter(x_vals, y_vals, marker='s', color=colors[model_type], label=model_type.upper())
-            # Annotate each point with dataset index
+            coeffs = np.polyfit(x_vals, y_vals, 1)
+            poly_eqn = np.poly1d(coeffs)
+            x_fit = np.linspace(min(x_vals), max(x_vals), 100)
+            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--')
             for xi, yi, d in zip(x_vals, y_vals, data):
-                lab = f"D{d[2]}"
-                plt.annotate(lab, (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=10, color='red')
+                plt.annotate(f"D{d[2]}", (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=10, color='red')
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
