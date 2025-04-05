@@ -94,12 +94,12 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     encoder = QuantumCircuit(num_qubits)
     params = []
     for layer in range(num_blocks):
+        # for i in range(num_qubits):
+        #     encoder.rx(Parameter('Encoder Layer ' + str(layer) + ' Rx θ ' + str(i)), i)
         add_entanglement_topology(encoder, num_qubits, entanglement_topology, entanglement_gate)
-        # add set of single qubit rotations
         for i in range(num_qubits):
-            p = Parameter('Encoder Layer ' + str(layer) + ' Ry θ ' + str(i))
-            params.append(p)
-            encoder.ry(p, i)
+            encoder.ry(Parameter('Encoder Layer ' + str(layer) + ' Ry θ ' + str(i)), i)
+    params.extend(encoder.parameters)
 
     # For a proper autoencoder, you want to compress information into a bottleneck but
     # choosing which qubits to force to |0> reduces the flexibility the AE has in
@@ -110,11 +110,11 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
         num_qubits -= 1
     decoder = QuantumCircuit(num_qubits)
     for layer in range(num_blocks):
+        # for i in range(num_qubits):
+        #     decoder.rx(Parameter('Decoder Layer ' + str(layer) + ' Rx θ ' + str(i)), i)
         add_entanglement_topology(decoder, num_qubits, entanglement_topology, entanglement_gate)
-        # add set of single qubit rotations
         for i in range(0, num_qubits):
-            p = Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i))
-            decoder.ry(p, i)
+            decoder.ry(Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i)), i)
     params.extend(decoder.parameters)
     full_circuit = encoder.compose(decoder, qubits=range(num_qubits))
     return full_circuit, encoder, decoder, params
@@ -203,14 +203,14 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     total_num_states = 0
     num_close_bottlenecks = 0
     num_close_predictions = 0
-    num_close_fidelities = 0
-    threshold = .00001
+    num_close_costs = 0
+    threshold = .001
     for (_, series) in data:
         series_cost = 0.0
         previous_error_vector = None
         prev_bottleneck = None
         prev_prediction = None
-        prev_fidelity = None
+        prev_cost = None
         for t, state in enumerate(series):
             params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
             t_param = input_params[-1]
@@ -234,28 +234,28 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             # partial traces are causing issues with collapse of bottleneck to nearly constant
             # possible that concentration of measurement phenomena is causing collapse of bottleneck
             # to nearly constant (invariant) regime even without enforcing trash qubits
-            # bottleneck_state = partial_trace(bottleneck_state, [len(encoder.qubits)-1])
+            bottleneck_state = partial_trace(bottleneck_state, [len(encoder.qubits)-1])
             # bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
             if prev_bottleneck is not None:
-                dist = np.linalg.norm(prev - bottleneck_state)
-                if dist < threshold * 100:
+                dist = np.linalg.norm(prev_bottleneck - bottleneck_state)
+                if dist < threshold:
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
 
             reconstructed_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
                 dist = np.linalg.norm(prev_prediction - reconstructed_state)
-                if dist < threshold * 100:
+                if dist < threshold:
                     num_close_predictions += 1
             prev_prediction = reconstructed_state
 
-            avg_fidelity = state_fidelity(next_state, reconstructed_state)
-            if prev_fidelity is not None:
-                dist = (prev_fidelity - avg_fidelity)**2
+            cost = np.linalg.norm(ideal_state.data - reconstructed_state.data)
+            if prev_cost is not None:
+                dist = (prev_cost - cost)**2
                 if dist < threshold:
-                    num_close_fidelities += 1
-            prev_fidelity = avg_fidelity
-            series_cost += 1 - avg_fidelity
+                    num_close_costs += 1
+            prev_cost = cost
+            series_cost += cost
 
             previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
 
@@ -263,7 +263,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         total_cost += series_cost / len(series) # avg cost per state (always same num states per series)
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_states)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_states)
-    print('      percentage of close consecutive fidelities:', num_close_fidelities/total_num_states)
+    print('      percentage of close consecutive costs:', num_close_costs/total_num_states)
     return total_cost
 
 def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0) -> float:
@@ -278,8 +278,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     total_num_transitions = 0
     num_close_bottlenecks = 0
     num_close_predictions = 0
-    num_close_fidelities = 0
-    threshold = .00001
+    num_close_costs = 0
+    threshold = .001
     for (_, series) in data:
         series_length = len(series)
         if series_length < 2:
@@ -293,7 +293,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
         prev_bottleneck = None
         prev_prediction = None
-        prev_fidelity = None
+        prev_cost = None
         for i in range(series_length - 1):
             next_state = series[i+1]
             next_input_params = {p: next_state[j] for j, p in enumerate(input_params)}
@@ -306,24 +306,24 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             # bottleneck_state = soft_reset_trash_qubits(bottleneck_state, bottleneck_size)
             if prev_bottleneck is not None:
                 dist = np.linalg.norm(prev_bottleneck - bottleneck_state)
-                if dist < threshold * 100:
+                if dist < threshold:
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
 
             predicted_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
                 dist = np.linalg.norm(prev_prediction - predicted_state)
-                if dist < threshold * 100:
+                if dist < threshold:
                     num_close_predictions += 1
             prev_prediction = predicted_state
 
-            avg_fidelity = state_fidelity(next_state, predicted_state)
-            if prev_fidelity is not None:
-                dist = (prev_fidelity - avg_fidelity)**2
+            cost = np.linalg.norm(next_state.data - predicted_state.data)
+            if prev_cost is not None:
+                dist = (prev_cost - cost)**2
                 if dist < threshold:
-                    num_close_fidelities += 1
-            prev_fidelity = avg_fidelity
-            series_cost += 1 - avg_fidelity
+                    num_close_costs += 1
+            prev_cost = cost
+            series_cost += cost
 
             if np.random.rand() < teacher_forcing_prob:
                 current_state = next_state
@@ -334,7 +334,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         total_cost += series_cost / (series_length-1) # avg cost per transition (always same num transitions per series)
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_transitions)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_transitions)
-    print('      percentage of close consecutive fidelities:', num_close_fidelities/total_num_transitions)
+    print('      percentage of close consecutive costs:', num_close_costs/total_num_transitions)
     return total_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -448,7 +448,7 @@ if __name__ == '__main__':
     from analysis import entanglement_entropy, von_neumann_entropy
 
     parser = argparse.ArgumentParser(
-        description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over the given data."
+        description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over each relevant dataset."
     )
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
     args = parser.parse_args()
