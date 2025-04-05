@@ -248,9 +248,9 @@ if __name__ == '__main__':
     entropy_vs_hurst = {'qae': [], 'qte': []}
     entropy_vs_lzc   = {'qae': [], 'qte': []}
     entropy_vs_hfd   = {'qae': [], 'qte': []}
-    fullvn_vs_hurst  = {'qae': [], 'qte': []}
-    fullvn_vs_lzc    = {'qae': [], 'qte': []}
-    fullvn_vs_hfd    = {'qae': [], 'qte': []}
+    full_vn_vs_hurst  = {'qae': [], 'qte': []}
+    full_vn_vs_lzc    = {'qae': [], 'qte': []}
+    full_vn_vs_hfd    = {'qae': [], 'qte': []}
 
     for (d_i, model_type), stats in stats_per_model.items():
         final_loss = np.mean(stats.validation_costs)
@@ -266,9 +266,9 @@ if __name__ == '__main__':
             entropy_vs_lzc[model_type].append((stats.lempel_ziv_complexity, avg_entropy, d_i, s_i))
             entropy_vs_hfd[model_type].append((stats.higuchi_fractal_dimension, avg_entropy, d_i, s_i))
 
-            fullvn_vs_hurst[model_type].append((stats.hurst_exponent, avg_full_vn, d_i, s_i))
-            fullvn_vs_lzc[model_type].append((stats.lempel_ziv_complexity, avg_full_vn, d_i, s_i))
-            fullvn_vs_hfd[model_type].append((stats.higuchi_fractal_dimension, avg_full_vn, d_i, s_i))
+            full_vn_vs_hurst[model_type].append((stats.hurst_exponent, avg_full_vn, d_i, s_i))
+            full_vn_vs_lzc[model_type].append((stats.lempel_ziv_complexity, avg_full_vn, d_i, s_i))
+            full_vn_vs_hfd[model_type].append((stats.higuchi_fractal_dimension, avg_full_vn, d_i, s_i))
 
     # per dataset (mean complexity metrics over all validation series)
     aggregated_loss_vs_hurst    = {'qae': [], 'qte': []}
@@ -277,9 +277,9 @@ if __name__ == '__main__':
     aggregated_entropy_vs_hurst = {'qae': [], 'qte': []}
     aggregated_entropy_vs_lzc   = {'qae': [], 'qte': []}
     aggregated_entropy_vs_hfd   = {'qae': [], 'qte': []}
-    aggregated_fullvn_vs_hurst  = {'qae': [], 'qte': []}
-    aggregated_fullvn_vs_lzc    = {'qae': [], 'qte': []}
-    aggregated_fullvn_vs_hfd    = {'qae': [], 'qte': []}
+    aggregated_full_vn_vs_hurst  = {'qae': [], 'qte': []}
+    aggregated_full_vn_vs_lzc    = {'qae': [], 'qte': []}
+    aggregated_full_vn_vs_hfd    = {'qae': [], 'qte': []}
 
     for (d_i, model_type), stats in stats_per_model.items():
         final_loss = np.mean(stats.validation_costs)
@@ -299,23 +299,26 @@ if __name__ == '__main__':
         aggregated_entropy_vs_lzc[model_type].append((agg_lzc, avg_entropy, d_i))
         aggregated_entropy_vs_hfd[model_type].append((agg_hfd, avg_entropy, d_i))
 
-        aggregated_fullvn_vs_hurst[model_type].append((agg_hurst, avg_full_vn, d_i))
-        aggregated_fullvn_vs_lzc[model_type].append((agg_lzc, avg_full_vn, d_i))
-        aggregated_fullvn_vs_hfd[model_type].append((agg_hfd, avg_full_vn, d_i))
+        aggregated_full_vn_vs_hurst[model_type].append((agg_hurst, avg_full_vn, d_i))
+        aggregated_full_vn_vs_lzc[model_type].append((agg_lzc, avg_full_vn, d_i))
+        aggregated_full_vn_vs_hfd[model_type].append((agg_hfd, avg_full_vn, d_i))
 
     def plot_scatter_individual(data_dict, x_label, y_label, title, filename):
         plt.figure()
         colors = {"qae": "blue", "qte": "orange"}
         for model_type, data in data_dict.items():
+            if not data:
+                continue
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
-            plt.scatter(x_vals, y_vals, color=colors[model_type], label=model_type.upper())
+            plt.scatter(x_vals, y_vals, color=colors[model_type])
             coeffs = np.polyfit(x_vals, y_vals, 1)
+            slope = coeffs[0]
             poly_eqn = np.poly1d(coeffs)
             x_fit = np.linspace(min(x_vals), max(x_vals), 100)
-            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--')
+            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--', label=f"{model_type.upper()} (slope={slope:.3f})")
             for xi, yi, d in zip(x_vals, y_vals, data):
-                plt.annotate('', (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=8)
+                plt.annotate(f"D{d[2]}-S{d[3]}", (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=8)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
@@ -328,13 +331,16 @@ if __name__ == '__main__':
         plt.figure()
         colors = {"qae": "blue", "qte": "orange"}
         for model_type, data in data_dict.items():
+            if not data:
+                continue
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
-            plt.scatter(x_vals, y_vals, marker='s', color=colors[model_type], label=model_type.upper())
+            plt.scatter(x_vals, y_vals, marker='s', color=colors[model_type])
             coeffs = np.polyfit(x_vals, y_vals, 1)
+            slope = coeffs[0]
             poly_eqn = np.poly1d(coeffs)
             x_fit = np.linspace(min(x_vals), max(x_vals), 100)
-            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--')
+            plt.plot(x_fit, poly_eqn(x_fit), color=colors[model_type], linestyle='--', label=f"{model_type.upper()} (slope={slope:.3f})")
             for xi, yi, d in zip(x_vals, y_vals, data):
                 plt.annotate(f"D{d[2]}", (xi, yi), textcoords="offset points", xytext=(5,5), fontsize=10, color='red')
         plt.xlabel(x_label)
@@ -345,57 +351,58 @@ if __name__ == '__main__':
         plt.savefig(save_path)
         print(f"Saved aggregated plot to {save_path}")
 
+
     # ===== per series =====
     # Loss vs. Complexity
     plot_scatter_individual(loss_vs_hurst,
-                            "Average Hurst Exponent",
+                            "Hurst Exponent",
                             "Mean Validation Loss",
                             "Loss vs. Hurst Exponent (Individual)",
                             "loss_vs_hurst_individual.png")
     plot_scatter_individual(loss_vs_lzc,
-                            "Average Lempel-Ziv Complexity",
+                            "Lempel-Ziv Complexity",
                             "Mean Validation Loss",
                             "Loss vs. LZC (Individual)",
                             "loss_vs_lzc_individual.png")
     plot_scatter_individual(loss_vs_hfd,
-                            "Average Higuchi Fractal Dimension",
+                            "Higuchi Fractal Dimension",
                             "Mean Validation Loss",
                             "Loss vs. HFD (Individual)",
                             "loss_vs_hfd_individual.png")
 
     # Entropy vs. Complexity
     plot_scatter_individual(entropy_vs_hurst,
-                            "Average Hurst Exponent",
-                            "Average Entanglement Entropy",
+                            "Hurst Exponent",
+                            "Entanglement Entropy",
                             "Entropy vs. Hurst Exponent (Individual)",
                             "entropy_vs_hurst_individual.png")
     plot_scatter_individual(entropy_vs_lzc,
-                            "Average Lempel-Ziv Complexity",
-                            "Average Entanglement Entropy",
+                            "Lempel-Ziv Complexity",
+                            "Entanglement Entropy",
                             "Entropy vs. LZC (Individual)",
                             "entropy_vs_lzc_individual.png")
     plot_scatter_individual(entropy_vs_hfd,
-                            "Average Higuchi Fractal Dimension",
-                            "Average Entanglement Entropy",
+                            "Higuchi Fractal Dimension",
+                            "Entanglement Entropy",
                             "Entropy vs. HFD (Individual)",
                             "entropy_vs_hfd_individual.png")
 
     # Full VN Entropy vs. Complexity (Individual)
-    plot_scatter_individual(fullvn_vs_hurst,
-                            "Average Hurst Exponent",
-                            "Average Full VN Entropy",
+    plot_scatter_individual(full_vn_vs_hurst,
+                            "Hurst Exponent",
+                            "Full VN Entropy",
                             "Full VN Entropy vs. Hurst (Individual)",
-                            "fullvn_vs_hurst_individual.png")
-    plot_scatter_individual(fullvn_vs_lzc,
-                            "Average Lempel-Ziv Complexity",
-                            "Average Full VN Entropy",
+                            "full_vn_vs_hurst_individual.png")
+    plot_scatter_individual(full_vn_vs_lzc,
+                            "Lempel-Ziv Complexity",
+                            "Full VN Entropy",
                             "Full VN Entropy vs. LZC (Individual)",
-                            "fullvn_vs_lzc_individual.png")
-    plot_scatter_individual(fullvn_vs_hfd,
-                            "Average Higuchi Fractal Dimension",
-                            "Average Full VN Entropy",
+                            "full_vn_vs_lzc_individual.png")
+    plot_scatter_individual(full_vn_vs_hfd,
+                            "Higuchi Fractal Dimension",
+                            "Full VN Entropy",
                             "Full VN Entropy vs. HFD (Individual)",
-                            "fullvn_vs_hfd_individual.png")
+                            "full_vn_vs_hfd_individual.png")
 
     # ===== per dataset =====
     # Loss vs. Complexity
@@ -433,17 +440,17 @@ if __name__ == '__main__':
                             "entropy_vs_hfd_aggregated.png")
 
     # Full VN Entropy vs. Complexity
-    plot_scatter_aggregated(aggregated_fullvn_vs_hurst,
+    plot_scatter_aggregated(aggregated_full_vn_vs_hurst,
                             "Average Hurst Exponent",
                             "Average Full VN Entropy",
                             "Full VN Entropy vs. Hurst (Aggregated)",
                             "full_vn_vs_hurst_aggregated.png")
-    plot_scatter_aggregated(aggregated_fullvn_vs_lzc,
+    plot_scatter_aggregated(aggregated_full_vn_vs_lzc,
                             "Average Lempel-Ziv Complexity",
                             "Average Full VN Entropy",
                             "Full VN Entropy vs. LZC (Aggregated)",
                             "full_vn_vs_lzc_aggregated.png")
-    plot_scatter_aggregated(aggregated_fullvn_vs_hfd,
+    plot_scatter_aggregated(aggregated_full_vn_vs_hfd,
                             "Average Higuchi Fractal Dimension",
                             "Average Full VN Entropy",
                             "Full VN Entropy vs. HFD (Aggregated)",
