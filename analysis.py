@@ -233,7 +233,8 @@ if __name__ == '__main__':
     dataset_series_stats = {}
     for d_i, (training_series, validation_series) in datasets.items():
         for s_i, series in validation_series:
-            print(f'Computing complexity metrics for dataset {d_i} series {s_i}')
+            num_features = len(series[0])
+            print(f'Computing complexity metrics for dataset {d_i} series {s_i} ({num_features} features)')
             series_stats = SeriesStats()
             series_stats.lempel_ziv_complexity = lempel_ziv_complexity_continuous(series)
             series_stats.hurst_exponent = np.mean(hurst_exponent(series))
