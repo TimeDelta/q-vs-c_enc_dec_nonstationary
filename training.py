@@ -472,7 +472,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 25
+    num_epochs = 50
 
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
         num_qubits = len(training[0][1][0])
@@ -481,7 +481,7 @@ if __name__ == '__main__':
             'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
             'learning_rate': 0.08,
-            'max_penalty_weight': 2.0,
+            'max_penalty_weight': 10.0,
             'entanglement_topology': 'full',
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
