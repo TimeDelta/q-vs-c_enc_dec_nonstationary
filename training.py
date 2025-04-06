@@ -106,9 +106,10 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
     # compressing and reconstructing the data. Instead, in this design, the circuit
     # structure (and subsequent training loss) is expected to force the encoder to
     # focus its information into 'bottleneck_size' qubits.
+    decoder = QuantumCircuit(num_qubits)
+    # leave the time step qubit in the circuit but don't add any gates to it
     if include_time_step:
         num_qubits -= 1
-    decoder = QuantumCircuit(num_qubits)
     for layer in range(num_blocks):
         # for i in range(num_qubits):
         #     decoder.rx(Parameter('Decoder Layer ' + str(layer) + ' Rx θ ' + str(i)), i)
@@ -116,7 +117,7 @@ def create_qed_circuit(bottleneck_size, num_qubits, num_blocks, entanglement_top
         for i in range(0, num_qubits):
             decoder.ry(Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i)), i)
     params.extend(decoder.parameters)
-    full_circuit = encoder.compose(decoder, qubits=range(num_qubits))
+    full_circuit = encoder.compose(decoder)
     return full_circuit, encoder, decoder, params
 
 def create_full_circuit(num_qubits, config, include_time_step=False):
@@ -192,21 +193,23 @@ def trash_qubit_penalty(state, bottleneck_size):
     penalty = sum(1 - p for p in sorted_marginals[:num_trash])
     return penalty
 
-def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, no_noise_prob=1.0) -> float:
+def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, no_noise_prob=1.0) -> float:
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
     from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
 
     (1 - average_per_qubit_fidelity(current_state, reconstructed_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
-    total_cost = 0.0
+    total_reconstruction_cost = 0.0
+    total_trash_cost = 0.0
     total_num_states = 0
     num_close_bottlenecks = 0
     num_close_predictions = 0
     num_close_costs = 0
     threshold = .001
     for (_, series) in data:
-        series_cost = 0.0
+        series_reconstruction_cost = 0.0
+        series_trash_cost = 0.0
         previous_error_vector = None
         prev_bottleneck = None
         prev_prediction = None
@@ -231,16 +234,14 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             # pass the (possibly perturbed) input state through the encoder and decoder
             bottleneck_state = input_state.evolve(encoder)
-            # partial traces are causing issues with collapse of bottleneck to nearly constant
-            # possible that concentration of measurement phenomena is causing collapse of bottleneck
-            # to nearly constant (invariant) regime even without enforcing trash qubits
-            bottleneck_state = partial_trace(bottleneck_state, [len(encoder.qubits)-1])
-            # bottleneck_state = force_trash_qubits(bottleneck_state, bottleneck_size)
             if prev_bottleneck is not None:
                 dist = np.linalg.norm(prev_bottleneck - bottleneck_state)
                 if dist < threshold:
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
+
+            trash_penalty = trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            series_trash_cost += trash_penalty
 
             reconstructed_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
@@ -249,24 +250,33 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                     num_close_predictions += 1
             prev_prediction = reconstructed_state
 
-            cost = np.linalg.norm(ideal_state.data - reconstructed_state.data)
+            reconstructed_state = partial_trace(reconstructed_state, [len(encoder.qubits)-1])
+            reconstruction_cost = np.linalg.norm(ideal_state.data - reconstructed_state.data)
             if prev_cost is not None:
-                dist = (prev_cost - cost)**2
+                dist = (prev_cost - reconstruction_cost)**2
                 if dist < threshold:
                     num_close_costs += 1
-            prev_cost = cost
-            series_cost += cost
+            prev_cost = reconstruction_cost
+            series_reconstruction_cost += reconstruction_cost
 
-            previous_error_vector = np.concatenate((ideal_state.data - dm_to_statevector(reconstructed_state).data, np.array([0])))
+            if reconstructed_state.data.ndim > 1:
+                reconstructed_state = dm_to_statevector(reconstructed_state)
 
+            previous_error_vector = ideal_state.data - reconstructed_state.data
+
+        # compute avg costs per state (always same num states per series but QTE uses transitions)
+        total_trash_cost += series_trash_cost / len(series)
         total_num_states += len(series)
-        total_cost += series_cost / len(series) # avg cost per state (always same num states per series)
+        total_reconstruction_cost += series_reconstruction_cost / len(series)
+
+    total_trash_cost = total_trash_cost * trash_qubit_penalty_weight
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_states)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_states)
-    print('      percentage of close consecutive costs:', num_close_costs/total_num_states)
-    return total_cost
+    print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_states)
+    print('      trash qubit cost:', total_trash_cost)
+    return total_reconstruction_cost + total_trash_cost
 
-def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=2, teacher_forcing_prob=1.0) -> float:
+def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, teacher_forcing_prob=1.0) -> float:
     """
     Scheduled sampling is incorporated via teacher_forcing_prob:
       - With probability teacher_forcing_prob, the next input state is taken from the ground truth.
@@ -274,7 +284,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
     (1 - fidelity(next_state, predicted_state)) + trash_qubit_penalty_weight * trash_qubit_penalty()
     """
-    total_cost = 0.0
+    total_reconstruction_cost = 0.0
+    total_trash_cost = 0.0
     total_num_transitions = 0
     num_close_bottlenecks = 0
     num_close_predictions = 0
@@ -284,7 +295,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         series_length = len(series)
         if series_length < 2:
             continue # can't model transition
-        series_cost = 0.0
+        series_reconstruction_cost = 0.0
+        series_trash_cost = 0.0
 
         # always use ground truth for first time step
         initial_params = {p: series[0][i] for i, p in enumerate(input_params)}
@@ -300,15 +312,14 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             next_state = Statevector.from_instruction(embedder.assign_parameters(next_input_params))
 
             bottleneck_state = current_state.evolve(encoder)
-            # partial traces are causing issues with collapse of bottleneck to invariant
-            # possible that concentration of measurement phenomena is causing collapse of bottleneck
-            # to nearly constant (invariant) regime even without enforcing trash qubits
-            # bottleneck_state = soft_reset_trash_qubits(bottleneck_state, bottleneck_size)
             if prev_bottleneck is not None:
                 dist = np.linalg.norm(prev_bottleneck - bottleneck_state)
                 if dist < threshold:
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
+
+            trash_penalty = trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            series_trash_cost += trash_penalty
 
             predicted_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
@@ -323,19 +334,22 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                 if dist < threshold:
                     num_close_costs += 1
             prev_cost = cost
-            series_cost += cost
+            series_reconstruction_cost += cost
 
             if np.random.rand() < teacher_forcing_prob:
                 current_state = next_state
             else:
                 current_state = predicted_state
 
+        # compute avg costs per transition (always same num transitions per series but QAE uses states)
+        total_trash_cost += series_trash_cost / (len(series)-1)
         total_num_transitions += len(series)-1
-        total_cost += series_cost / (series_length-1) # avg cost per transition (always same num transitions per series)
+        total_reconstruction_cost += series_reconstruction_cost / (series_length-1)
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_transitions)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_transitions)
-    print('      percentage of close consecutive costs:', num_close_costs/total_num_transitions)
-    return total_cost
+    print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_transitions)
+    print('      trash qubit cost:', total_trash_cost)
+    return total_reconstruction_cost + total_trash_cost
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
     moment1 = beta1 * moment1 + (1 - beta1) * gradients
@@ -372,7 +386,7 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     bottleneck_size = int(config['bottleneck_size'])
     num_blocks = int(config['num_blocks'])
     learning_rate = float(config['learning_rate'])
-    penalty_weight = float(config.get('penalty_weight', 1.0))
+    max_penalty_weight = float(config.get('max_penalty_weight', 1.0))
 
     trained_circuit, embedder, encoder, decoder, input_params, trainable_params = create_full_circuit(num_qubits, config, include_time_step)
     param_values = np.random.uniform(0., np.pi, size=len(trainable_params))
@@ -383,7 +397,8 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
 
     previous_param_values = param_values.copy()
     for t in range(1, num_epochs + 1):
-        print('  Epoch ' + str(t))
+        penalty_weight = max_penalty_weight * t / num_epochs
+        print(f'  Epoch {t} (trash qubit penalty weight: {penalty_weight})')
         param_dict = {param: value for param, value in zip(trainable_params, param_values)}
         encoder_params = {k: v for k,v in param_dict.items() if k in encoder.parameters}
         decoder_params = {k: v for k,v in param_dict.items() if k in decoder.parameters}
@@ -463,7 +478,7 @@ if __name__ == '__main__':
             'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
             'learning_rate': 0.08,
-            'penalty_weight': .75,
+            'max_penalty_weight': 2.0,
             'entanglement_topology': 'full',
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
