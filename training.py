@@ -269,10 +269,11 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         total_num_states += len(series)
         total_reconstruction_cost += series_reconstruction_cost / len(series)
 
-    total_trash_cost = total_trash_cost * trash_qubit_penalty_weight
+    total_trash_cost *= trash_qubit_penalty_weight
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_states)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_states)
     print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_states)
+    print('      reconstruction cost:', total_reconstruction_cost)
     print('      trash qubit cost:', total_trash_cost)
     return total_reconstruction_cost + total_trash_cost
 
@@ -345,9 +346,11 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         total_trash_cost += series_trash_cost / (len(series)-1)
         total_num_transitions += len(series)-1
         total_reconstruction_cost += series_reconstruction_cost / (series_length-1)
+    total_trash_cost *= trash_qubit_penalty_weight
     print('      percentage of close consecutive bottlenecks:', num_close_bottlenecks/total_num_transitions)
     print('      percentage of close consecutive predictions:', num_close_predictions/total_num_transitions)
     print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_transitions)
+    print('      reconstruction cost:', total_reconstruction_cost)
     print('      trash qubit cost:', total_trash_cost)
     return total_reconstruction_cost + total_trash_cost
 
@@ -521,12 +524,7 @@ if __name__ == '__main__':
                         params_dict = {p: state[i] for i, p in enumerate(input_params)}
                     qc_init = embedder.assign_parameters(params_dict)
                     initial_dm = DensityMatrix.from_instruction(qc_init)
-                    encoder_dm = initial_dm.evolve(encoder)
-
-                    if model_type == 'qae': # remove the time step qubit
-                        encoder_dm = partial_trace(encoder_dm, [num_qubits-1])
-                    bottleneck_dm = soft_reset_trash_qubits(encoder_dm, bottleneck_size)
-
+                    bottleneck_dm = initial_dm.evolve(encoder)
                     enc_entangle_entropies.append(entanglement_entropy(bottleneck_dm))
                     enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
                     if enc_entangle_entropies[-1] > enc_vn_entropies[-1]:
