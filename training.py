@@ -213,7 +213,7 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         previous_error_vector = None
         prev_bottleneck = None
         prev_prediction = None
-        prev_cost = None
+        prev_reconstruction_cost = None
         for t, state in enumerate(series):
             params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
             t_param = input_params[-1]
@@ -240,8 +240,8 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
 
-            trash_penalty = trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_trash_cost += trash_penalty
+            trash_cost = trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            series_trash_cost += trash_cost
 
             reconstructed_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
@@ -252,11 +252,11 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
             reconstructed_state = partial_trace(reconstructed_state, [len(encoder.qubits)-1])
             reconstruction_cost = np.linalg.norm(ideal_state.data - reconstructed_state.data)
-            if prev_cost is not None:
-                dist = (prev_cost - reconstruction_cost)**2
+            if prev_reconstruction_cost is not None:
+                dist = (prev_reconstruction_cost - reconstruction_cost)**2
                 if dist < threshold:
                     num_close_costs += 1
-            prev_cost = reconstruction_cost
+            prev_reconstruction_cost = reconstruction_cost
             series_reconstruction_cost += reconstruction_cost
 
             if reconstructed_state.data.ndim > 1:
@@ -306,7 +306,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
 
         prev_bottleneck = None
         prev_prediction = None
-        prev_cost = None
+        prev_reconstruction_cost = None
         for i in range(series_length - 1):
             next_state = series[i+1]
             next_input_params = {p: next_state[j] for j, p in enumerate(input_params)}
@@ -319,8 +319,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                     num_close_bottlenecks += 1
             prev_bottleneck = bottleneck_state
 
-            trash_penalty = trash_qubit_penalty(bottleneck_state, bottleneck_size)
-            series_trash_cost += trash_penalty
+            trash_cost = trash_qubit_penalty(bottleneck_state, bottleneck_size)
+            series_trash_cost += trash_cost
 
             predicted_state = bottleneck_state.evolve(decoder)
             if prev_prediction is not None:
@@ -329,13 +329,13 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                     num_close_predictions += 1
             prev_prediction = predicted_state
 
-            cost = np.linalg.norm(next_state.data - predicted_state.data)
-            if prev_cost is not None:
-                dist = (prev_cost - cost)**2
+            reconstruction_cost = np.linalg.norm(next_state.data - predicted_state.data)
+            if prev_reconstruction_cost is not None:
+                dist = (prev_reconstruction_cost - reconstruction_cost)**2
                 if dist < threshold:
                     num_close_costs += 1
-            prev_cost = cost
-            series_reconstruction_cost += cost
+            prev_reconstruction_cost = reconstruction_cost
+            series_reconstruction_cost += reconstruction_cost
 
             if np.random.rand() < teacher_forcing_prob:
                 current_state = next_state
