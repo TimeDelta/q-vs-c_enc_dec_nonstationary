@@ -193,7 +193,7 @@ def trash_qubit_penalty(state, bottleneck_size):
     penalty = sum(1 - p for p in sorted_marginals[:num_trash])
     return penalty
 
-def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, no_noise_prob=1.0) -> float:
+def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, no_noise_prob=1.0, include_time_step=False) -> float:
     """
     With probability (1-no_noise_prob), the input state is perturbed by adding (or subtracting) the error vector
     from the previous time step. The perturbed state is both the input to the encoder and the reconstruction target.
@@ -212,16 +212,23 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
         series_trash_cost = 0.0
         previous_error_vector = None
         prev_bottleneck = None
-        prev_prediction = None
+        prev_reconstruction = None
         prev_reconstruction_cost = None
         for t, state in enumerate(series):
-            params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
-            t_param = input_params[-1]
-            params[t_param] = t/len(series)
+            if include_time_step:
+                params = {p: state[i] for i, p in enumerate(input_params[:-1])} # final param is time step
+                t_param = input_params[-1]
+                params[t_param] = t/len(series)
+            else:
+                params = {p: state[i] for i, p in enumerate(input_params)}
             input_qc = embedder.assign_parameters(params)
             input_state = Statevector.from_instruction(input_qc)
             input_array = input_state.data
-            ideal_state = Statevector.from_instruction(without_t_gate(input_qc))
+            if include_time_step:
+                params.pop(t_param)
+                ideal_state = Statevector.from_instruction(without_t_gate(embedder).assign_parameters(params))
+            else:
+                ideal_state = input_state
 
             if previous_error_vector is not None and np.random.rand() < (1-no_noise_prob):
                 sign = 1 if np.random.rand() < 0.5 else -1
@@ -244,13 +251,17 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             series_trash_cost += trash_cost
 
             reconstructed_state = bottleneck_state.evolve(decoder)
-            if prev_prediction is not None:
-                dist = np.linalg.norm(prev_prediction - reconstructed_state)
+            # remove time step qubit from reconstruction
+            if include_time_step:
+                reconstructed_state = partial_trace(reconstructed_state, [len(embedder.qubits)-1])
+            if reconstructed_state.data.ndim > 1:
+                reconstructed_state = dm_to_statevector(reconstructed_state)
+            if prev_reconstruction is not None:
+                dist = np.linalg.norm(prev_reconstruction - reconstructed_state)
                 if dist < threshold:
                     num_close_predictions += 1
-            prev_prediction = reconstructed_state
+            prev_reconstruction = reconstructed_state
 
-            reconstructed_state = partial_trace(reconstructed_state, [len(encoder.qubits)-1])
             reconstruction_cost = np.linalg.norm(ideal_state.data - reconstructed_state.data)
             if prev_reconstruction_cost is not None:
                 dist = (prev_reconstruction_cost - reconstruction_cost)**2
@@ -258,9 +269,6 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
                     num_close_costs += 1
             prev_reconstruction_cost = reconstruction_cost
             series_reconstruction_cost += reconstruction_cost
-
-            if reconstructed_state.data.ndim > 1:
-                reconstructed_state = dm_to_statevector(reconstructed_state)
 
             previous_error_vector = ideal_state.data - reconstructed_state.data
 
@@ -275,9 +283,9 @@ def qae_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_states)
     print('      reconstruction cost:', total_reconstruction_cost)
     print('      trash qubit cost:', total_trash_cost)
-    return total_reconstruction_cost + total_trash_cost
+    return [total_reconstruction_cost, total_trash_cost]
 
-def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, teacher_forcing_prob=1.0) -> float:
+def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck_size, trash_qubit_penalty_weight=1, teacher_forcing_prob=1.0, dummy_var=False) -> float:
     """
     Scheduled sampling is incorporated via teacher_forcing_prob:
       - With probability teacher_forcing_prob, the next input state is taken from the ground truth.
@@ -323,6 +331,8 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
             series_trash_cost += trash_cost
 
             predicted_state = bottleneck_state.evolve(decoder)
+            if predicted_state.data.ndim > 1:
+                predicted_state = dm_to_statevector(predicted_state)
             if prev_prediction is not None:
                 dist = np.linalg.norm(prev_prediction - predicted_state)
                 if dist < threshold:
@@ -352,7 +362,7 @@ def qte_cost_function(data, embedder, encoder, decoder, input_params, bottleneck
     print('      percentage of close consecutive reconstruction costs:', num_close_costs/total_num_transitions)
     print('      reconstruction cost:', total_reconstruction_cost)
     print('      trash qubit cost:', total_trash_cost)
-    return total_reconstruction_cost + total_trash_cost
+    return [total_reconstruction_cost, total_trash_cost]
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
     moment1 = beta1 * moment1 + (1 - beta1) * gradients
@@ -411,11 +421,14 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
         print('    calculating initial cost')
         # avoid also calculating the loss for (current param - epsilon) and use single
         # initial cost evaluation for all parameters to speed up training
-        current_cost = cost_function(
-            training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+        initial_costs = cost_function(
+            training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1, include_time_step
         )
-        cost_history.append(current_cost)
-        print('     ', current_cost)
+        cost_history.append(initial_costs)
+        initial_cost = initial_costs[0]
+        for cost in initial_costs:
+            initial_cost += cost
+        print('     ', initial_cost)
 
         gradients = np.zeros_like(param_values)
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
@@ -429,9 +442,13 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
             decoder_params = {k: v for k,v in param_dict.items() if k in decoder.parameters}
             encoder_bound = encoder.assign_parameters(encoder_params)
             decoder_bound = decoder.assign_parameters(decoder_params)
-            gradients[j] = (cost_function(
-                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1-prob_own_noise
-            ) - current_cost) / gradient_width
+            perturbed_costs = cost_function(
+                training_data, embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1-prob_own_noise, include_time_step
+            )
+            perturbed_cost = perturbed_costs[0]
+            for cost in perturbed_costs:
+                perturbed_cost += cost
+            gradients[j] = (perturbed_cost - initial_cost) / gradient_width
 
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
@@ -449,10 +466,10 @@ def train_adam(training_data, validation_data, cost_function, config, num_epochs
     decoder_bound = decoder.assign_parameters(decoder_params)
     validation_costs = []
     for (i, series) in validation_data:
-        cost = cost_function(
-            [(i, series)], embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight
+        costs = cost_function(
+            [(i, series)], embedder, encoder_bound, decoder_bound, input_params, bottleneck_size, penalty_weight, 1, include_time_step
         )
-        validation_costs.append((i, cost))
+        validation_costs.append([i, costs[0], costs[1]])
 
     param_dict = {param: value for param, value in zip(trainable_params, param_values)}
     trained_circuit.assign_parameters(param_dict)
@@ -462,6 +479,7 @@ if __name__ == '__main__':
     from qiskit import qpy
     import os
     import argparse
+    import matplotlib.pyplot as plt
     from data_importers import import_generated
     from analysis import entanglement_entropy, von_neumann_entropy
 
@@ -469,8 +487,10 @@ if __name__ == '__main__':
         description="Train a Quantum Transition Encoder/Decoder and a Quantum Auto Encoder over each relevant dataset."
     )
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
+    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
     args = parser.parse_args()
 
+    run_prefix = args.prefix if args.prefix else ''
     dataset_partitions = import_generated(args.data_directory)
     num_epochs = 50
 
@@ -486,12 +506,13 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in ['qae', 'qte']:
+        for model_type in ['qae', 'qae_plus_time', 'qte']:
             np.random.seed(89266583)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
-            if model_type == 'qae':
+            include_time_step = model_type == 'qae_plus_time'
+            if model_type.startswith('qae'):
                 trained_circuit, cost_history, validation_costs, embedder, encoder, input_params = \
-                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs, include_time_step=True)
+                    train_adam(training, validation, qae_cost_function, config, num_epochs=num_epochs, include_time_step=include_time_step)
             elif model_type == 'qte':
                 trained_circuit, cost_history, validation_costs, embedder, encoder, input_params = \
                     train_adam(training, validation, qte_cost_function, config, num_epochs=num_epochs)
@@ -500,23 +521,25 @@ if __name__ == '__main__':
 
             print('  Training cost history:', cost_history)
             cost_history = np.array(cost_history)
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_cost_history.npy')
+            fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_cost_history.npy')
             np.save(fname, cost_history)
             print('  Saved cost history')
             print('  Validation cost per series:', validation_costs)
+            print(validation_costs)
             validation_costs = np.array(validation_costs)
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_validation_costs.npy')
+            fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_validation_costs.npy')
             np.save(fname, validation_costs)
             print('  Saved validation cost per series')
 
-            # === Entropy computations ===
+            # === Model metric computations ===
             dataset_enc_entangle_entropies = []
             dataset_enc_vn_entropies = []
+            all_trash_indices = []
             for (s_i, series) in validation:
                 enc_entangle_entropies = []
                 enc_vn_entropies = []
                 for t, state in enumerate(series):
-                    if model_type == 'qae':
+                    if include_time_step:
                         params_dict = {p: state[i] for i, p in enumerate(input_params[:-1])}
                         t_param = input_params[-1]
                         params_dict[t_param] = t/len(series)
@@ -525,29 +548,52 @@ if __name__ == '__main__':
                     qc_init = embedder.assign_parameters(params_dict)
                     initial_dm = DensityMatrix.from_instruction(qc_init)
                     bottleneck_dm = initial_dm.evolve(encoder)
+
+                    # keep track of stats for trash qubit indices histogram
+                    marginals = []
+                    for q in range(bottleneck_dm.num_qubits):
+                        trace_indices = list(range(bottleneck_dm.num_qubits))
+                        trace_indices.remove(q)
+                        dm_reduced = partial_trace(bottleneck_dm, trace_indices)
+                        p0 = np.real(dm_reduced.data[0, 0])
+                        marginals.append((q, p0))
+                    marginals_sorted = sorted(marginals, key=lambda x: x[1])
+                    num_trash = bottleneck_dm.num_qubits - bottleneck_size
+                    trash_indices = [q for (q, p) in marginals_sorted[:num_trash]]
+                    all_trash_indices.extend(trash_indices)
+
                     enc_entangle_entropies.append(entanglement_entropy(bottleneck_dm))
                     enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
                     if enc_entangle_entropies[-1] > enc_vn_entropies[-1]:
                         difference = enc_entangle_entropies[-1] - enc_vn_entropies[-1]
-                        print(f'WARNING: entanglement entropy > full VN entropy for dataset {d_i} series {s_i} state {t} by {difference}')
+                        percent = int(100 * difference / enc_vn_entropies[-1])
+                        print(f'WARNING: entanglement entropy > full VN entropy for dataset {d_i} series {s_i} state {t} by {difference.real} ({percent}%)')
                 dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
                 dataset_enc_vn_entropies.append(np.concatenate(([s_i], enc_vn_entropies)))
+            plt.figure()
+            plt.hist(all_trash_indices, bins=range(0, bottleneck_dm.num_qubits+1), align='left')
+            plt.xlabel('Trash Qubit Index')
+            plt.ylabel('Frequency')
+            plt.title('Histogram of Trash Qubit Selection')
+            hist_save_path = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trash_qubit_histogram.png')
+            plt.savefig(hist_save_path)
+            print(f'Saved trash qubit histogram to {hist_save_path}')
 
-            def save_and_print_averages(dataset_metrics, metric_desc):
+            def save(dataset_metrics, metric_desc):
                 print(f'  {metric_desc}:')
                 metric_desc = metric_desc.lower().replace(' ', '_')
-                fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_{metric_desc}.npy')
-                print('    Shape (series, time steps[+1 for series index]):', dataset_metrics.shape)
+                fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_{metric_desc}.npy')
+                print('    Shape (series, time steps[+1 for prepending series index]):', dataset_metrics.shape)
                 np.save(fname, dataset_metrics)
                 print('    Saved', fname)
 
             dataset_enc_entangle_entropies = np.array(dataset_enc_entangle_entropies)
-            save_and_print_averages(dataset_enc_entangle_entropies, 'Bottleneck entanglement entropies')
+            save(dataset_enc_entangle_entropies, 'Bottleneck entanglement entropies')
 
             dataset_enc_vn_entropies = np.array(dataset_enc_vn_entropies)
-            save_and_print_averages(dataset_enc_vn_entropies, 'Bottleneck full VN entropies')
+            save(dataset_enc_vn_entropies, 'Bottleneck full VN entropies')
 
-            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_trained_circuit.qpy')
+            fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_circuit.qpy')
             with open(fname, 'wb') as file:
                 qpy.dump(trained_circuit, file)
             print(f"Saved trained circuit to {fname}")
