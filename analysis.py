@@ -254,9 +254,9 @@ if __name__ == '__main__':
         loss_vs_hurst[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
         loss_vs_lzc[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
         loss_vs_hfd[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    entanglement_entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    entanglement_entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    entanglement_entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
     full_vn_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
     full_vn_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
     full_vn_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
@@ -289,9 +289,9 @@ if __name__ == '__main__':
                 loss_vs_lzc[loss_key][model_type].append((s_stats.lempel_ziv_complexity, loss_val, d_i, s_i))
                 loss_vs_hfd[loss_key][model_type].append((s_stats.higuchi_fractal_dimension, loss_val, d_i, s_i))
 
-            entropy_vs_hurst[model_type].append((s_stats.hurst_exponent, entanglement_entropy, d_i, s_i))
-            entropy_vs_lzc[model_type].append((s_stats.lempel_ziv_complexity, entanglement_entropy, d_i, s_i))
-            entropy_vs_hfd[model_type].append((s_stats.higuchi_fractal_dimension, entanglement_entropy, d_i, s_i))
+            entanglement_entropy_vs_hurst[model_type].append((s_stats.hurst_exponent, entanglement_entropy, d_i, s_i))
+            entanglement_entropy_vs_lzc[model_type].append((s_stats.lempel_ziv_complexity, entanglement_entropy, d_i, s_i))
+            entanglement_entropy_vs_hfd[model_type].append((s_stats.higuchi_fractal_dimension, entanglement_entropy, d_i, s_i))
 
             full_vn_vs_hurst[model_type].append((s_stats.hurst_exponent, full_vn_entropy, d_i, s_i))
             full_vn_vs_lzc[model_type].append((s_stats.lempel_ziv_complexity, full_vn_entropy, d_i, s_i))
@@ -308,9 +308,9 @@ if __name__ == '__main__':
         aggregated_loss_vs_hurst[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
         aggregated_loss_vs_lzc[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
         aggregated_loss_vs_hfd[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    aggregated_entanglement_entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    aggregated_entanglement_entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    aggregated_entanglement_entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
     aggregated_full_vn_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
     aggregated_full_vn_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
     aggregated_full_vn_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
@@ -336,9 +336,9 @@ if __name__ == '__main__':
             aggregated_loss_vs_lzc[loss_key][model_type].append((agg_lzc, loss_val, d_i))
             aggregated_loss_vs_hfd[loss_key][model_type].append((agg_hfd, loss_val, d_i))
 
-        aggregated_entropy_vs_hurst[model_type].append((agg_hurst, mean_entanglement_entropy, d_i))
-        aggregated_entropy_vs_lzc[model_type].append((agg_lzc, mean_entanglement_entropy, d_i))
-        aggregated_entropy_vs_hfd[model_type].append((agg_hfd, mean_entanglement_entropy, d_i))
+        aggregated_entanglement_entropy_vs_hurst[model_type].append((agg_hurst, mean_entanglement_entropy, d_i))
+        aggregated_entanglement_entropy_vs_lzc[model_type].append((agg_lzc, mean_entanglement_entropy, d_i))
+        aggregated_entanglement_entropy_vs_hfd[model_type].append((agg_hfd, mean_entanglement_entropy, d_i))
 
         aggregated_full_vn_vs_hurst[model_type].append((agg_hurst, mean_full_vn_entropy, d_i))
         aggregated_full_vn_vs_lzc[model_type].append((agg_lzc, mean_full_vn_entropy, d_i))
@@ -405,22 +405,22 @@ if __name__ == '__main__':
                                 f"{loss_type} Loss vs. HFD (Individual)",
                                 f"{loss_type.lower()}_loss_vs_hfd_individual.png")
 
-    # Entropy vs. Complexity
-    plot_scatter_individual(entropy_vs_hurst,
+    # Entanglement Entropy vs. Complexity
+    plot_scatter_individual(entanglement_entropy_vs_hurst,
                             "Hurst Exponent",
                             "Entanglement Entropy",
                             "Entropy vs. Hurst Exponent (Individual)",
-                            "entropy_vs_hurst_individual.png")
-    plot_scatter_individual(entropy_vs_lzc,
+                            "entanglement_entropy_vs_hurst_individual.png")
+    plot_scatter_individual(entanglement_entropy_vs_lzc,
                             "Lempel-Ziv Complexity",
                             "Entanglement Entropy",
                             "Entropy vs. LZC (Individual)",
-                            "entropy_vs_lzc_individual.png")
-    plot_scatter_individual(entropy_vs_hfd,
+                            "entanglement_entropy_vs_lzc_individual.png")
+    plot_scatter_individual(entanglement_entropy_vs_hfd,
                             "Higuchi Fractal Dimension",
                             "Entanglement Entropy",
                             "Entropy vs. HFD (Individual)",
-                            "entropy_vs_hfd_individual.png")
+                            "entanglement_entropy_vs_hfd_individual.png")
 
     # Full VN Entropy vs. Complexity (Individual)
     plot_scatter_individual(full_vn_vs_hurst,
@@ -458,18 +458,18 @@ if __name__ == '__main__':
                                 f"{loss_type} Loss vs. HFD (Aggregated)",
                                 f"{loss_type.lower()}_loss_vs_hfd_aggregated.png")
 
-    # Entropy vs. Complexity
-    plot_scatter_aggregated(aggregated_entropy_vs_hurst,
+    # Entanglement Entropy vs. Complexity
+    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_hurst,
                             "Mean Hurst Exponent",
                             "Mean Entanglement Entropy",
                             "Entanglement Entropy vs. Hurst Exponent (Aggregated)",
                             "entanglement_entropy_vs_hurst_aggregated.png")
-    plot_scatter_aggregated(aggregated_entropy_vs_lzc,
+    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_lzc,
                             "Mean Lempel-Ziv Complexity",
                             "Mean Entanglement Entropy",
                             "Entanglement Entropy vs. LZC (Aggregated)",
                             "entanglement_entropy_vs_lzc_aggregated.png")
-    plot_scatter_aggregated(aggregated_entropy_vs_hfd,
+    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_hfd,
                             "Mean Higuchi Fractal Dimension",
                             "Mean Entanglement Entropy",
                             "Entanglement Entropy vs. HFD (Aggregated)",
