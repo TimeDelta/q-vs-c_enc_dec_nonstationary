@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 0
+    num_epochs = 50
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
