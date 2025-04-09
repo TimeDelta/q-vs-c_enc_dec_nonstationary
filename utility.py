@@ -123,3 +123,6 @@ def without_t_gate(qc: QuantumCircuit) -> QuantumCircuit:
             continue # instruction involves a qubit that was dropped
         new_qc.append(instr.operation, new_qubits, instr.clbits)
     return new_qc
+
+def has_method(obj, method_name):
+    return hasattr(obj, method_name) and callable(getattr(obj, method_name))

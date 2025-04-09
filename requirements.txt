@@ -1,6 +1,7 @@
 fbm
 torch
 antropy
+astropy
 cma
 mne
 numpy

@@ -2,37 +2,53 @@ import numpy as np
 import torch
 from qiskit.quantum_info import partial_trace, entropy
 import antropy
-from data_importers import import_generated
+from astropy.stats import bayesian_blocks
 
-def differential_entropy(data):
+from typing import Dict
+from dataclasses import dataclass, field
+
+from data_importers import import_generated
+num_states_per_block = 20
+
+def multimodal_differential_entropy_per_feature(data):
     """
-    data (np.ndarray): shape should be (num_features, sequence_length)
-    Uses Freedman-Diaconis Rule to determine num_bins due to non-normal data
+    data (np.ndarray): shape should be (sequence_length, num_features)
+    Uses adaptive width per bin to allow for multimodality in underlying series.
     """
     entropy_per_feature = []
-    num_features = data.shape[0]
+    num_features = data.shape[1]
+
     for f in range(num_features):
-        feature_data = data[f]
-        q75, q25 = np.percentile(feature_data, [75 ,25])
-        IQR = q75 - q25
-        bin_width = 2 * IQR / np.cbrt(len(feature_data))
-        num_bins = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
-        hist, edges = np.histogram(feature_data, bins=num_bins, density=True)
-        dimensions = data.shape[1]
+        feature_data = data[:, f]
+        # use bayesian_blocks from astropy to adaptively determine bin edges
+        # use density normalization so that the integral is one
+        hist, edges = np.histogram(feature_data, bins=bayesian_blocks(feature_data), density=True)
 
-        widths_list = [np.diff(edge) for edge in edges]
-        # create a meshgrid to combine bin widths across dimensions
-        mesh = np.meshgrid(*widths_list, indexing='ij')
-        bin_volumes = np.ones_like(mesh[0])
-        for w in mesh:
-            bin_volumes *= w
-
-        bin_prob_mass = hist * bin_volumes
+        bin_widths = np.diff(edges) # 1D differences from the histogram edges
+        bin_prob_mass = hist * bin_widths
 
         nonzero = bin_prob_mass > 0
-        de = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] * bin_volumes[nonzero]))
+        de = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero]))
         entropy_per_feature.append(de)
     return entropy_per_feature
+
+def gaussian_total_differential_entropy(data):
+    # data: numpy array of shape (num_states, num_features)
+    variances = np.var(data, axis=0)
+    # per latent dimension (with epsilon added to avoid log(0))
+    entropies = np.log(2 * np.pi * np.e * (variances + 1E-13)) / 2
+    return np.sum(entropies)
+
+def series_gaussian_differential_entropy(series):
+    # fractional brownian motion is a gaussian process but the concatenation
+    # of multiple blocks each with different params means multimodality
+    current_index = 0
+    diff_entropy = 0.0
+    while current_index < len(series):
+        gaussian_block = series[current_index : current_index+num_states_per_block]
+        diff_entropy += gaussian_total_differential_entropy(gaussian_block)
+        current_index += num_states_per_block
+    return diff_entropy
 
 def joint_differential_entropy(data):
     """
@@ -191,16 +207,6 @@ def per_patient(func, data, **kwargs):
         final_values.append(func(data[p], **kwargs))
     return final_values
 
-class ModelStats:
-    cost_history = None
-    validation_costs = None
-    bottleneck_entanglement_entropies = None
-    bottleneck_full_vn_entropies = None
-
-class SeriesStats:
-    hurst_exponent = None
-    lempel_ziv_complexity = None
-    higuchi_fractal_dimension = None
 
 if __name__ == '__main__':
     import argparse
@@ -219,18 +225,79 @@ if __name__ == '__main__':
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
 
-    loss_types = ['Reconstruction', 'Trash Qubit', 'Total']
+    loss_types = ['Prediction', 'Bottleneck Trash']
+    MODEL_STATS_CONFIG = {
+        # lambda to parse rows into {series_index: individual}
+        # lambda to aggregate rows into single value
+        'validation_costs': {
+            loss_types[i]: (
+                lambda rows: {row[0]: row[i+1] for row in rows},
+                lambda rows: np.mean([row[i+1] for row in rows])
+            ) for i in range(len(loss_types))
+        },
+        'bottleneck_differential_entropy': (
+            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
+            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
+        ),
+        'bottleneck_entanglement_entropy': (
+            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
+            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
+        ),
+        'bottleneck_full_vn_entropy': (
+            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
+            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
+        )
+    }
+    MODEL_STATS_CONFIG['validation_costs']['Total'] = (
+        lambda rows: {row[0]: sum(row[1:]) for row in rows},
+        lambda rows: np.mean([sum(row[1:]) for row in rows])
+    )
+    SERIES_STATS_CONFIG = {
+        # lambda to map series into single value
+        'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
+        'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series),
+        'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
+        'differential_entropy':      lambda series: series_gaussian_differential_entropy(series),
+    }
+    model_types = ['qae', 'qae_plus_time', 'qte', 'cae', 'cae_plus_time', 'cte']
+    independent_keys = list(SERIES_STATS_CONFIG.keys())
+    dependent_keys = []
+    for dependent_var_key in MODEL_STATS_CONFIG.keys():
+        parsers = MODEL_STATS_CONFIG[dependent_var_key]
+        if isinstance(parsers, Dict):
+            dependent_keys.extend(parsers.keys())
+        else:
+            dependent_keys.append(dependent_var_key)
+
+    @dataclass
+    class ModelStats:
+        data: dict = field(default_factory=dict)
+
+        def load(self, dataset_index, model_type, dsets_dir, run_prefix):
+            for key in MODEL_STATS_CONFIG.keys():
+                if model_type.startswith('c') and ('vn' in key or 'entangle' in key):
+                    continue
+                filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{key}.npy')
+                self.data[key] = np.load(filepath)
+                if key == 'validation_costs':
+                    for k in MODEL_STATS_CONFIG[key].keys():
+                        self.data[k] = self.data[key]
+
+    @dataclass
+    class SeriesStats:
+        data: dict = field(default_factory=dict)
+
+        def compute(self, series):
+            for key, func in SERIES_STATS_CONFIG.items():
+                self.data[key] = func(series)
 
     # load model statistics for each dataset and model type (qae and qte)
     stats_per_model = {}
     for d_i in datasets:
-        for model_type in ['qae', 'qae_plus_time', 'qte']:
+        for model_type in model_types:
             print(f'Loading {model_type} model statistics for dataset {d_i}')
             stats = ModelStats()
-            stats.cost_history = np.load(os.path.join(args.datasets_directory, f'{run_prefix}dataset{d_i}_{model_type}_cost_history.npy'))
-            stats.validation_costs = np.load(os.path.join(args.datasets_directory, f'{run_prefix}dataset{d_i}_{model_type}_validation_costs.npy'))
-            stats.bottleneck_entanglement_entropies = np.load(os.path.join(args.datasets_directory, f'{run_prefix}dataset{d_i}_{model_type}_bottleneck_entanglement_entropies.npy'))
-            stats.bottleneck_full_vn_entropies = np.load(os.path.join(args.datasets_directory, f'{run_prefix}dataset{d_i}_{model_type}_bottleneck_full_vn_entropies.npy'))
+            stats.load(d_i, model_type, args.datasets_directory, run_prefix)
             stats_per_model[(d_i, model_type)] = stats
 
     # compute complexity metrics for all validation series
@@ -240,111 +307,54 @@ if __name__ == '__main__':
             num_features = len(series[0])
             print(f'Computing complexity metrics for dataset {d_i} series {s_i} ({num_features} features)')
             series_stats = SeriesStats()
-            series_stats.lempel_ziv_complexity = lempel_ziv_complexity_continuous(series)
-            series_stats.hurst_exponent = np.mean(hurst_exponent(series))
-            series_stats.higuchi_fractal_dimension = np.mean(higuchi_fractal_dimension(series))
+            series_stats.compute(series)
             # store as tuple (s_i, series_stats) for later annotation
             dataset_series_stats.setdefault(d_i, []).append((s_i, series_stats))
 
-    # per series
-    loss_vs_hurst = {}
-    loss_vs_lzc = {}
-    loss_vs_hfd = {}
-    for type in loss_types:
-        loss_vs_hurst[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-        loss_vs_lzc[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-        loss_vs_hfd[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entanglement_entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entanglement_entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    entanglement_entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    full_vn_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    full_vn_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    full_vn_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
+    individual_plot_data = {i_key: {d_key: {model: [] for model in model_types} for d_key in dependent_keys} for i_key in independent_keys}
+    aggregated_plot_data = {i_key: {d_key: {model: [] for model in model_types} for d_key in dependent_keys} for i_key in independent_keys}
 
-    for (d_i, model_type), stats in stats_per_model.items():
-        # first element of each numpy array is series index
-        reconstruction_costs = {row[0]: row[1] for row in stats.validation_costs}
-        trash_qubit_costs = {row[0]: row[2] for row in stats.validation_costs}
-        total_losses = {row[0]: row[1] + row[2] for row in stats.validation_costs}
-        entanglement_entropies = {row[0]: np.mean(row[1:]) for row in stats.bottleneck_entanglement_entropies}
-        full_vn_entropies = {row[0]: np.mean(row[1:]) for row in stats.bottleneck_full_vn_entropies}
+    for (d_i, model_type), m_stats in stats_per_model.items():
+        dependent_individual = {}
+        dependent_aggregated = {}
+        for dependent_var_key in MODEL_STATS_CONFIG.keys():
+            parsers = MODEL_STATS_CONFIG[dependent_var_key]
+            if isinstance(parsers, Dict): # allow multiple values from same file
+                for key, (parse_individual, parse_aggregated) in parsers.items():
+                    dependent_individual[key] = parse_individual(m_stats.data[key])
+                    dependent_aggregated[key] = parse_aggregated(m_stats.data[key])
+            else:
+                (parse_individual, parse_aggregated) = parsers
+                dependent_individual[dependent_var_key] = parse_individual(m_stats.data[key])
+                dependent_aggregated[dependent_var_key] = parse_aggregated(m_stats.data[key])
+
+        # Get the series stats for the current dataset.
         series_stats_list = dataset_series_stats[d_i]
+
         num_entropy_warnings = 0
         for s_i, s_stats in series_stats_list:
-            entanglement_entropy = entanglement_entropies.get(s_i)
-            if entanglement_entropy is None:
+            for i_key in independent_keys:
+                for d_key in dependent_keys:
+                    individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
+                    aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
+
+            ent_entropy = dependent_individual['bottleneck_entanglement_entropy'].get(s_i)
+            full_vn = dependent_individual['bottleneck_full_vn_entropy'].get(s_i)
+            if ent_entropy is None:
                 raise Exception(f'ERROR: missing entanglement entropy for dataset {d_i} series {s_i} {model_type} model')
-            full_vn_entropy = full_vn_entropies.get(s_i)
-            if full_vn_entropy is None:
+            if full_vn is None:
                 raise Exception(f'ERROR: missing full VN entropy for dataset {d_i} series {s_i} {model_type} model')
-
-            difference = full_vn_entropy - entanglement_entropy
-            if difference < -1**-13:
-                print(f'WARNING: full VN entropy < entanglement entropy by {abs(difference)}')
+            if full_vn < ent_entropy - 1E-15:
+                print(f'WARNING: full VN entropy < entanglement entropy by {abs(full_vn - ent_entropy)} for dataset {d_i} series {s_i}')
                 num_entropy_warnings += 1
-
-            costs = [reconstruction_costs[s_i], trash_qubit_costs[s_i], total_losses[s_i]]
-            for loss_key, loss_val in zip(loss_types, costs):
-                loss_vs_hurst[loss_key][model_type].append((s_stats.hurst_exponent, loss_val, d_i, s_i))
-                loss_vs_lzc[loss_key][model_type].append((s_stats.lempel_ziv_complexity, loss_val, d_i, s_i))
-                loss_vs_hfd[loss_key][model_type].append((s_stats.higuchi_fractal_dimension, loss_val, d_i, s_i))
-
-            entanglement_entropy_vs_hurst[model_type].append((s_stats.hurst_exponent, entanglement_entropy, d_i, s_i))
-            entanglement_entropy_vs_lzc[model_type].append((s_stats.lempel_ziv_complexity, entanglement_entropy, d_i, s_i))
-            entanglement_entropy_vs_hfd[model_type].append((s_stats.higuchi_fractal_dimension, entanglement_entropy, d_i, s_i))
-
-            full_vn_vs_hurst[model_type].append((s_stats.hurst_exponent, full_vn_entropy, d_i, s_i))
-            full_vn_vs_lzc[model_type].append((s_stats.lempel_ziv_complexity, full_vn_entropy, d_i, s_i))
-            full_vn_vs_hfd[model_type].append((s_stats.higuchi_fractal_dimension, full_vn_entropy, d_i, s_i))
         if num_entropy_warnings > 0:
-            print(f'{num_entropy_warnings} total warnings for unexpected entropy relationship w/ dataset {d_i} {model_type}')
+            percent = num_entropy_warnings / len()
+            print(f'{num_entropy_warnings} total warnings ({percent}%) for unexpected quantum entropy relationship w/ dataset {d_i} {model_type}')
 
-
-    # per dataset (mean complexity metrics over all validation series)
-    aggregated_loss_vs_hurst = {}
-    aggregated_loss_vs_lzc = {}
-    aggregated_loss_vs_hfd = {}
-    for type in loss_types:
-        aggregated_loss_vs_hurst[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-        aggregated_loss_vs_lzc[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-        aggregated_loss_vs_hfd[type] = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entanglement_entropy_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entanglement_entropy_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_entanglement_entropy_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_full_vn_vs_hurst = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_full_vn_vs_lzc   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-    aggregated_full_vn_vs_hfd   = {'qae': [], 'qae_plus_time': [], 'qte': []}
-
-    for (d_i, model_type), stats in stats_per_model.items():
-        # first element of each numpy array is series index
-        mean_reconstruction_cost = np.mean([row[1] for row in stats.validation_costs])
-        mean_trash_qubit_cost = np.mean([row[2] for row in stats.validation_costs])
-        mean_total_loss = np.mean([row[1] + row[2] for row in stats.validation_costs])
-        mean_entanglement_entropy = np.mean([row[1:] for row in stats.bottleneck_entanglement_entropies])
-        mean_full_vn_entropy = np.mean([row[1:] for row in stats.bottleneck_full_vn_entropies])
-
-        if d_i not in dataset_series_stats:
-            raise Exception(f'Missing dataset {d_i} stats')
-        series_stats_list = dataset_series_stats[d_i]
-        agg_hurst = np.mean([s.hurst_exponent for (_, s) in series_stats_list])
-        agg_lzc   = np.mean([s.lempel_ziv_complexity for (_, s) in series_stats_list])
-        agg_hfd   = np.mean([s.higuchi_fractal_dimension for (_, s) in series_stats_list])
-
-        costs = [mean_reconstruction_cost, mean_trash_qubit_cost, mean_total_loss]
-        for (loss_key, loss_val) in zip(loss_types, costs):
-            aggregated_loss_vs_hurst[loss_key][model_type].append((agg_hurst, loss_val, d_i))
-            aggregated_loss_vs_lzc[loss_key][model_type].append((agg_lzc, loss_val, d_i))
-            aggregated_loss_vs_hfd[loss_key][model_type].append((agg_hfd, loss_val, d_i))
-
-        aggregated_entanglement_entropy_vs_hurst[model_type].append((agg_hurst, mean_entanglement_entropy, d_i))
-        aggregated_entanglement_entropy_vs_lzc[model_type].append((agg_lzc, mean_entanglement_entropy, d_i))
-        aggregated_entanglement_entropy_vs_hfd[model_type].append((agg_hfd, mean_entanglement_entropy, d_i))
-
-        aggregated_full_vn_vs_hurst[model_type].append((agg_hurst, mean_full_vn_entropy, d_i))
-        aggregated_full_vn_vs_lzc[model_type].append((agg_lzc, mean_full_vn_entropy, d_i))
-        aggregated_full_vn_vs_hfd[model_type].append((agg_hfd, mean_full_vn_entropy, d_i))
-
-    colors = {"qae": "blue", "qae_plus_time": "black", "qte": "orange"}
+    color_map = plt.get_cmap('viridis')
+    spacing = np.linspace(0, 1, len(model_types))
+    colors = color_map(spacing)
+    colors = {model: color for (model, color) in zip(model_types, colors)}
 
     def plot_model_data_and_save(data, label_prefix, annotation_func, color):
         x_vals = [d[0] for d in data]
@@ -384,112 +394,28 @@ if __name__ == '__main__':
         plot_data(data_dict, x_label, y_label, title, filename, lambda d: f"D{d[2]}")
         print(f"Saved aggregated plot to {run_prefix + filename}")
 
+    for i_key in independent_keys:
+        for d_key in dependent_keys:
+            x_label = i_key.replace('_', ' ').title()
+            y_label = d_key.replace('_', ' ').title()
+            print(f'Plotting individual data for {y_label} vs {x_label}')
+            plot_scatter_individual(
+                data_dict=individual_plot_data[i_key][d_key],
+                x_label=f'{x_label} (Individual)',
+                y_label=f'{y_label} (Validation)',
+                title=f'{x_label} vs {y_label} Per Series',
+                filename=f'{run_prefix}{y_label}_vs_{x_label}_individual.png'
+            )
 
+            print(f'Plotting aggregated data for {y_label} vs {x_label}')
+            plot_scatter_aggregated(
+                data_dict=aggregated_plot_data[i_key][d_key],
+                x_label=f'Mean {x_label}',
+                y_label=f'{y_label} (Validation)',
+                title=f'Mean {x_label} vs {y_label} Per Dataset',
+                filename=f'{run_prefix}{y_label}_vs_{x_label}_aggregated.png'
+            )
 
-    # ===== per series =====
-    # Loss vs. Complexity
-    for loss_type in loss_types:
-        plot_scatter_individual(loss_vs_hurst[loss_type],
-                                "Hurst Exponent",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. Hurst Exponent (Individual)",
-                                f"{loss_type.lower()}_loss_vs_hurst_individual.png")
-        plot_scatter_individual(loss_vs_lzc[loss_type],
-                                "Lempel-Ziv Complexity",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. LZC (Individual)",
-                                f"{loss_type.lower()}_loss_vs_lzc_individual.png")
-        plot_scatter_individual(loss_vs_hfd[loss_type],
-                                "Higuchi Fractal Dimension",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. HFD (Individual)",
-                                f"{loss_type.lower()}_loss_vs_hfd_individual.png")
-
-    # Entanglement Entropy vs. Complexity
-    plot_scatter_individual(entanglement_entropy_vs_hurst,
-                            "Hurst Exponent",
-                            "Entanglement Entropy",
-                            "Entropy vs. Hurst Exponent (Individual)",
-                            "entanglement_entropy_vs_hurst_individual.png")
-    plot_scatter_individual(entanglement_entropy_vs_lzc,
-                            "Lempel-Ziv Complexity",
-                            "Entanglement Entropy",
-                            "Entropy vs. LZC (Individual)",
-                            "entanglement_entropy_vs_lzc_individual.png")
-    plot_scatter_individual(entanglement_entropy_vs_hfd,
-                            "Higuchi Fractal Dimension",
-                            "Entanglement Entropy",
-                            "Entropy vs. HFD (Individual)",
-                            "entanglement_entropy_vs_hfd_individual.png")
-
-    # Full VN Entropy vs. Complexity (Individual)
-    plot_scatter_individual(full_vn_vs_hurst,
-                            "Hurst Exponent",
-                            "Full VN Entropy",
-                            "Full VN Entropy vs. Hurst (Individual)",
-                            "full_vn_vs_hurst_individual.png")
-    plot_scatter_individual(full_vn_vs_lzc,
-                            "Lempel-Ziv Complexity",
-                            "Full VN Entropy",
-                            "Full VN Entropy vs. LZC (Individual)",
-                            "full_vn_vs_lzc_individual.png")
-    plot_scatter_individual(full_vn_vs_hfd,
-                            "Higuchi Fractal Dimension",
-                            "Full VN Entropy",
-                            "Full VN Entropy vs. HFD (Individual)",
-                            "full_vn_vs_hfd_individual.png")
-
-    # ===== per dataset =====
-    # Loss vs. Complexity
-    for loss_type in loss_types:
-        plot_scatter_aggregated(aggregated_loss_vs_hurst[loss_type],
-                                "Hurst Exponent",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. Hurst Exponent (Aggregated)",
-                                f"{loss_type.lower()}_loss_vs_hurst_aggregated.png")
-        plot_scatter_aggregated(aggregated_loss_vs_lzc[loss_type],
-                                "Lempel-Ziv Complexity",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. LZC (Aggregated)",
-                                f"{loss_type.lower()}_loss_vs_lzc_aggregated.png")
-        plot_scatter_aggregated(aggregated_loss_vs_hfd[loss_type],
-                                "Higuchi Fractal Dimension",
-                                f"Mean Validation {loss_type} Loss",
-                                f"{loss_type} Loss vs. HFD (Aggregated)",
-                                f"{loss_type.lower()}_loss_vs_hfd_aggregated.png")
-
-    # Entanglement Entropy vs. Complexity
-    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_hurst,
-                            "Mean Hurst Exponent",
-                            "Mean Entanglement Entropy",
-                            "Entanglement Entropy vs. Hurst Exponent (Aggregated)",
-                            "entanglement_entropy_vs_hurst_aggregated.png")
-    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_lzc,
-                            "Mean Lempel-Ziv Complexity",
-                            "Mean Entanglement Entropy",
-                            "Entanglement Entropy vs. LZC (Aggregated)",
-                            "entanglement_entropy_vs_lzc_aggregated.png")
-    plot_scatter_aggregated(aggregated_entanglement_entropy_vs_hfd,
-                            "Mean Higuchi Fractal Dimension",
-                            "Mean Entanglement Entropy",
-                            "Entanglement Entropy vs. HFD (Aggregated)",
-                            "entanglement_entropy_vs_hfd_aggregated.png")
-
-    # Full VN Entropy vs. Complexity
-    plot_scatter_aggregated(aggregated_full_vn_vs_hurst,
-                            "Mean Hurst Exponent",
-                            "Mean Full VN Entropy",
-                            "Full VN Entropy vs. Hurst (Aggregated)",
-                            "full_vn_vs_hurst_aggregated.png")
-    plot_scatter_aggregated(aggregated_full_vn_vs_lzc,
-                            "Mean Lempel-Ziv Complexity",
-                            "Mean Full VN Entropy",
-                            "Full VN Entropy vs. LZC (Aggregated)",
-                            "full_vn_vs_lzc_aggregated.png")
-    plot_scatter_aggregated(aggregated_full_vn_vs_hfd,
-                            "Mean Higuchi Fractal Dimension",
-                            "Mean Full VN Entropy",
-                            "Full VN Entropy vs. HFD (Aggregated)",
-                            "full_vn_vs_hfd_aggregated.png")
+    # TODO: load and plot cost part history per model (all on same plot) w/ each cost part as separate plot
 
     plt.show()
