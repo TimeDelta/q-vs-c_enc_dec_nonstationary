@@ -103,7 +103,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     from data_importers import import_generated
-    from analysis import entanglement_entropy, von_neumann_entropy, gaussian_total_differential_entropy, multimodal_differential_entropy_per_feature
+    from analysis import entanglement_entropy, von_neumann_entropy, gaussian_total_differential_entropy, multimodal_differential_entropy_per_feature, MODEL_TYPES
 
     parser = argparse.ArgumentParser(
         description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         print(f'  {metric_desc}:')
         metric_desc = metric_desc.lower().replace(' ', '_')
         fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_{metric_desc}.npy')
-        print('    Shape (number series, number time steps[+1 for prepending series index]):', dataset_metrics.shape)
+        print('    Shape (number series, number of values[+1 for prepending series index]):', dataset_metrics.shape)
         np.save(fname, dataset_metrics)
         print('    Saved', fname)
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in ['qae', 'qae_plus_time', 'qte', 'cae', 'cae_plus_time', 'cte']:
+        for model_type in MODEL_TYPES:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             include_time_step = 'plus_time' in model_type
@@ -169,6 +169,8 @@ if __name__ == '__main__':
 
             trained_model, cost_history, validation_costs = \
                 train_adam(training, validation, loss_fn, config, model, num_epochs)
+
+            check_for_overfitting(cost_history[-1], validation_costs)
 
             print('  Training cost history:', cost_history)
             cost_history = np.array(cost_history)

@@ -118,6 +118,7 @@ def main_cost_function(data, model, trash_penalty_fn, trash_penalty_weight=1, au
             series_prediction_cost += prediction_cost
 
         # normalize series costs by number of predictions
+        # same number of series per dataset
         num_predictions += len(series)
         if autoregressive:
             num_predictions -= 1

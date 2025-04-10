@@ -9,6 +9,19 @@ from dataclasses import dataclass, field
 
 from data_importers import import_generated
 num_states_per_block = 20
+LOSS_TYPES = ['Prediction', 'Bottleneck Trash']
+MODEL_TYPES = ['qae', 'qae_plus_time', 'qte', 'cae', 'cae_plus_time', 'cte']
+
+def check_for_overfitting(training_costs, validation_costs_per_series, threshold=.15):
+    def check_overfit(tc, vc, loss_type):
+        overfit_ratio = (vc-tc)/tc
+        if overfit_ratio > threshold:
+            print(f'WARNING: Overfit likely based on {loss_type} costs (validation higher by {(100*overfit_ratio):.1f}%)')
+    for tc, vc, loss_type in zip(training_costs, np.sum(validation_costs_per_series[:,1:], axis=0), LOSS_TYPES):
+        check_overfit(tc, vc, loss_type)
+    total_training_cost = np.sum(training_costs)
+    total_validation_cost = np.sum(validation_costs_per_series[:,1:])
+    check_overfit(total_training_cost, total_validation_cost, 'Total')
 
 def multimodal_differential_entropy_per_feature(data):
     """
@@ -220,20 +233,20 @@ if __name__ == '__main__':
     )
     parser.add_argument("datasets_directory", type=str, help="Path to the directory containing the generated datasets.")
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
+    parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
 
-    loss_types = ['Prediction', 'Bottleneck Trash']
     MODEL_STATS_CONFIG = {
         # lambda to parse rows into {series_index: individual}
         # lambda to aggregate rows into single value
         'validation_costs': {
-            loss_types[i]: (
+            LOSS_TYPES[i]: (
                 lambda rows: {row[0]: row[i+1] for row in rows},
                 lambda rows: np.mean([row[i+1] for row in rows])
-            ) for i in range(len(loss_types))
+            ) for i in range(len(LOSS_TYPES))
         },
         'bottleneck_differential_entropy': (
             lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
@@ -259,7 +272,6 @@ if __name__ == '__main__':
         'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
         'differential_entropy':      lambda series: series_gaussian_differential_entropy(series),
     }
-    model_types = ['qae', 'qae_plus_time', 'qte', 'cae', 'cae_plus_time', 'cte']
     independent_keys = list(SERIES_STATS_CONFIG.keys())
     dependent_keys = []
     for dependent_var_key in MODEL_STATS_CONFIG.keys():
@@ -282,6 +294,8 @@ if __name__ == '__main__':
                 if key == 'validation_costs':
                     for k in MODEL_STATS_CONFIG[key].keys():
                         self.data[k] = self.data[key]
+            filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_cost_history.npy')
+            self.data['cost_history'] = np.load(filepath)
 
     @dataclass
     class SeriesStats:
@@ -294,11 +308,12 @@ if __name__ == '__main__':
     # load model statistics for each dataset and model type (qae and qte)
     stats_per_model = {}
     for d_i in datasets:
-        for model_type in model_types:
+        for model_type in MODEL_TYPES:
             print(f'Loading {model_type} model statistics for dataset {d_i}')
             stats = ModelStats()
             stats.load(d_i, model_type, args.datasets_directory, run_prefix)
             stats_per_model[(d_i, model_type)] = stats
+            check_for_overfitting(stats.data['cost_history'][-1], stats.data['validation_costs'], args.overfit_threshold)
 
     # compute complexity metrics for all validation series
     dataset_series_stats = {}
@@ -311,8 +326,8 @@ if __name__ == '__main__':
             # store as tuple (s_i, series_stats) for later annotation
             dataset_series_stats.setdefault(d_i, []).append((s_i, series_stats))
 
-    individual_plot_data = {i_key: {d_key: {model: [] for model in model_types} for d_key in dependent_keys} for i_key in independent_keys}
-    aggregated_plot_data = {i_key: {d_key: {model: [] for model in model_types} for d_key in dependent_keys} for i_key in independent_keys}
+    individual_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
+    aggregated_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
 
     for (d_i, model_type), m_stats in stats_per_model.items():
         dependent_individual = {}
@@ -352,9 +367,9 @@ if __name__ == '__main__':
             print(f'{num_entropy_warnings} total warnings ({percent}%) for unexpected quantum entropy relationship w/ dataset {d_i} {model_type}')
 
     color_map = plt.get_cmap('viridis')
-    spacing = np.linspace(0, 1, len(model_types))
+    spacing = np.linspace(0, 1, len(MODEL_TYPES))
     colors = color_map(spacing)
-    colors = {model: color for (model, color) in zip(model_types, colors)}
+    colors = {model: color for (model, color) in zip(MODEL_TYPES, colors)}
 
     def plot_model_data_and_save(data, label_prefix, annotation_func, color):
         x_vals = [d[0] for d in data]
@@ -388,12 +403,13 @@ if __name__ == '__main__':
 
     def plot_scatter_individual(data_dict, x_label, y_label, title, filename):
         plot_data(data_dict, x_label, y_label, title, filename, lambda d: '')
-        print(f"Saved individual series plot to {run_prefix + filename}")
+        print(f"Saved individual series plot to {filename}")
 
     def plot_scatter_aggregated(data_dict, x_label, y_label, title, filename):
         plot_data(data_dict, x_label, y_label, title, filename, lambda d: f"D{d[2]}")
-        print(f"Saved aggregated plot to {run_prefix + filename}")
+        print(f"Saved aggregated plot to {filename}")
 
+    # TODO: need to plot classical and quantum losses sepoarately due to scale differences
     for i_key in independent_keys:
         for d_key in dependent_keys:
             x_label = i_key.replace('_', ' ').title()
@@ -404,7 +420,7 @@ if __name__ == '__main__':
                 x_label=f'{x_label} (Individual)',
                 y_label=f'{y_label} (Validation)',
                 title=f'{x_label} vs {y_label} Per Series',
-                filename=f'{run_prefix}{y_label}_vs_{x_label}_individual.png'
+                filename=f'{run_prefix}{d_key}_vs_{i_key}_individual.png'
             )
 
             print(f'Plotting aggregated data for {y_label} vs {x_label}')
@@ -413,7 +429,7 @@ if __name__ == '__main__':
                 x_label=f'Mean {x_label}',
                 y_label=f'{y_label} (Validation)',
                 title=f'Mean {x_label} vs {y_label} Per Dataset',
-                filename=f'{run_prefix}{y_label}_vs_{x_label}_aggregated.png'
+                filename=f'{run_prefix}{d_key}_vs_{i_key}_aggregated.png'
             )
 
     # TODO: load and plot cost part history per model (all on same plot) w/ each cost part as separate plot
