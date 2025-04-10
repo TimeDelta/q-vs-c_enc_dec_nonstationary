@@ -64,7 +64,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
 
         gradients = np.zeros_like(param_values)
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
-        for j in range(len(param_values)): # TODO ensure same number of param updates between quantum / classical equivalent models
+        for j in range(len(param_values)):
             print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     from data_importers import import_generated
-    from analysis import entanglement_entropy, von_neumann_entropy, gaussian_total_differential_entropy, multimodal_differential_entropy_per_feature, MODEL_TYPES
+    from analysis import *
 
     parser = argparse.ArgumentParser(
         description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
@@ -170,8 +170,6 @@ if __name__ == '__main__':
             trained_model, cost_history, validation_costs = \
                 train_adam(training, validation, loss_fn, config, model, num_epochs)
 
-            check_for_overfitting(cost_history[-1], validation_costs)
-
             print('  Training cost history:', cost_history)
             cost_history = np.array(cost_history)
             fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_cost_history.npy')
@@ -183,6 +181,8 @@ if __name__ == '__main__':
             fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_validation_costs.npy')
             np.save(fname, validation_costs)
             print('  Saved validation cost per series')
+
+            check_for_overfitting(cost_history[-1], validation_costs)
 
             # === Model metric computations ===
             all_trash_indices = []

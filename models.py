@@ -17,7 +17,7 @@ class QuantumEncoderDecoder:
         self.entanglement_topology = config.get('entanglement_topology', 'full')
         self.entanglement_gate = config.get('entanglement_gate', 'cx')
         self.embedding_gate = config.get('embedding_gate', 'rz')
-        self.bottleneck_size = config.get('bottleneck_size', int(num_qubits/2))
+        self.bottleneck_size = config.get('bottleneck_size', num_qubits//2)
         self.include_time_step = include_time_step
 
         self.create_embedding_circuit()
@@ -180,13 +180,14 @@ class ClassicalEncoderDecoder(nn.Module):
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
+            # TODO need method for limiting representation capacity for fairness (i.e. only unitary transforms in each layer)
             self.encoder.append(nn.Linear(num_dimensions, num_dimensions))
             # bottleneck enforced via cost function similar to Quantum version to help mitigate mode collapse
             if include_time_step:
                 self.decoder.append(nn.Linear(num_dimensions, num_dimensions-1))
             else:
                 self.decoder.append(nn.Linear(num_dimensions, num_dimensions))
-        self.bottleneck_size = config.get('bottleneck_size', int(self.num_dimensions/2))
+        self.bottleneck_size = config.get('bottleneck_size', self.num_dimensions//2)
 
     @property
     def num_features(self):
@@ -196,7 +197,11 @@ class ClassicalEncoderDecoder(nn.Module):
 
     @property
     def trainable_params(self):
-        return [param for param in self.parameters() if param.requires_grad]
+        all_params = []
+        for p_tensor in self.parameters():
+            for p in p_tensor.flatten():
+                all_params.append(p)
+        return all_params
 
     def forward(self, x):
         bottleneck = torch.Tensor(x)
@@ -225,5 +230,4 @@ class ClassicalEncoderDecoder(nn.Module):
     def set_params(self, params_dict):
         for p, v in params_dict.items():
             with torch.no_grad():
-                new_val = params_dict[p]
-                p.copy_(torch.tensor(new_val, dtype=torch.float32))
+                p.copy_(torch.tensor(v, dtype=torch.float32))
