@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from data_importers import import_generated
 num_states_per_block = 20
 LOSS_TYPES = ['Prediction', 'Bottleneck Trash']
-MODEL_TYPES = ['qae', 'qae_plus_time', 'qte', 'cae', 'cae_plus_time', 'cte']
+MODEL_TYPES = ['qae', 'qae_recurrent', 'qte', 'qte_recurrent', 'cae', 'cae_recurrent', 'cte', 'cte_recurrent']
 
 def check_for_overfitting(training_costs, validation_costs_per_series, threshold=.15):
     def check_overfit(tc, vc, loss_type):
@@ -19,6 +19,7 @@ def check_for_overfitting(training_costs, validation_costs_per_series, threshold
             print(f'WARNING: Overfit likely based on {loss_type} costs (validation higher by {(100*overfit_ratio):.1f}%)')
     for tc, vc, loss_type in zip(training_costs, np.sum(validation_costs_per_series[:,1:], axis=0), LOSS_TYPES):
         check_overfit(tc, vc, loss_type)
+
     total_training_cost = np.sum(training_costs)
     total_validation_cost = np.sum(validation_costs_per_series[:,1:])
     check_overfit(total_training_cost, total_validation_cost, 'Total')

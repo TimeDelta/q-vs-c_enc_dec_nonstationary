@@ -57,9 +57,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         # initial cost evaluation for all parameters to speed up training
         initial_costs = cost_function(training_data, model, penalty_weight)
         cost_history.append(initial_costs)
-        initial_cost = initial_costs[0]
-        for cost in initial_costs:
-            initial_cost += cost
+        initial_cost = np.sum(initial_costs)
         print('     ', initial_cost)
 
         gradients = np.zeros_like(param_values)
@@ -147,17 +145,17 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in MODEL_TYPES:
+        for model_type in [t for t in MODEL_TYPES if 'recurrent' in t]:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
-            include_time_step = 'plus_time' in model_type
+            is_recurrent = 'recurrent' in model_type
             autoregressive = 'te' in model_type # transition encoder
 
             if model_type.startswith('c'):
-                model = ClassicalEncoderDecoder(num_features, config, include_time_step)
+                model = ClassicalEncoderDecoder(num_features, config, is_recurrent)
                 trash_penalty_fn = classical_trash_penalty
             elif model_type.startswith('q'):
-                model = QuantumEncoderDecoder(num_features, config, include_time_step)
+                model = QuantumEncoderDecoder(num_features, config, is_recurrent)
                 trash_penalty_fn = trash_qubit_penalty
             else:
                 raise Exception('Unexpected model type: ' + model_type)

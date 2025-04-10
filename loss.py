@@ -77,6 +77,8 @@ def main_cost_function(data, model, trash_penalty_fn, trash_penalty_weight=1, au
     num_close_costs = 0
     threshold = .001
     for (_, series) in data:
+        model.reset_hidden_state()
+
         series_prediction_cost = 0.0
         series_trash_cost = 0.0
 
