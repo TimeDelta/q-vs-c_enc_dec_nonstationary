@@ -1,7 +1,60 @@
 from functools import reduce
 import numpy as np
+import torch
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector, partial_trace, DensityMatrix
+
+ROUNDING_ERROR_LIMIT = 1E-8
+
+def normalize_classical_vector(state):
+    """
+    Set unit L2 norm. This is the closest feasible analogue to the non-linearity introduced by
+    clipping of negative density matrix eigenvalues because in order to get a spectral nonlinearity
+    of a vector, we need to some how turn it into a matrix in a way that allows for negative
+    eigenvalues to be clipped and reduced back into a vector without losing per-feature structure
+    (a very non-trivial task).
+
+    This approach maintains the full per-feature structure of the vector while ensuring that its
+    overall scale remains fixed, making it more directly comparable to enforcing unit trace on a
+    density matrix without imposing additional structure like that of a probability simplex,
+    especially since the model is already using RestrictedParamCountCayleyLinear layers.
+    """
+    norm = torch.norm(state, p=2)
+    if norm != 0:
+        return state / norm
+    return state
+
+def fix_dm_array(dm_array):
+    """
+    WARNING: This introduces the only nonlinearity in the quantum architecture so be sure to
+    enforce unit L2 norm on equivalent classical states via `normalize_classical_vector` to
+    maintain a more fair comparison.
+    """
+    return normalize_to_unit_trace(clip_negative_eigenvalues(enforce_hermiticity(dm_array)))
+
+def clip_negative_eigenvalues(density_matrix_array):
+    """
+    WARNING: This introduces the only nonlinearity in the quantum architecture so be sure to
+    enforce unit L2 norm on equivalent classical states via `normalize_classical_vector` to
+    maintain a more fair comparison.
+    """
+    eigenvalues, eigenvectors = torch.linalg.eigh(torch.tensor(density_matrix_array, dtype=torch.complex128))
+    clipped_eigenvalues = torch.clamp(eigenvalues, min=ROUNDING_ERROR_LIMIT).to(dtype=torch.complex128)
+    projected_dm = eigenvectors @ torch.diag(clipped_eigenvalues) @ eigenvectors.T.conj()
+    return projected_dm.detach().numpy()
+
+def enforce_hermiticity(dm_array):
+    dm_array = (dm_array + dm_array.T.conj()) / 2.0
+    hermiticity_error = np.linalg.norm(dm_array - dm_array.T.conj()).item()
+    if hermiticity_error > ROUNDING_ERROR_LIMIT:
+        print("WARNING: Hermiticity error", hermiticity_error)
+    return dm_array
+
+def normalize_to_unit_trace(state):
+    trace_val = np.trace(state)
+    if trace_val != 0:
+        return state / trace_val
+    return state
 
 def soft_reset_trash_qubits(bottleneck_state, bottleneck_size, reset_strength=0.5):
     """

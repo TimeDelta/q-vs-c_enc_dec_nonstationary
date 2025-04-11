@@ -89,9 +89,9 @@ def main_cost_function(data, model, trash_penalty_fn, trash_penalty_weight=1, au
         if autoregressive:
             num_examples -= 1
         for t in range(num_examples):
-            input_state = model.prepare_state(series[t], t/num_examples, is_output_state=False)
+            input_state = model.prepare_state(series[t])
             if autoregressive:
-                ideal_state = model.prepare_state(series[t+1], is_output_state=True)
+                ideal_state = model.prepare_state(series[t+1])
             else:
                 ideal_state = input_state
 

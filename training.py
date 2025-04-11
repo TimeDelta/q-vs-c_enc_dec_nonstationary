@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 50
+    num_epochs = 1
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in [t for t in MODEL_TYPES if 'recurrent' in t]:
+        for model_type in [t for t in MODEL_TYPES if 'recurrent' in t and t.startswith('c')]:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'recurrent' in model_type
@@ -228,7 +228,7 @@ if __name__ == '__main__':
                     if autoregressive:
                         num_examples -= 1
                     for t in range(num_examples):
-                        input_state = model.prepare_state(series[t], t/num_examples, is_output_state=False)
+                        input_state = model.prepare_state(series[t])
                         initial_dm = DensityMatrix(input_state)
                         bottleneck_dm, _ = model.forward(initial_dm)
                         bottlenecks.append(bottleneck_dm)
@@ -258,7 +258,7 @@ if __name__ == '__main__':
                         num_examples -= 1
                     bottlenecks = []
                     for t in range(num_examples):
-                        input_state = model.prepare_state(series[t], t/num_examples, is_output_state=False)
+                        input_state = model.prepare_state(series[t])
                         bottleneck_state, _ = model.forward(input_state)
                         bottlenecks.append(bottleneck_state)
 

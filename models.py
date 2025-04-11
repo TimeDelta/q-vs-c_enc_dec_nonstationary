@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix
 
-from utility import dm_to_statevector, without_t_gate
+from utility import dm_to_statevector, without_t_gate, fix_dm_array, normalize_classical_vector
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
@@ -29,49 +29,29 @@ class QuantumEncoderDecoder:
 
     @property
     def num_features(self):
-        if self.is_recurrent:
-            return self.num_qubits + 1
         return self.num_qubits
 
     def reset_hidden_state(self):
         self.hidden_state = None
 
     def forward(self, state):
-        bottleneck_state = state.evolve(self.encoder_bound)
+        if not isinstance(state, DensityMatrix):
+            state = DensityMatrix(state)
+        bottleneck_dm = state.evolve(self.encoder_bound)
         if self.is_recurrent:
             if self.hidden_state is None:
-                self.hidden_state = DensityMatrix(np.zeros_like(bottleneck_state.data))
-            self.hidden_state = bottleneck_state.data + self.hidden_weight * self.hidden_state
-            bottleneck_state = DensityMatrix(self.hidden_state)
+                self.hidden_state = np.zeros_like(bottleneck_dm.data)
+            self.hidden_state = fix_dm_array(bottleneck_dm.data + self.hidden_weight * self.hidden_state)
+            bottleneck_dm = DensityMatrix(self.hidden_state)
 
-        hermiticity_error = torch.norm(bottleneck_state.data - bottleneck_state.data.t().conj())
-        print("Hermiticity error:", hermiticity_error.item())
-
-        # Check eigenvalues for positive semi-definiteness
-        eigenvalues, _ = torch.linalg.eigh(bottleneck_state.data)
-        print("Minimum eigenvalue:", eigenvalues.min().item())
-
-        predicted_state = bottleneck_state.evolve(self.decoder_bound)
-        if self.is_recurrent:
-            predicted_state = partial_trace(predicted_state, [self.num_qubits-1])
+        predicted_state = bottleneck_dm.evolve(self.decoder_bound)
         if predicted_state.data.ndim > 1:
             predicted_state = dm_to_statevector(predicted_state)
-        return bottleneck_state, predicted_state
+        return bottleneck_dm, predicted_state
 
-    def prepare_state(self, state, t_value=None, is_output_state=False):
-        embedder = self.embedder
-        if self.is_recurrent:
-            param_values = {p: state[i] for i, p in enumerate(self.input_params[:-1])} # final param is time step
-            if not is_output_state:
-                if t_value is None:
-                    raise Exception('Missing expected time step feature value')
-                t_param = self.input_params[-1]
-                param_values[t_param] = t_value
-            else:
-                embedder = without_t_gate(embedder)
-        else:
-            param_values = {p: state[i] for i, p in enumerate(self.input_params)}
-        return Statevector.from_instruction(embedder.assign_parameters(param_values))
+    def prepare_state(self, state):
+        param_values = {p: state[i] for i, p in enumerate(self.input_params)}
+        return Statevector.from_instruction(self.embedder.assign_parameters(param_values))
 
     def get_trash_indices(self, bottleneck_dm):
         num_trash = bottleneck_dm.num_qubits - self.bottleneck_size
@@ -89,13 +69,9 @@ class QuantumEncoderDecoder:
         Apply rotation gate to each qubit for embedding of classical data.
         """
         self.input_params = []
-        n_qbits = self.num_qubits+1 if self.is_recurrent else self.num_qubits
-        self.embedder = QuantumCircuit(n_qbits)
-        for i in range(n_qbits):
-            if self.is_recurrent and i == n_qbits-1:
-                p = Parameter('t')
-            else:
-                p = Parameter('Embedding Rθ ' + str(i))
+        self.embedder = QuantumCircuit(self.num_qubits)
+        for i in range(self.num_qubits):
+            p = Parameter('Embedding Rθ ' + str(i))
             self.input_params.append(p)
             if self.embedding_gate.lower() == 'rx':
                 self.embedder.rx(p, i)
@@ -155,14 +131,13 @@ class QuantumEncoderDecoder:
           - A layer of single-qubit rotations (we use Ry for simplicity).
           - An entangling layer whose connectivity is determined by entanglement_topology.
         """
-        n_qbits = self.num_qubits
-        if self.is_recurrent:
-            n_qbits += 1
-        self.encoder = QuantumCircuit(n_qbits)
+        self.encoder = QuantumCircuit(self.num_qubits)
         self.trainable_params = []
+        if self.is_recurrent:
+            self.trainable_params.append(self.hidden_state_weight_param)
         for layer in range(self.num_blocks):
             self.add_entanglement_topology(self.encoder)
-            for i in range(n_qbits):
+            for i in range(self.num_qubits):
                 self.encoder.ry(Parameter('Encoder Layer ' + str(layer) + ' Ry θ ' + str(i)), i)
         self.trainable_params.extend(self.encoder.parameters)
 
@@ -171,13 +146,10 @@ class QuantumEncoderDecoder:
         # compressing and reconstructing the data. Instead, in this design, the circuit
         # structure (and subsequent training loss) is expected to force the encoder to
         # focus its information into 'bottleneck_size' qubits. This helps mitigate mode collapse.
-        self.decoder = QuantumCircuit(n_qbits)
-        # leave the time step qubit in the circuit but don't add any gates to it
-        if self.is_recurrent:
-            n_qbits -= 1
+        self.decoder = QuantumCircuit(self.num_qubits)
         for layer in range(self.num_blocks):
             self.add_entanglement_topology(self.decoder)
-            for i in range(n_qbits):
+            for i in range(self.num_qubits):
                 self.decoder.ry(Parameter('Decoder Layer ' + str(layer) + ' Ry θ ' + str(i)), i)
         self.trainable_params.extend(self.decoder.parameters)
         return self.encoder.compose(self.decoder)
@@ -191,36 +163,45 @@ class QuantumEncoderDecoder:
             self.hidden_weight = params_dict[self.hidden_state_weight_param]
 
 
+class RestrictedParamCountCayleyLinear(nn.Module):
+    """
+    A linear layer whose weight matrix is restricted to be orthogonal using the Cayley transform.
+    In order to maintain a directly comparable parameter count, parameterize a skew-symmetric
+    matrix using a vector of length num_features.
+    """
+    def __init__(self, num_params):
+        super(RestrictedParamCountCayleyLinear, self).__init__()
+        self.num_params = num_params
+        self.param_vector = nn.Parameter(torch.randn(num_params))
+
+    def forward(self, x):
+        skew_symmetric_matrix = self.param_vector.unsqueeze(1) - self.param_vector.unsqueeze(0)
+        I = torch.eye(self.num_params, device=x.device, dtype=x.dtype)
+        U = torch.linalg.solve(I - skew_symmetric_matrix, I + skew_symmetric_matrix)
+        orthogonalized_output = x @ U.T
+        return orthogonalized_output
+
+
 class ClassicalEncoderDecoder(nn.Module):
-    def __init__(self, num_dimensions, config, is_recurrent=False):
+    def __init__(self, num_features, config, is_recurrent=False):
         super(ClassicalEncoderDecoder, self).__init__()
-        self.num_dimensions = num_dimensions
+        self.num_features = num_features
         self.is_recurrent = is_recurrent
-        if is_recurrent:
-            num_dimensions += 1
         self.num_blocks = config.get('num_blocks', 1)
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
-            # TODO need method for limiting representation capacity for fairness (i.e. only unitary transforms in each layer)
-            self.encoder.append(nn.Linear(num_dimensions, num_dimensions))
+            self.encoder.append(RestrictedParamCountCayleyLinear(num_features))
             # bottleneck enforced via cost function similar to Quantum version
-            if is_recurrent:
-                self.decoder.append(nn.Linear(num_dimensions, num_dimensions-1))
-            else:
-                self.decoder.append(nn.Linear(num_dimensions, num_dimensions))
-        self.bottleneck_size = config.get('bottleneck_size', self.num_dimensions//2)
-        self.recurrent_weight = nn.Parameter('recurrent_weight')
-
-    @property
-    def num_features(self):
+            self.decoder.append(RestrictedParamCountCayleyLinear(num_features))
+        self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
-            return self.num_dimensions + 1
-        return self.num_dimensions
+            self.recurrent_weight = nn.Parameter(torch.randn(1))
+        self.hidden_state = None
 
     @property
     def trainable_params(self):
-        all_params = [self.recurrent_weight]
+        all_params = []
         for p_tensor in self.parameters():
             for p in p_tensor.flatten():
                 all_params.append(p)
@@ -230,27 +211,26 @@ class ClassicalEncoderDecoder(nn.Module):
         self.hidden_state = None
 
     def forward(self, x):
-        """
-        At each encoder block, recurrence is applied via:
-        """
         if self.hidden_state is None:
-            self.hidden_state = torch.zeros(self.num_dimensions)
-        bottleneck_state = torch.Tensor(x)
+            self.hidden_state = torch.zeros(self.num_features)
+        bottleneck_state = x
         for block in self.encoder:
             bottleneck_state = block(bottleneck_state)
-        bottleneck_state += self.recurrent_weight * self.hidden_state
-        self.hidden_state = bottleneck_state
-        output = h
+
+        if self.is_recurrent:
+            # add normalization to avoid infinite growth and have similar dynamics as
+            # fixing of density matrix in quantum version
+            bottleneck_state = normalize_classical_vector(bottleneck_state + self.recurrent_weight * self.hidden_state)
+            output = self.hidden_state = bottleneck_state
+        else:
+            output = bottleneck_state
+
         for block in self.decoder:
             output = block(output)
-        return self.bottleneck_state.detach().numpy(), output.detach().numpy()
+        return bottleneck_state.detach().numpy(), output.detach().numpy()
 
-    def prepare_state(self, state, t_value=None, is_output_state=False):
-        if self.is_recurrent and not is_output_state:
-            if t_value is None:
-                raise Exception('Missing expected time step feature value')
-            return np.concatenate((state, [t_value]))
-        return state
+    def prepare_state(self, state):
+        return torch.Tensor(state)
 
     def get_trash_indices(self, bottleneck_state):
         num_trash = bottleneck_state.shape[0] - self.bottleneck_size
