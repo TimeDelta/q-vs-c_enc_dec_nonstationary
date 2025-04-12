@@ -39,6 +39,9 @@ def clip_negative_eigenvalues(density_matrix_array):
     maintain a more fair comparison.
     """
     eigenvalues, eigenvectors = torch.linalg.eigh(torch.tensor(density_matrix_array, dtype=torch.complex128))
+    eigvals = eigenvalues.detach().numpy()
+    if len(eigvals[eigvals < -ROUNDING_ERROR_LIMIT]):
+        print(eigvals[eigvals < -ROUNDING_ERROR_LIMIT])
     clipped_eigenvalues = torch.clamp(eigenvalues, min=ROUNDING_ERROR_LIMIT).to(dtype=torch.complex128)
     projected_dm = eigenvectors @ torch.diag(clipped_eigenvalues) @ eigenvectors.T.conj()
     return projected_dm.detach().numpy()

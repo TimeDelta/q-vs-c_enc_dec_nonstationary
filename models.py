@@ -41,7 +41,9 @@ class QuantumEncoderDecoder:
         if self.is_recurrent:
             if self.hidden_state is None:
                 self.hidden_state = np.zeros_like(bottleneck_dm.data)
-            self.hidden_state = fix_dm_array(bottleneck_dm.data + self.hidden_weight * self.hidden_state)
+            # force weight between 0 and 1 w/o creating flat part of loss landscape
+            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight))
+            self.hidden_state = (1-weight)*bottleneck_dm.data + weight*self.hidden_state
             bottleneck_dm = DensityMatrix(self.hidden_state)
 
         predicted_state = bottleneck_dm.evolve(self.decoder_bound)
@@ -160,7 +162,12 @@ class QuantumEncoderDecoder:
         self.encoder_bound = self.encoder.assign_parameters(encoder_params)
         self.decoder_bound = self.decoder.assign_parameters(decoder_params)
         if self.hidden_state_weight_param in params_dict:
-            self.hidden_weight = params_dict[self.hidden_state_weight_param]
+            if self.hidden_weight is None:
+                # always start at zero to give better starting gradient, ensuring contribution
+                # from both hidden and current bottleneck
+                self.hidden_weight = 0
+            else:
+                self.hidden_weight = params_dict[self.hidden_state_weight_param]
 
 
 class RestrictedParamCountCayleyLinear(nn.Module):
@@ -196,8 +203,11 @@ class ClassicalEncoderDecoder(nn.Module):
             self.decoder.append(RestrictedParamCountCayleyLinear(num_features))
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
-            self.recurrent_weight = nn.Parameter(torch.randn(1))
+            # always start at zero to give better starting gradient
+            self.hidden_weight = nn.Parameter(torch.tensor([0]))
         self.hidden_state = None
+        # ensure set_params starts w/ 0 for hidden weight
+        self._params_initialized = False
 
     @property
     def trainable_params(self):
@@ -220,7 +230,9 @@ class ClassicalEncoderDecoder(nn.Module):
         if self.is_recurrent:
             # add normalization to avoid infinite growth and have similar dynamics as
             # fixing of density matrix in quantum version
-            bottleneck_state = normalize_classical_vector(bottleneck_state + self.recurrent_weight * self.hidden_state)
+            # force weight between 0 and 1 w/o creating flat part of loss landscape
+            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight))
+            bottleneck_state = (1-weight)*bottleneck_state + weight*self.hidden_state
             output = self.hidden_state = bottleneck_state
         else:
             output = bottleneck_state
@@ -242,5 +254,8 @@ class ClassicalEncoderDecoder(nn.Module):
 
     def set_params(self, params_dict):
         for p, v in params_dict.items():
+            if not self._params_initialized and p == self.hidden_weight:
+                self._params_initialized = True
+                continue # skip first assignment to always start w/ 0
             with torch.no_grad():
                 p.copy_(torch.tensor(v, dtype=torch.float32))

@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     def save_trash_indices_histogram(trash_indices, num_features):
         plt.figure()
-        plt.hist(trash_indices, bins=range(0, num_features), align='left')
+        plt.hist(trash_indices, bins=range(num_features + 1), align='left')
         plt.xlabel('Trash Feature Index')
         plt.ylabel('Frequency')
         plt.title('Trash Feature Index Selection Histogram')
