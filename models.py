@@ -254,7 +254,7 @@ class ClassicalEncoderDecoder(nn.Module):
 
     def set_params(self, params_dict):
         for p, v in params_dict.items():
-            if not self._params_initialized and p == self.hidden_weight:
+            if not self._params_initialized and self.is_recurrent and p == self.hidden_weight:
                 self._params_initialized = True
                 continue # skip first assignment to always start w/ 0
             with torch.no_grad():
