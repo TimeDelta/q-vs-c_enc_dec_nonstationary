@@ -149,7 +149,7 @@ if __name__ == '__main__':
         for model_type in MODEL_TYPES:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
-            is_recurrent = 'recurrent' in model_type
+            is_recurrent = 'r' in model_type
             autoregressive = 'te' in model_type # transition encoder
 
             if model_type.startswith('c'):
