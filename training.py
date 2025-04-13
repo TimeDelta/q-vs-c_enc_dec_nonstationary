@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 50
+    num_epochs = 100
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
@@ -124,11 +124,12 @@ if __name__ == '__main__':
         print('    Saved', fname)
 
     def save_trash_indices_histogram(trash_indices, num_features):
-        plt.figure()
+        fig, ax = plt.subplots()
         plt.hist(trash_indices, bins=range(num_features + 1), align='left')
         plt.xlabel('Trash Feature Index')
         plt.ylabel('Frequency')
         plt.title('Trash Feature Index Selection Histogram')
+        ax.set_xticks(range(num_features))
         hist_save_path = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trash_feature_histogram.png')
         plt.savefig(hist_save_path)
         print(f'Saved trash feature histogram to {hist_save_path}')
@@ -140,7 +141,7 @@ if __name__ == '__main__':
             'bottleneck_size': bottleneck_size,
             'num_blocks': 1,
             'learning_rate': 0.08,
-            'max_penalty_weight': 10.0,
+            'max_penalty_weight': 2.0,
             'entanglement_topology': 'full',
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
@@ -180,7 +181,8 @@ if __name__ == '__main__':
             np.save(fname, validation_costs)
             print('  Saved validation cost per series')
 
-            check_for_overfitting(cost_history[-1], validation_costs)
+            if num_epochs > 0: # avoid index out of range while testing
+                check_for_overfitting(cost_history[-1], validation_costs)
 
             # === Model metric computations ===
             all_trash_indices = []
