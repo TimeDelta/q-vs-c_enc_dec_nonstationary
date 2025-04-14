@@ -40,11 +40,10 @@ class FractionalGaussianSequenceGenerator:
         # generates one-dimensional fractional Brownian motion
         series = []
         for f in range(self.num_features):
-            # fbm() returns an array of length n+1: subtract first value so series starts at 0
-            FBM = fbm(n=self.num_states-1, hurst=hurst_target, length=1, method='daviesharte')
-            FBM = FBM - FBM[0]
+            # fbm() returns array of length n+1: remove first value so series doesn't start at 0
+            FBM = fbm(n=self.num_states, hurst=hurst_target, length=np.pi, method='daviesharte')[1:]
             # scale and shift the series by stdev and mean for feature f
-            series.append(mean[f] + stdev[f] * np.tanh(FBM))
+            series.append(mean[f] + stdev[f] * np.sin(FBM))
         return np.stack(series, axis=-1).astype(np.float32)
 
 def generate_data(base_dir):
@@ -83,11 +82,12 @@ def generate_data(base_dir):
             print('    chosen target hurst exponent:', hurst_target)
             series = []
             num_blocks = int(max(num_blocks_per_series, 1))
+            # fbm() returns array of length n+1: remove first value so series doesn't start at 0
+            percentages = fbm(n=num_blocks, hurst=hurst_target, length=np.pi, method='daviesharte')[1:]
             for b in range(num_blocks):
                 # have to blend multiple series together to ensure non-stationarity
-                percentage = math.sin((num_blocks - b) / num_blocks * math.pi - math.pi/2)
-                mean = orig_mean * percentage * np.linspace(.5, 1, num_features_per_state)
-                stdev = orig_stdev * percentage * np.linspace(.5, 1, num_features_per_state)
+                mean = orig_mean * math.sin(percentages[b]) * np.linspace(.5, 1, num_features_per_state)
+                stdev = orig_stdev * math.sin(percentages[b]) * np.linspace(.5, 1, num_features_per_state)
                 new_block = generator.forward(mean, stdev, hurst_target)
                 if len(series) > 0:
                     series = np.concatenate((series, new_block))
