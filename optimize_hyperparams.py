@@ -123,7 +123,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Find single optimal hyperparameter config to use across all model types in this experiment."
     )
-    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
+    parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Path to the directory containing the training data.")
     parser.add_argument("--reduction_factor", type=int, default=2, help="Factor by which successive configuration evals are reduced each round.")
     parser.add_argument("--max_training_epochs", type=int, default=16, help="Maximum number of epochs allocated to any configuration.")
     args = parser.parse_args()

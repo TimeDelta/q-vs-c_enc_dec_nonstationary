@@ -132,6 +132,7 @@ def generate_data(base_dir):
 
     series_metric_grid = {}
     max_series_in_grid_per_dataset = num_series_per_dataset // 3
+    dataset_series_count = {}
     for metrics, series in series_metrics:
         lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
         if np.isnan(he) or np.isnan(hfd):
@@ -163,6 +164,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Find single optimal hyperparameter config to use across all model types in this experiment."
     )
-    parser.add_argument("data_directory", type=str, default='generated_datasets', help="Path to the directory containing the training data.")
+    parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Path to the directory containing the training data.")
     args = parser.parse_args()
     generate_data(args.data_directory)
