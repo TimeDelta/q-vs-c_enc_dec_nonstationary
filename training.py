@@ -73,10 +73,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
             param_dict = {param: value for param, value in zip(model.trainable_params, params_eps)}
             model.set_params(param_dict)
             perturbed_costs = cost_function(training_data, model, penalty_weight)
-            perturbed_cost = perturbed_costs[0]
-            for cost in perturbed_costs:
-                perturbed_cost += cost
-            gradients[j] = (perturbed_cost - initial_cost) / gradient_width
+            gradients[j] = (sum(perturbed_costs) - initial_cost) / gradient_width
 
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
