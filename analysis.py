@@ -12,7 +12,7 @@ import colorsys
 
 from data_importers import import_generated
 
-num_states_per_block = 20
+num_states_per_block = 5
 LOSS_TYPES = ['Prediction', 'Bottleneck Trash']
 MODEL_TYPES = ['qae', 'qrae', 'qte', 'qrte', 'cae', 'crae', 'cte', 'crte']
 # q = quantum; c = classical

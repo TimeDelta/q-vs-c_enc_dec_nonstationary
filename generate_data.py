@@ -47,9 +47,9 @@ class FractionalGaussianSequenceGenerator:
             series.append(mean[f] + stdev[f] * np.tanh(FBM))
         return np.stack(series, axis=-1).astype(np.float32)
 
-num_features_per_state = 8 # num_qubits
+num_features_per_state = 4 # num_qubits
 num_series_per_dataset = 20
-num_blocks_per_series = 5
+num_blocks_per_series = 20
 from analysis import num_states_per_block # other direction creates cyclical dependency
 num_time_steps_to_taper = num_states_per_block // 10
 num_datasets = 250
