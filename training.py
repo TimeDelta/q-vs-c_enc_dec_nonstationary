@@ -108,10 +108,12 @@ if __name__ == '__main__':
     )
     parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
+    parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
     parser.add_argument("--seed", type=int, default=89266583, help="Seed value to set before creation of each model.")
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
+    model_types = [m for m in MODEL_TYPES if args.type_filter in m]
     dataset_partitions = import_generated(args.data_directory)
     num_epochs = 2
 
@@ -146,7 +148,7 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in MODEL_TYPES:
+        for model_type in model_types:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'r' in model_type
