@@ -86,7 +86,7 @@ if __name__ == '__main__':
             num_blocks = int(max(num_blocks_per_series, 1))
             for b in range(num_blocks):
                 # have to blend multiple series together to ensure non-stationarity
-                percentage = math.sin((num_blocks - b + 1) / num_blocks * math.pi - math.pi/2)
+                percentage = math.sin((num_blocks - b) / num_blocks * math.pi - math.pi/2)
                 mean = orig_mean * percentage * np.linspace(.5, 1, num_features_per_state)
                 stdev = orig_stdev * percentage * np.linspace(.5, 1, num_features_per_state)
                 new_block = generator.forward(mean, stdev, hurst_target)
