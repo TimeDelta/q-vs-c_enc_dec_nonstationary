@@ -223,6 +223,9 @@ if __name__ == '__main__':
                     return np.array(features)
                 dataset_enc_entangle_entropies = []
                 dataset_enc_vn_entropies = []
+                dataset_bottleneck_lzcs = []
+                dataset_bottleneck_hes = []
+                dataset_bottleneck_hfds = []
                 for (s_i, series) in validation:
                     enc_entangle_entropies = []
                     enc_vn_entropies = []
@@ -244,11 +247,21 @@ if __name__ == '__main__':
 
                     dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
                     dataset_enc_vn_entropies.append(np.concatenate(([s_i], enc_vn_entropies)))
-                    diff_entropies = multimodal_differential_entropy_per_feature(extract_marginal_features(bottlenecks))
-                    dataset_enc_differential_entropies.append([s_i, np.mean(diff_entropies)])
+
+                    bottlenecks_features = extract_marginal_features(bottlenecks)
+
+                    diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks_features)
+                    dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
+
+                    dataset_bottleneck_lzcs.append(np.concatenate(([s_i], [lempel_ziv_complexity_continuous(bottlenecks_features)])))
+                    dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks_features))))
+                    dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks_features))))
 
                 save(np.array(dataset_enc_entangle_entropies), 'Bottleneck entanglement entropy')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
+                save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
+                save(np.array(dataset_bottleneck_hes), 'Bottleneck HE')
+                save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
 
                 fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.qpy')
                 with open(fname, 'wb') as file:
@@ -268,7 +281,7 @@ if __name__ == '__main__':
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_state))
                     diff_entropies = multimodal_differential_entropy_per_feature(np.array(bottlenecks))
-                    dataset_enc_differential_entropies.append([s_i, np.mean(diff_entropies)])
+                    dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
 
                 fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.pth')
                 torch.save(model, fname)

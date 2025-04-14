@@ -59,13 +59,14 @@ def multimodal_differential_entropy_per_feature(data):
 def gaussian_total_differential_entropy(data):
     # data: numpy array of shape (num_states, num_features)
     variances = np.var(data, axis=0)
-    # per latent dimension (with epsilon added to avoid log(0))
     entropies = np.log(2 * np.pi * np.e * (variances + 1E-13)) / 2
     return np.sum(entropies)
 
 def series_gaussian_differential_entropy(series):
-    # fractional brownian motion is a gaussian process but the concatenation
-    # of multiple blocks each with different params means multimodality
+    # Fractional brownian motion is a gaussian process but the concatenation
+    # of multiple blocks each with different params means multimodality.
+    # Thankfully, we know exactly when the distribution changes based on the
+    # data generation process.
     current_index = 0
     diff_entropy = 0.0
     while current_index < len(series):
@@ -253,27 +254,34 @@ if __name__ == '__main__':
     num_training_series = len(next(iter(datasets.values()))[0])
     num_validation_series = len(next(iter(datasets.values()))[1])
 
+    # lambda to parse each series row into dict({series_index: single_value})
+    # lambda to aggregate all series rows into single_value
+    MODEL_MEAN_MEAN_STAT_LAMBDAS = (
+        lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
+        lambda rows: np.mean([np.mean(row[1:]) for row in rows])
+    )
+    MODEL_MEAN_SUM_STAT_LAMBDAS = (
+        lambda rows: {row[0]: np.sum(row[1:]) for row in rows},
+        lambda rows: np.mean([np.sum(row[1:]) for row in rows])
+    )
+    MODEL_MEAN_PLAIN_STAT_LAMBDAS = (
+        lambda rows: {row[0]: row[1] for row in rows},
+        lambda rows: np.mean([row[1] for row in rows])
+    )
     MODEL_STATS_CONFIG = {
-        # lambda to parse rows into {series_index: individual}
-        # lambda to aggregate rows into single value
+        # cost_history gets added separately
         'validation_costs': {
             LOSS_TYPES[i]: (
                 lambda rows: {row[0]: row[i+1] for row in rows},
                 lambda rows: np.mean([row[i+1] for row in rows])
             ) for i in range(len(LOSS_TYPES))
         },
-        'bottleneck_differential_entropy': (
-            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
-            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
-        ),
-        'bottleneck_entanglement_entropy': (
-            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
-            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
-        ),
-        'bottleneck_full_vn_entropy': (
-            lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
-            lambda rows: np.mean([np.mean(row[1:]) for row in rows])
-        )
+        'bottleneck_differential_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_entanglement_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_lzc': MODEL_MEAN_PLAIN_STAT_LAMBDAS,
+        'bottleneck_he': MODEL_MEAN_MEAN_STAT_LAMBDAS,
+        'bottleneck_hfd': MODEL_MEAN_MEAN_STAT_LAMBDAS,
     }
     MODEL_STATS_CONFIG['validation_costs']['Total'] = (
         lambda rows: {row[0]: sum(row[1:]) for row in rows},
