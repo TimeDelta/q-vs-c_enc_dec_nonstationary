@@ -146,7 +146,7 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in [m for m in MODEL_TYPES if 'c' in m]:
+        for model_type in MODEL_TYPES:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'r' in model_type
