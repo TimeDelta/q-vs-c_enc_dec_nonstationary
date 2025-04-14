@@ -1,8 +1,16 @@
 import numpy as np
 from qiskit.quantum_info import partial_trace, DensityMatrix
+from qiskit import qpy
+import matplotlib.pyplot as plt
+
+import os
 
 from loss import *
 from models import *
+from data_importers import import_generated
+from analysis import *
+
+RANDOM_SEED = 89266583
 
 def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
     moment1 = beta1 * moment1 + (1 - beta1) * gradients
@@ -95,65 +103,29 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
 
     return model, cost_history, validation_costs
 
-if __name__ == '__main__':
-    from qiskit import qpy
-    import os
-    import argparse
-    import matplotlib.pyplot as plt
-
-    from data_importers import import_generated
-    from analysis import *
-
-    parser = argparse.ArgumentParser(
-        description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
-    )
-    parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
-    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
-    parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
-    parser.add_argument("--seed", type=int, default=89266583, help="Seed value to set before creation of each model.")
-    parser.add_argument("--num_epochs", type=int, default=100)
-    args = parser.parse_args()
-
-    run_prefix = args.prefix if args.prefix else ''
-    model_types = MODEL_TYPES
-    if args.type_filter:
-        model_types = [m for m in MODEL_TYPES if args.type_filter in m]
-    dataset_partitions = import_generated(args.data_directory)
-    num_epochs = args.num_epochs
-
+def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, num_epochs, config, run_prefix='', model_types=MODEL_TYPES):
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
         metric_desc = metric_desc.lower().replace(' ', '_')
-        fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_{metric_desc}.npy')
+        fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_{metric_desc}.npy')
         print('    Shape (number series, number of values[+1 for prepending series index]):', dataset_metrics.shape)
         np.save(fname, dataset_metrics)
         print('    Saved', fname)
 
-    def save_trash_indices_histogram(trash_indices, num_features):
+    def save_trash_indices_histogram(trash_indices):
         fig, ax = plt.subplots()
         plt.hist(trash_indices, bins=range(num_features + 1), align='left')
         plt.xlabel('Trash Feature Index')
         plt.ylabel('Frequency')
         plt.title('Trash Feature Index Selection Histogram')
         ax.set_xticks(range(num_features))
-        hist_save_path = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trash_feature_histogram.png')
+        hist_save_path = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trash_feature_histogram.png')
         plt.savefig(hist_save_path)
         print(f'Saved trash feature histogram to {hist_save_path}')
 
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
-        num_features = len(training[0][1][0])
-        bottleneck_size = num_features // 2
-        config = {
-            'bottleneck_size': bottleneck_size,
-            'num_blocks': 1,
-            'learning_rate': 0.08,
-            'max_penalty_weight': 2.0,
-            'entanglement_topology': 'full',
-            'entanglement_gate': 'cz',
-            'embedding_gate': 'rz',
-        }
         for model_type in model_types:
-            np.random.seed(args.seed)
+            np.random.seed(RANDOM_SEED)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'r' in model_type
             autoregressive = 'te' in model_type # transition encoder
@@ -177,13 +149,13 @@ if __name__ == '__main__':
 
             print('  Training cost history:', cost_history)
             cost_history = np.array(cost_history)
-            fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_cost_history.npy')
+            fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_cost_history.npy')
             np.save(fname, cost_history)
             print('  Saved cost history')
             print('  Validation cost per series:', validation_costs)
             print(validation_costs)
             validation_costs = np.array(validation_costs)
-            fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_validation_costs.npy')
+            fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_validation_costs.npy')
             np.save(fname, validation_costs)
             print('  Saved validation cost per series')
 
@@ -266,7 +238,7 @@ if __name__ == '__main__':
                 save(np.array(dataset_enc_entangle_entropies), 'Bottleneck entanglement entropy')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
 
-                fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.qpy')
+                fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.qpy')
                 with open(fname, 'wb') as file:
                     qpy.dump(trained_model.full_circuit, file)
             elif model_type.startswith('c'):
@@ -290,7 +262,7 @@ if __name__ == '__main__':
                     dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks))))
                     dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks))))
 
-                fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.pth')
+                fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.pth')
                 torch.save(model, fname)
 
             save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
@@ -298,4 +270,37 @@ if __name__ == '__main__':
             save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
             save(np.array(dataset_enc_differential_entropies), 'Bottleneck Differential Entropy')
             print(f"Saved trained model to {fname}")
-            save_trash_indices_histogram(all_trash_indices, model.num_features)
+            save_trash_indices_histogram(all_trash_indices)
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
+    )
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the generated data.")
+    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
+    parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
+    parser.add_argument("--seed", type=int, default=RANDOM_SEED, help="Seed value to set before creation of each model.")
+    parser.add_argument("--num_epochs", type=int, default=100)
+    args = parser.parse_args()
+
+    run_prefix = args.prefix if args.prefix else ''
+    model_types = MODEL_TYPES
+    if args.type_filter:
+        model_types = [m for m in MODEL_TYPES if args.type_filter in m]
+    dataset_partitions = import_generated(args.data_directory)
+    num_epochs = args.num_epochs
+    RANDOM_SEED = args.seed
+
+    num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
+    bottleneck_size = num_features // 2
+    config = {
+        'bottleneck_size': bottleneck_size,
+        'num_blocks': 1,
+        'learning_rate': 0.08,
+        'max_penalty_weight': 2.0,
+        'entanglement_topology': 'full',
+        'entanglement_gate': 'cz',
+        'embedding_gate': 'rz',
+    }
+    train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, config, run_prefix, model_types)

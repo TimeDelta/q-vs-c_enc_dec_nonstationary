@@ -103,18 +103,7 @@ def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
 
     return optimal_config, optimal_loss
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="Optimize the hyperparameters of the QAE or QTE training for this experiment."
-    )
-    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
-    parser.add_argument("--reduction_factor", type=int, default=2, help="Factor by which successive configuration evals are reduced each round.")
-    parser.add_argument("--max_training_epochs", type=int, default=16, help="Maximum number of epochs allocated to any configuration.")
-    args = parser.parse_args()
-
-    from data_importers import import_generated
-    dataset_partitions = import_generated(args.data_directory)
+def get_best_config(dataset_partitions):
     input_data = [[], []]
     for _, (training, validation) in sorted(dataset_partitions.items()):
         # take one training and one validation series from each dataset
@@ -127,3 +116,17 @@ if __name__ == '__main__':
     print("\nBest hyperparameter configuration found:")
     print(best_config)
     print("With estimated loss:", best_loss)
+    return best_config
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Find single optimal hyperparameter config to use across all model types in this experiment."
+    )
+    parser.add_argument("data_directory", type=str, help="Path to the directory containing the training data.")
+    parser.add_argument("--reduction_factor", type=int, default=2, help="Factor by which successive configuration evals are reduced each round.")
+    parser.add_argument("--max_training_epochs", type=int, default=16, help="Maximum number of epochs allocated to any configuration.")
+    args = parser.parse_args()
+
+    from data_importers import import_generated
+    get_best_config(import_generated(args.data_directory))

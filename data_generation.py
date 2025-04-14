@@ -56,8 +56,7 @@ required_length = num_blocks_per_series * num_states_per_block
 dset_hurst_min = .9
 dset_hurst_max = 1
 
-if __name__ == '__main__':
-    base_dir = 'generated_datasets'
+def generate_data(base_dir):
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
@@ -150,3 +149,12 @@ if __name__ == '__main__':
             np.save(os.path.join(base_dir, filename), series)
 
     print('Number of grid cells covered: ', len(series_metric_grid))
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Find single optimal hyperparameter config to use across all model types in this experiment."
+    )
+    parser.add_argument("data_directory", type=str, default='generated_datasets', help="Path to the directory containing the training data.")
+    args = parser.parse_args()
+    generate_data(args.data_directory)

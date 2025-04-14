@@ -4,11 +4,13 @@ import torch
 from qiskit.quantum_info import partial_trace, entropy
 import antropy
 from astropy.stats import bayesian_blocks
+import matplotlib.pyplot as plt
 
 from typing import Dict
 import random
 from dataclasses import dataclass, field
 import colorsys
+import os
 
 from data_importers import import_generated
 
@@ -234,27 +236,11 @@ def per_patient(func, data, **kwargs):
         final_values.append(func(data[p], **kwargs))
     return final_values
 
-
-if __name__ == '__main__':
-    import argparse
-    import os
-    import re
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    parser = argparse.ArgumentParser(
-        description="Train a QTE and QAE and generate correlation plots."
-    )
-    parser.add_argument("datasets_directory", type=str, help="Path to the directory containing the generated datasets.")
-    parser.add_argument("--test", action='store_true', default=False)
-    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
-    parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
-    args = parser.parse_args()
-
-    run_prefix = args.prefix if args.prefix else ''
-    datasets = import_generated(args.datasets_directory)
+def run_analysis(datasets, data_dir, overfit_threshold):
     num_training_series = len(next(iter(datasets.values()))[0])
+    print(num_training_series)
     num_validation_series = len(next(iter(datasets.values()))[1])
+    print(num_validation_series)
 
     # lambda to parse each individual series into a single value
     # lambda to aggregate all series of a dataset into a single value
@@ -346,11 +332,11 @@ if __name__ == '__main__':
             print(f'Loading {model_type} model statistics for dataset {d_i}')
             stats = ModelStats()
             try:
-                stats.load(d_i, model_type, args.datasets_directory, run_prefix)
+                stats.load(d_i, model_type, data_dir, run_prefix)
                 dataset_stats[model_type] = stats
                 mean_training_costs = stats.data['cost_history'][-1] / num_training_series
                 mean_validation_costs = np.sum(stats.data['validation_costs'][:,1:], axis=0) / num_validation_series
-                check_for_overfitting(mean_training_costs, mean_validation_costs, args.overfit_threshold)
+                check_for_overfitting(mean_training_costs, mean_validation_costs, overfit_threshold)
             except Exception as e:
                 if args.test:
                     print('  skipping due to exception: ' + str(e))
@@ -462,7 +448,7 @@ if __name__ == '__main__':
         plt.ylabel(y_label)
         plt.title(title)
         plt.legend()
-        save_path = os.path.join(args.datasets_directory, run_prefix + filename)
+        save_path = os.path.join(data_dir, run_prefix + filename)
         plt.savefig(save_path)
 
     print('\n\n\n' + bar)
@@ -528,7 +514,7 @@ if __name__ == '__main__':
         plt.ylabel(f'{loss_label} Loss')
         plt.title(f'Sample {loss_label} Loss Histories')
         plt.legend()
-        save_filepath = os.path.join(args.datasets_directory, f'{run_prefix}{model_type}_sample_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
+        save_filepath = os.path.join(data_dir, f'{run_prefix}{model_type}_sample_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
         plt.savefig(save_filepath)
         print(f'Saved cost history plot for {loss_label} to {save_filepath}')
 
@@ -546,7 +532,7 @@ if __name__ == '__main__':
         plt.title(f'Mean {loss_label} Loss History per Model Type')
         plt.legend()
 
-        save_filepath = os.path.join(args.datasets_directory, f'{run_prefix}_mean_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
+        save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
         plt.savefig(save_filepath)
         print(f'Saved cost history plot for {loss_label} to {save_filepath}')
 
@@ -675,3 +661,18 @@ if __name__ == '__main__':
                 hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
                 hf_energy_uniform[model_type][cost_part_index] = hf_ratio
                 print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Train a QTE and QAE and generate correlation plots."
+    )
+    parser.add_argument("datasets_directory", type=str, help="Path to the directory containing the generated datasets.")
+    parser.add_argument("--test", action='store_true', default=False)
+    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
+    parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
+    args = parser.parse_args()
+
+    run_prefix = args.prefix if args.prefix else ''
+    datasets = import_generated(args.datasets_directory)
+    run_analysis(datasets, args.overfit_threshold)
