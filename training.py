@@ -56,9 +56,13 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         # avoid also calculating the loss for (current param - epsilon) and use single
         # initial cost evaluation for all parameters to speed up training
         initial_costs = cost_function(training_data, model, penalty_weight)
-        cost_history.append(initial_costs)
         initial_cost = np.sum(initial_costs)
         print('     ', initial_cost)
+
+        # remove scaling factor from cost history analysis
+        costs_copy = initial_costs
+        costs_copy[-1] /= penalty_weight
+        cost_history.append(costs_copy)
 
         gradients = np.zeros_like(param_values)
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
@@ -118,7 +122,7 @@ if __name__ == '__main__':
     if args.type_filter:
         model_types = [m for m in MODEL_TYPES if args.type_filter in m]
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = args.num_epoochs
+    num_epochs = args.num_epochs
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
