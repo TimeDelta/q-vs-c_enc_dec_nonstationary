@@ -27,12 +27,14 @@ def check_for_overfitting(training_costs, validation_costs, threshold=.15):
         overfit_ratio = (vc-tc)/tc
         if overfit_ratio > threshold:
             print(f'WARNING: Overfit likely based on {loss_type} costs (validation higher by {(100*overfit_ratio):.1f}%)')
+            return True
+        return False
     for tc, vc, loss_type in zip(training_costs, validation_costs, LOSS_TYPES):
         check_overfit(tc, vc, loss_type)
 
     total_training_cost = np.sum(training_costs)
     total_validation_cost = np.sum(validation_costs)
-    check_overfit(total_training_cost, total_validation_cost, 'Total')
+    return check_overfit(total_training_cost, total_validation_cost, 'Total')
 
 def multimodal_differential_entropy_per_feature(data):
     """
@@ -254,8 +256,8 @@ if __name__ == '__main__':
     num_training_series = len(next(iter(datasets.values()))[0])
     num_validation_series = len(next(iter(datasets.values()))[1])
 
-    # lambda to parse each series row into dict({series_index: single_value})
-    # lambda to aggregate all series rows into single_value
+    # lambda to parse each individual series into a single value
+    # lambda to aggregate all series of a dataset into a single value
     MODEL_MEAN_MEAN_STAT_LAMBDAS = (
         lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
         lambda rows: np.mean([np.mean(row[1:]) for row in rows])
@@ -293,6 +295,12 @@ if __name__ == '__main__':
         'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series),
         'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
         'differential_entropy':      lambda series: series_gaussian_differential_entropy(series),
+    }
+    MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
+        'hurst_exponent': ['bottleneck_he', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
+        'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
+        'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
+        'differential_entropy': ['bottleneck_differential_entropy', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
     dependent_keys = []
@@ -460,7 +468,7 @@ if __name__ == '__main__':
     print('\n\n\n' + bar)
 
     # TODO: need to plot classical and quantum losses sepoarately due to scale differences
-    for i_key in independent_keys:
+    for (i_key, dependent_keys) in MAPPINGS_TO_PLOT.items():
         for d_key in dependent_keys:
             x_label = i_key.replace('_', ' ').title()
             y_label = d_key.replace('_', ' ').title()
@@ -666,4 +674,4 @@ if __name__ == '__main__':
                 total_energy = np.sum(power_spectrum)
                 hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
                 hf_energy_uniform[model_type][cost_part_index] = hf_ratio
-                print(f'  Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
+                print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
