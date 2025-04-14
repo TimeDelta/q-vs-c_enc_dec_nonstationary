@@ -253,7 +253,7 @@ if __name__ == '__main__':
                     diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks_features)
                     dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
 
-                    dataset_bottleneck_lzcs.append(np.concatenate(([s_i], [lempel_ziv_complexity_continuous(bottlenecks_features)])))
+                    dataset_bottleneck_lzcs.append([[s_i, lempel_ziv_complexity_continuous(bottlenecks_features)]])
                     dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks_features))))
                     dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks_features))))
 
@@ -280,7 +280,7 @@ if __name__ == '__main__':
                     bottlenecks = np.array(bottlenecks)
                     diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks)
                     dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
-                    dataset_bottleneck_lzcs.append(np.concatenate(([s_i], [lempel_ziv_complexity_continuous(bottlenecks)])))
+                    dataset_bottleneck_lzcs.append([[s_i, lempel_ziv_complexity_continuous(bottlenecks)]])
                     dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks))))
                     dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks))))
 
