@@ -51,7 +51,6 @@ num_features_per_state = 4 # num_qubits
 num_series_per_dataset = 20
 num_blocks_per_series = 20
 from analysis import num_states_per_block # other direction creates cyclical dependency
-num_time_steps_to_taper = num_states_per_block // 10
 num_datasets = 250
 required_length = num_blocks_per_series * num_states_per_block
 dset_hurst_min = .9
@@ -84,14 +83,15 @@ if __name__ == '__main__':
             hurst_target = np.random.uniform(dset_hurst_min, dset_hurst_max)
             print('    chosen target hurst exponent:', hurst_target)
             series = []
-            for b in range(num_blocks_per_series):
+            num_blocks = int(max(num_blocks_per_series, 1))
+            for b in range(num_blocks):
                 # have to blend multiple series together to ensure non-stationarity
-                percentage = math.sin((num_blocks_per_series - b + 1) / num_blocks_per_series * math.pi - math.pi/2)
+                percentage = math.sin((num_blocks - b + 1) / num_blocks * math.pi - math.pi/2)
                 mean = orig_mean * percentage * np.linspace(.5, 1, num_features_per_state)
                 stdev = orig_stdev * percentage * np.linspace(.5, 1, num_features_per_state)
                 new_block = generator.forward(mean, stdev, hurst_target)
                 if len(series) > 0:
-                    series = blend_with_new_block(series, new_block, num_time_steps_to_taper)
+                    series = np.concatenate((series, new_block))
                 else:
                     series = new_block
             if isinstance(series, torch.Tensor):
@@ -105,7 +105,6 @@ if __name__ == '__main__':
             series_filename = os.path.join(dataset_dir, f'series_{i+1}.npy')
             np.save(series_filename, series)
         num_blocks_per_series /= (1 + 1/num_datasets)
-        num_blocks_per_series = int(max(num_blocks_per_series, 1))
         datasets.append(generated_sequences)
 
     series_metrics = []
