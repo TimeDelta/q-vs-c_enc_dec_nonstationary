@@ -182,7 +182,9 @@ if __name__ == '__main__':
             print('  Saved validation cost per series')
 
             if num_epochs > 0: # avoid index out of range while testing
-                check_for_overfitting(cost_history[-1], validation_costs)
+                mean_training_costs = cost_history[-1] / len(training)
+                mean_validation_costs = np.sum(validation_costs[:,1:], axis=0) / len(validation)
+                check_for_overfitting(mean_training_costs, mean_validation_costs)
 
             # === Model metric computations ===
             all_trash_indices = []

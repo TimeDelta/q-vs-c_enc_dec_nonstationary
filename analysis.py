@@ -19,16 +19,19 @@ MODEL_TYPES = ['qae', 'qrae', 'qte', 'qrte', 'cae', 'crae', 'cte', 'crte']
 # r = recurrent
 # ae = auto-encoder; te = transition encoder (auto-regressive)
 
-def check_for_overfitting(training_costs, validation_costs_per_series, threshold=.15):
+def check_for_overfitting(training_costs, validation_costs, threshold=.15):
+    """
+    each cost part must already be normalized by number of series in that partition
+    """
     def check_overfit(tc, vc, loss_type):
         overfit_ratio = (vc-tc)/tc
         if overfit_ratio > threshold:
             print(f'WARNING: Overfit likely based on {loss_type} costs (validation higher by {(100*overfit_ratio):.1f}%)')
-    for tc, vc, loss_type in zip(training_costs, np.sum(validation_costs_per_series[:,1:], axis=0), LOSS_TYPES):
+    for tc, vc, loss_type in zip(training_costs, validation_costs, LOSS_TYPES):
         check_overfit(tc, vc, loss_type)
 
     total_training_cost = np.sum(training_costs)
-    total_validation_cost = np.sum(validation_costs_per_series[:,1:])
+    total_validation_cost = np.sum(validation_costs)
     check_overfit(total_training_cost, total_validation_cost, 'Total')
 
 def multimodal_differential_entropy_per_feature(data):
@@ -247,6 +250,8 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
+    num_training_series = len(next(iter(datasets.values()))[0])
+    num_validation_series = len(next(iter(datasets.values()))[1])
 
     MODEL_STATS_CONFIG = {
         # lambda to parse rows into {series_index: individual}
@@ -327,7 +332,9 @@ if __name__ == '__main__':
             try:
                 stats.load(d_i, model_type, args.datasets_directory, run_prefix)
                 dataset_stats[model_type] = stats
-                check_for_overfitting(stats.data['cost_history'][-1], stats.data['validation_costs'], args.overfit_threshold)
+                mean_training_costs = stats.data['cost_history'][-1] / num_training_series
+                mean_validation_costs = np.sum(stats.data['validation_costs'][:,1:], axis=0) / num_validation_series
+                check_for_overfitting(mean_training_costs, mean_validation_costs, args.overfit_threshold)
             except Exception as e:
                 if args.test:
                     print('  skipping due to exception: ' + str(e))
@@ -488,7 +495,7 @@ if __name__ == '__main__':
     sample = next(iter(mean_cost_history_per_model_type.values()))
     num_epochs, num_loss_types = sample.shape
 
-    # randomly sample 20% datasets to plot individual histories per model type to avoid too much clutter
+    # randomly sample 10% datasets to plot individual histories per model type to avoid too much clutter
     individual_datasets_to_plot = list(set(d_i for (d_i, model_type) in stats_per_model.keys()))
     random.shuffle(individual_datasets_to_plot)
     individual_datasets_to_plot = individual_datasets_to_plot[:max(len(individual_datasets_to_plot)//10, 1)]
