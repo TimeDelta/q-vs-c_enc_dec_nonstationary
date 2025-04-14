@@ -110,6 +110,7 @@ if __name__ == '__main__':
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
     parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
     parser.add_argument("--seed", type=int, default=89266583, help="Seed value to set before creation of each model.")
+    parser.add_argument("--num_epochs", type=int, default=100)
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     if args.type_filter:
         model_types = [m for m in MODEL_TYPES if args.type_filter in m]
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 2
+    num_epochs = args.num_epoochs
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
