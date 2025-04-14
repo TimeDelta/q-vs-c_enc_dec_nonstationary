@@ -47,18 +47,18 @@ class FractionalGaussianSequenceGenerator:
             series.append(mean[f] + stdev[f] * np.tanh(FBM))
         return np.stack(series, axis=-1).astype(np.float32)
 
-num_features_per_state = 4 # num_qubits
-num_series_per_dataset = 30
-num_blocks_per_series = 20
-from analysis import num_states_per_block # other direction creates cyclical dependency
-num_datasets = 250
-required_length = num_blocks_per_series * num_states_per_block
-dset_hurst_min = .9
-dset_hurst_max = 1
-
 def generate_data(base_dir):
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
+
+    num_features_per_state = 4
+    num_series_per_dataset = 30
+    num_blocks_per_series = 20
+    from analysis import num_states_per_block # other direction creates cyclical dependency
+    num_datasets = 250
+    required_length = num_blocks_per_series * num_states_per_block
+    dset_hurst_min = .9
+    dset_hurst_max = 1
 
     datasets = []
     generator = FractionalGaussianSequenceGenerator(num_features_per_state, num_states_per_block)

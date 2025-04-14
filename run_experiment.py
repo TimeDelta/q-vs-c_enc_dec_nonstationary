@@ -1,6 +1,6 @@
 from data_generation import generate_data
 from optimize_hyperparams import get_best_config
-from training import train_and_analyze_bottlenecks_for_all_models
+from training import train_and_analyze_bottlenecks
 from analysis import run_analysis
 
 if __name__ == '__main__':
@@ -8,7 +8,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Run this experiment."
     )
-    parser.add_argument("data_directory", type=str, help="Directory in which to store the generated data.")
+    parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Directory in which to store the generated data.")
     args = parser.parse_args()
 
     generate_data(args.data_directory)
