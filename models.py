@@ -204,7 +204,7 @@ class ClassicalEncoderDecoder(nn.Module):
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
             # always start at zero to give better starting gradient
-            self.hidden_weight = nn.Parameter(torch.tensor([0]))
+            self.hidden_weight = nn.Parameter(torch.tensor([0.0]))
         self.hidden_state = None
         # ensure set_params starts w/ 0 for hidden weight
         self._params_initialized = False
@@ -231,7 +231,7 @@ class ClassicalEncoderDecoder(nn.Module):
             # add normalization to avoid infinite growth and have similar dynamics as
             # fixing of density matrix in quantum version
             # force weight between 0 and 1 w/o creating flat part of loss landscape
-            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight))
+            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight.detach().numpy()[0]))
             bottleneck_state = (1-weight)*bottleneck_state + weight*self.hidden_state
             output = self.hidden_state = bottleneck_state
         else:
