@@ -48,7 +48,7 @@ class FractionalGaussianSequenceGenerator:
         return np.stack(series, axis=-1).astype(np.float32)
 
 num_features_per_state = 4 # num_qubits
-num_series_per_dataset = 20
+num_series_per_dataset = 30
 num_blocks_per_series = 20
 from analysis import num_states_per_block # other direction creates cyclical dependency
 num_datasets = 250
@@ -131,19 +131,27 @@ def generate_data(base_dir):
     hfd_edges = np.linspace(1, 2, num_bins_per_metric + 1)
 
     series_metric_grid = {}
+    max_series_in_grid_per_dataset = num_series_per_dataset // 3
     for metrics, series in series_metrics:
         lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
         if np.isnan(he) or np.isnan(hfd):
             print('WARNING: Invalid complexity metric value: ', he, hfd)
             continue
+
         lzc_bin = np.digitize(lzc, lzc_edges) - 1
         he_bin = np.digitize(he, he_edges) - 1
         hfd_bin = np.digitize(hfd, hfd_edges) - 1
         metrics_key = (lzc_bin, he_bin, hfd_bin)
+        dataset_id = metrics["dataset"]
+
+        if dataset_series_count.get(dataset_id, 0) >= max_series_in_grid_per_dataset:
+            continue
+
         # only store first encountered series per cell (this also reduces the number of models needed to be trained
         # since the series appear in order of dataset)
         if metrics_key not in series_metric_grid:
             series_metric_grid[metrics_key] = (metrics, series)
+            dataset_series_count[dataset_id] = dataset_series_count.get(dataset_id, 0) + 1
             print(metrics)
             filename = f'series_cell_{metrics_key[0]}_{metrics_key[1]}_{metrics_key[2]}_dataset{metrics["dataset"]}.npy'
             np.save(os.path.join(base_dir, filename), series)
