@@ -113,7 +113,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
-    model_types = [m for m in MODEL_TYPES if args.type_filter in m]
+    model_types = MODEL_TYPES
+    if args.type_filter:
+        model_types = [m for m in MODEL_TYPES if args.type_filter in m]
     dataset_partitions = import_generated(args.data_directory)
     num_epochs = 2
 
