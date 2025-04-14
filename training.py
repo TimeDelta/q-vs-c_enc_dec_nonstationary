@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     dataset_partitions = import_generated(args.data_directory)
-    num_epochs = 100
+    num_epochs = 2
 
     def save(dataset_metrics, metric_desc):
         print(f'  {metric_desc}:')
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             'entanglement_gate': 'cz',
             'embedding_gate': 'rz',
         }
-        for model_type in MODEL_TYPES:
+        for model_type in [m for m in MODEL_TYPES if 'c' in m]:
             np.random.seed(args.seed)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'r' in model_type
@@ -189,6 +189,9 @@ if __name__ == '__main__':
             # === Model metric computations ===
             all_trash_indices = []
             dataset_enc_differential_entropies = []
+            dataset_bottleneck_lzcs = []
+            dataset_bottleneck_hes = []
+            dataset_bottleneck_hfds = []
             if model_type.startswith('q'):
                 def extract_marginal_features(bottlenecks):
                     # One feature per qubit: the marginal probability of |0>
@@ -223,9 +226,6 @@ if __name__ == '__main__':
                     return np.array(features)
                 dataset_enc_entangle_entropies = []
                 dataset_enc_vn_entropies = []
-                dataset_bottleneck_lzcs = []
-                dataset_bottleneck_hes = []
-                dataset_bottleneck_hfds = []
                 for (s_i, series) in validation:
                     enc_entangle_entropies = []
                     enc_vn_entropies = []
@@ -259,9 +259,6 @@ if __name__ == '__main__':
 
                 save(np.array(dataset_enc_entangle_entropies), 'Bottleneck entanglement entropy')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
-                save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
-                save(np.array(dataset_bottleneck_hes), 'Bottleneck HE')
-                save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
 
                 fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.qpy')
                 with open(fname, 'wb') as file:
@@ -280,12 +277,19 @@ if __name__ == '__main__':
                         bottlenecks.append(bottleneck_state)
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_state))
-                    diff_entropies = multimodal_differential_entropy_per_feature(np.array(bottlenecks))
+                    bottlenecks = np.array(bottlenecks)
+                    diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks)
                     dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
+                    dataset_bottleneck_lzcs.append(np.concatenate(([s_i], [lempel_ziv_complexity_continuous(bottlenecks)])))
+                    dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks))))
+                    dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks))))
 
                 fname = os.path.join(args.data_directory, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.pth')
                 torch.save(model, fname)
 
+            save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
+            save(np.array(dataset_bottleneck_hes), 'Bottleneck HE')
+            save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
             save(np.array(dataset_enc_differential_entropies), 'Bottleneck Differential Entropy')
             print(f"Saved trained model to {fname}")
             save_trash_indices_histogram(all_trash_indices, model.num_features)
