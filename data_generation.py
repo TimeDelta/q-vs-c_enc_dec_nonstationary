@@ -164,6 +164,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Find single optimal hyperparameter config to use across all model types in this experiment."
     )
-    parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Path to the directory containing the training data.")
+    parser.add_argument("data_directory", nargs='?', type=str, default='generated_datasets', help="Path to the directory containing the training data.")
     args = parser.parse_args()
     generate_data(args.data_directory)

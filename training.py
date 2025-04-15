@@ -277,7 +277,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
     )
-    parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Path to the directory containing the generated data.")
+    parser.add_argument("data_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated data.")
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
     parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
     parser.add_argument("--seed", type=int, default=RANDOM_SEED, help="Seed value to set before creation of each model.")

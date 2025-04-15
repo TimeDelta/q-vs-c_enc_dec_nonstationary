@@ -667,7 +667,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Train a QTE and QAE and generate correlation plots."
     )
-    parser.add_argument("datasets_directory", type=str, help="Path to the directory containing the generated datasets.")
+    parser.add_argument("datasets_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated datasets.")
     parser.add_argument("--test", action='store_true', default=False)
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
     parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
