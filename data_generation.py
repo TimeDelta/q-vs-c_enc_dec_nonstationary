@@ -133,6 +133,8 @@ def generate_data(base_dir):
     series_metric_grid = {}
     max_series_in_grid_per_dataset = num_series_per_dataset // 3
     dataset_series_count = {}
+    max_datasets_in_grid = 50
+    num_datasets_seen = 0
     for metrics, series in series_metrics:
         lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
         if np.isnan(he) or np.isnan(hfd):
@@ -145,7 +147,13 @@ def generate_data(base_dir):
         metrics_key = (lzc_bin, he_bin, hfd_bin)
         dataset_id = metrics["dataset"]
 
-        if dataset_series_count.get(dataset_id, 0) >= max_series_in_grid_per_dataset:
+        if dataset_id not in dataset_series_count:
+            num_datasets_seen += 1
+            if num_datasets_seen <= max_datasets_in_grid:
+                dataset_series_count[dataset_id] = 0
+            else:
+                continue
+        if dataset_series_count[dataset_id] >= max_series_in_grid_per_dataset:
             continue
 
         # only store first encountered series per cell (this also reduces the number of models needed to be trained
