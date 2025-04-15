@@ -85,7 +85,11 @@ def import_generated(generated_datasets_dir, train_ratio=0.66, seed=42):
         # Randomly split non-forced series into training and validation partitions
         non_forced_indices = np.array(non_forced_indices, dtype=int)
         np.random.shuffle(non_forced_indices)
-        num_train = int(np.floor(train_ratio * len(non_forced_indices)))
+        desired_num_train = train_ratio * (len(forced_indices) + len(non_forced_indices))
+        if len(non_forced_indices) > desired_num_train:
+            num_train = int(desired_num_train)
+        else:
+            num_train = len(non_forced_indices)
         train_indices = sorted(non_forced_indices[:num_train])
         val_indices = sorted(non_forced_indices[num_train:])
 

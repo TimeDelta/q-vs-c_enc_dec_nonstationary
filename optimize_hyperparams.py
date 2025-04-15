@@ -103,7 +103,7 @@ def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
 
     return optimal_config, optimal_loss
 
-def get_best_config(dataset_partitions):
+def get_best_config(dataset_partitions, max_training_epochs=16, reduction_factor=2):
     input_data = [[], []]
     for _, (training, validation) in sorted(dataset_partitions.items()):
         # take one training and one validation series from each dataset
@@ -112,7 +112,7 @@ def get_best_config(dataset_partitions):
         v = np.random.randint(0, len(validation))
         input_data[1].append(validation[v])
 
-    best_config, best_loss = hyperband_search(input_data, args.max_training_epochs, args.reduction_factor)
+    best_config, best_loss = hyperband_search(input_data, max_training_epochs, reduction_factor)
     print("\nBest hyperparameter configuration found:")
     print(best_config)
     print("With estimated loss:", best_loss)
@@ -129,4 +129,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     from data_importers import import_generated
-    get_best_config(import_generated(args.data_directory))
+    get_best_config(import_generated(args.data_directory, args.max_training_epochs, args.reduction_factor))
