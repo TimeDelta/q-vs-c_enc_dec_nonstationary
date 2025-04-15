@@ -1,7 +1,10 @@
+import os
+
 from data_generation import generate_data
 from optimize_hyperparams import get_best_config
 from training import train_and_analyze_bottlenecks
-from analysis import run_analysis
+from analysis import run_analysis, MODEL_TYPES
+from data_importers import import_generated
 
 if __name__ == '__main__':
     import argparse
@@ -11,9 +14,23 @@ if __name__ == '__main__':
     parser.add_argument("--data_directory", type=str, default='generated_datasets', help="Directory in which to store the generated data.")
     args = parser.parse_args()
 
-    generate_data(args.data_directory)
+    if not os.path.exists(args.data_directory):
+        generate_data(args.data_directory)
     dataset_partitions = import_generated(args.data_directory)
-    best_config = get_best_config(dataset_partitions)
+
+    best_config_path = os.path.join(args.data_directory, 'best_config.json')
+    if os.path.exists(best_config_path):
+        with open(best_config_path, 'r') as file:
+            best_config = json.load(file)
+    else:
+        best_config = get_best_config(dataset_partitions)
+        with open(best_config_path, 'w') as file:
+            json.dump(best_config, file, indent=2)
+
     num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
-    train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, best_config)
+    pytorch_models = len(glob.glob(os.path.join(args.data_directory, '*.pth')))
+    qiskit_models = len(glob.glob(os.path.join(args.data_directory, '*.qpy')))
+    if pytorch_models + qiskit_models == len(dataset_partitions) * len(MODEL_TYPES):
+        train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, best_config)
     run_analysis(dataset_partitions, args.data_directory)
+    print('Experiment complete')
