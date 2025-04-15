@@ -16,9 +16,10 @@ if __name__ == '__main__':
 
     if not os.path.exists(args.data_directory):
         generate_data(args.data_directory)
-    else:
-        print('!! Skipping data generation due to existing specified directory')
     dataset_partitions = import_generated(args.data_directory)
+    if len(dataset_partitions) == 0: # in case directory is empty
+        generate_data(args.data_directory)
+        dataset_partitions = import_generated(args.data_directory)
 
     best_config_path = os.path.join(args.data_directory, 'best_config.json')
     if os.path.exists(best_config_path):
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     num_missing_models = num_required_models - (pytorch_models + qiskit_models)
     if num_missing_models > 0:
         if pytorch_models > 0 or qiskit_models > 0:
-            print(f'Missing {num_missing_models} models')
+            print(f'Missing {num_missing_models} models ... Rerunning training')
         train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, best_config)
     run_analysis(dataset_partitions, args.data_directory)
     print('Experiment complete')

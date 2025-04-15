@@ -9,6 +9,7 @@ from utility import dm_to_statevector, without_t_gate, fix_dm_array, normalize_c
 
 ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
+EMBEDDING_GATES = ['rx', 'ry', 'rz']
 
 class QuantumEncoderDecoder:
     hidden_state_weight_param = Parameter('Hidden State Weight')

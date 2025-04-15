@@ -3,6 +3,7 @@ import math
 
 from training import *
 from loss import *
+from models import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_GATES
 from analysis import check_for_overfitting, MODEL_TYPES
 
 MAX_NUM_BLOCKS = 1 # per encoder AND per decoder
@@ -15,6 +16,7 @@ def sample_hyperparameters(num_features):
         'max_penalty_weight': 2.0,
         'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
         'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
+        'embedding_gate': np.random.choice(EMBEDDING_GATES),
     }
 
 def get_loss(data, model_type, config, allocated_epochs):
@@ -129,4 +131,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     from data_importers import import_generated
-    get_best_config(import_generated(args.data_directory, args.max_training_epochs, args.reduction_factor))
+    best_config = get_best_config(import_generated(args.data_directory, args.max_training_epochs, args.reduction_factor))
+    best_config_path = os.path.join(args.data_directory, 'best_config.json')
+    with open(best_config_path, 'w') as file:
+        json.dump(best_config, file, indent=2)
