@@ -200,7 +200,8 @@ class RestrictedParamCountIndividualCayleyLinear(nn.Module):
         core = scaling @ rotation
         lifted_core = torch.zeros(self.num_params, self.num_params, dtype=core.dtype)
         for offset in range(self.num_params//2 + 1):
-            lifted_core[offset:offset+self.num_params // 2, offset:offset+self.num_params // 2] += core
+            rotated_core = torch.rot90(core, k=offset, dims=(0, 1)) # to get a different rotation per feature
+            lifted_core[offset:offset+self.num_params // 2, offset:offset+self.num_params // 2] += rotated_core
         return x @ lifted_core.T
 
 
