@@ -176,13 +176,13 @@ class RestrictedParamCountIndividualCayleyLinear(nn.Module):
     A linear layer with a specified even number of free parameters equal to both the input and output dimension.
     To achieve this, they are split in half between an two smaller matrices, each with half dimensions. One is
     an orthogonal rotation matrix created via a Cayley transform and the other is a diagonal scaling matrix. The
-    dimensionality of this core transformation is then increased by repeatedly adding (with overlap) the lower-
-    dimensional result along the diagonal of the higher dimensional matrix so that each individual node has a
-    unique rotation while still forcing the free parameters to be "coupled" across the layer. While this is not
-    a perfect analogue to the quantum architecture — since in a quantum system the qubits themselves are inherently
-    correlated — it does allow a correlation between the effects of the rotations. This engineered coupling mimics,
-    to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full
-    complexity of quantum entanglement.
+    core transformation is a scaled rotation. The dimensionality of this core transformation is then increased by
+    repeatedly adding (with overlap) the lower-dimensional result along the diagonal of the higher dimensional
+    matrix so that each individual node has a unique rotation while still forcing the free parameters to be
+    "coupled" across the layer. While this is not a perfect analogue to the quantum architecture — since in a
+    quantum system the qubits themselves are inherently correlated — it does allow a correlation between the
+    effects of the rotations. This engineered coupling mimics, to some extent, the way local gate parameters
+    interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement.
     """
     def __init__(self, num_params):
         super(RestrictedParamCountIndividualCayleyLinear, self).__init__()
@@ -197,7 +197,7 @@ class RestrictedParamCountIndividualCayleyLinear(nn.Module):
         I = torch.eye(self.num_params // 2, device=x.device, dtype=x.dtype)
         rotation = torch.linalg.solve(I - skew_symmetric_matrix, I + skew_symmetric_matrix)
         scaling = torch.diag(self.diagonal_scaling_params)
-        core = rotation @ scaling
+        core = scaling @ rotation
         lifted_core = torch.zeros(self.num_params, self.num_params, dtype=core.dtype)
         for offset in range(self.num_params//2 + 1):
             lifted_core[offset:offset+self.num_params // 2, offset:offset+self.num_params // 2] += core
