@@ -5,6 +5,13 @@
 - [Model Architectures and Methods](#model-architectures-and-methods)
   - [Data Generation](#data-generation)
   - [Hyperparameter Optimizaiton](#hyperparameter-optimization)
+- [Results](#results)
+  - [Classical vs Quantum](#classical-vs-quantum)
+    - [Loss Landscape Similarity](#loss-landscape-similarity)
+  - [Prediction vs Reconstruction](#prediction-vs-reconstruction)
+  - [Recurrence](#recurrence)
+- [Discussion](#discussion)
+- [Conclusion](#conclusion)
 - [Abbreviations](#abbreviations)
 - [References](#references)
 - [Useful Commands](#useful-commands)
@@ -20,7 +27,7 @@ In this work, I conduct a comprehensive comparison of eight model variants spann
 - Autoencoder vs. Transition Encoder (Autoregressive) objectives
 - Minimalist Recurrent vs. Non-Recurrent models
 
-By evaluating these models on the same set of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics. Specifically, the central hypothesis is that transition encoders will converge faster during training, achieve lower loss (error), and produce latent representations that better align with established complexity metrics of the data, compared to traditional autoencoders. The intuition is that because transition encoders are explicitly trained on the temporal relationships (the state-to-state transitions), they intrinsically have better access to the underlying non-stationary patterns and dynamics of the sequence. This should make it easier for them to learn structure that a stationary autoencoder might miss if the distribution shifts over time. An additional hypothesis is that recurrence being added to the autoencoder objective will not be enough to outcompete the autoregressive versions without recursion, especially since the implemented recursion adds only a single extra parameter.
+By evaluating these models on the same set of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics. Specifically, the central hypothesis is that transition encoders will converge faster during training, achieve lower loss (error), and produce latent representations that better align with established complexity metrics of the data, compared to traditional autoencoders. The intuition is that because transition encoders are explicitly trained on the temporal relationships (the state-to-state transitions), they intrinsically have better access to the underlying non-stationary patterns and dynamics of the sequence. This should make it easier for them to learn structure that a standard autoencoder objective might miss if the distribution shifts over time. An additional hypothesis is that recurrence being added to the autoencoder objective will not be enough to outcompete the autoregressive versions without recursion, especially since the implemented recursion adds only a single extra parameter.
 
 Furthermore, I investigate expected differences between quantum and classical variants. Quantum models, implemented via parametrized quantum circuits, often exhibit highly non-linear loss landscapes. Despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures-and-methods), I expect that the quantum variants will still have more rugged loss landscapes, characterized by larger first and second derivatives and more high-frequency content in the derivatives spectrum, compared to their classical analogues. This expectation comes mostly from parameter entanglement causing sharpness.
 
@@ -58,6 +65,10 @@ Multivariate time series are synthesized by concatenating blocks where each feat
 - ignore configurations that lead to obvious overfitting when number of trained epochs is ≥ 10 by returning infinite cost for any configuration whose validation cost is higher than its final training cost by more than 50% of its training cost
 
 ## Results
+### Classical vs Quantum
+#### Loss Landscape Similarity
+### Prediction vs Reconstruction
+### Reccurence
 
 ## Discussion
 
