@@ -3,7 +3,7 @@ import math
 
 from training import *
 from loss import *
-from models import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, EMBEDDING_GATES
+from models import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, ROTATION_GATES
 from analysis import check_for_overfitting, MODEL_TYPES
 
 MAX_NUM_BLOCKS = 1 # per encoder AND per decoder
@@ -16,7 +16,8 @@ def sample_hyperparameters(num_features):
         'max_penalty_weight': 2.0,
         'entanglement_topology': np.random.choice(ENTANGLEMENT_OPTIONS),
         'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
-        'embedding_gate': np.random.choice(EMBEDDING_GATES),
+        'embedding_gate': np.random.choice(ROTATION_GATES),
+        'block_gate': np.random.choice(ROTATION_GATES),
     }
 
 def get_loss(data, model_type, config, allocated_epochs):
@@ -105,7 +106,7 @@ def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
 
     return optimal_config, optimal_loss
 
-def get_best_config(dataset_partitions, max_training_epochs=16, reduction_factor=2):
+def get_best_config(dataset_partitions, max_training_epochs=16, reduction_factor=4):
     input_data = [[], []]
     for _, (training, validation) in sorted(dataset_partitions.items()):
         # take one training and one validation series from each dataset
@@ -126,7 +127,7 @@ if __name__ == '__main__':
         description="Find single optimal hyperparameter config to use across all model types in this experiment."
     )
     parser.add_argument("data_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the training data.")
-    parser.add_argument("--reduction_factor", type=int, default=2, help="Factor by which successive configuration evals are reduced each round.")
+    parser.add_argument("--reduction_factor", type=int, default=4, help="Factor by which successive configuration evals are reduced each round.")
     parser.add_argument("--max_training_epochs", type=int, default=16, help="Maximum number of epochs allocated to any configuration.")
     args = parser.parse_args()
 
