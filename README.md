@@ -50,12 +50,18 @@ While this is not a perfect analogue to the quantum architecture — since in a 
 The BTFP for the classical architecture is the sum of the lowest activation values in the bottleneck.
 
 ### Data Generation
-Multivariate time series are synthesized by concatenating blocks where each feature is a separate fractional Brownian motion (FBM) series, which is a zero‑mean Gaussian process characterized by a target HE to control long‑range dependence. The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity. Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible Lempel-Ziv complexity value. Representative sequences are then selected via 3D binning in the space of LZC, HE, and Higuchi fractal dimension (HFD).
+Multivariate time series are synthesized by concatenating blocks where each feature is a separate fractional Brownian motion (FBM) series, which is a zero‑mean Gaussian process characterized by a target HE to control long‑range dependence. The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity based on another FBM sequence. Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible Lempel-Ziv complexity value. Sequences are then randomly shuffled and then representative sequences are then selected via 3D binning in the space of LZC, HE, and Higuchi fractal dimension (HFD). These sample sequences are ensured to be in the validation set so that there is a good spread of metric values to use when looking at relationships during the analysis. In order to ensure a reasonable amount of training data for each dataset, the grid was limited to choosing at most a third of the series in each dataset. The unchosen sequences are then split between each dataset's training and validation partitions as close as possible to a desired split ratio and the size of each validation partition is then standardized to the maximum validation partition size. For the experimental results in this paper, a ratio of 2/3 training to 1/3 validation is used.
 
 ### Hyperparameter Optimization
 - hyperband
 - one example from training and one example from validation partitions of each dataset
 - ignore configurations that lead to obvious overfitting when number of trained epochs is ≥ 10 by returning infinite cost for any configuration whose validation cost is higher than its final training cost by more than 50% of its training cost
+
+## Results
+
+## Discussion
+
+## Conclusion
 
 ## Future Work
 - Multiple blocks per model half
