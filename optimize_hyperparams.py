@@ -27,7 +27,7 @@ def get_loss(data, model_type, config, allocated_epochs):
     validation = data[1]
     num_features = len(training[0][1][0])
 
-    print('Training ' + model_type.upper())
+    print(f'Training {model_type.upper()} for {allocated_epochs}')
     is_recurrent = 'r' in model_type
     autoregressive = 'te' in model_type # transition encoder
 

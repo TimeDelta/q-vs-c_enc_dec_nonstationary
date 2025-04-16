@@ -171,23 +171,37 @@ class QuantumEncoderDecoder:
                 self.hidden_weight = params_dict[self.hidden_state_weight_param]
 
 
-class RestrictedParamCountCayleyLinear(nn.Module):
+class RestrictedParamCountIndividualCayleyLinear(nn.Module):
     """
-    A linear layer whose weight matrix is restricted to be orthogonal using the Cayley transform.
-    In order to maintain a directly comparable parameter count, parameterize a skew-symmetric
-    matrix using a vector of length num_features.
+    A linear layer with a specified even number of free parameters equal to both the input and output dimension.
+    To achieve this, they are split in half between an two smaller matrices, each with half dimensions. One is
+    an orthogonal rotation matrix created via a Cayley transform and the other is a diagonal scaling matrix. The
+    dimensionality of this core transformation is then increased by repeatedly adding (with overlap) the lower-
+    dimensional result along the diagonal of the higher dimensional matrix so that each individual node has a
+    unique rotation while still forcing the free parameters to be "coupled" across the layer. While this is not
+    a perfect analogue to the quantum architecture — since in a quantum system the qubits themselves are inherently
+    correlated — it does allow a correlation between the effects of the rotations. This engineered coupling mimics,
+    to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full
+    complexity of quantum entanglement.
     """
     def __init__(self, num_params):
-        super(RestrictedParamCountCayleyLinear, self).__init__()
+        super(RestrictedParamCountIndividualCayleyLinear, self).__init__()
+        if num_params % 2 == 1:
+            raise Exception('Need even number of features')
         self.num_params = num_params
-        self.param_vector = nn.Parameter(torch.randn(num_params))
+        self.rotation_params = nn.Parameter(torch.randn(self.num_params // 2))
+        self.diagonal_scaling_params = nn.Parameter(torch.randn(self.num_params // 2))
 
     def forward(self, x):
-        skew_symmetric_matrix = self.param_vector.unsqueeze(1) - self.param_vector.unsqueeze(0)
-        I = torch.eye(self.num_params, device=x.device, dtype=x.dtype)
-        U = torch.linalg.solve(I - skew_symmetric_matrix, I + skew_symmetric_matrix)
-        orthogonalized_output = x @ U.T
-        return orthogonalized_output
+        skew_symmetric_matrix = self.rotation_params.unsqueeze(1) - self.rotation_params.unsqueeze(0)
+        I = torch.eye(self.num_params // 2, device=x.device, dtype=x.dtype)
+        rotation = torch.linalg.solve(I - skew_symmetric_matrix, I + skew_symmetric_matrix)
+        scaling = torch.diag(self.diagonal_scaling_params)
+        core = rotation @ scaling
+        lifted_core = torch.zeros(self.num_params, self.num_params, dtype=core.dtype)
+        for offset in range(self.num_params//2 + 1):
+            lifted_core[offset:offset+self.num_params // 2, offset:offset+self.num_params // 2] += core
+        return x @ lifted_core.T
 
 
 class ClassicalEncoderDecoder(nn.Module):
@@ -199,9 +213,9 @@ class ClassicalEncoderDecoder(nn.Module):
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
-            self.encoder.append(RestrictedParamCountCayleyLinear(num_features))
+            self.encoder.append(RestrictedParamCountIndividualCayleyLinear(num_features))
             # bottleneck enforced via cost function similar to Quantum version
-            self.decoder.append(RestrictedParamCountCayleyLinear(num_features))
+            self.decoder.append(RestrictedParamCountIndividualCayleyLinear(num_features))
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
             # always start at zero to give better starting gradient
