@@ -1,4 +1,9 @@
 # Quantum vs Classical, Autoregressive vs Reconstructive Encoder/Decoder Architectures on Non-Stationary Time-Series: Convergence, Entropy, and Complexity with and without Recurrence
+## Contents
+- [Model Architectures and Methods](#model_architectures_and_methods)
+- [Abbreviations](#abbreviations)
+- [References](#references)
+- [Useful Commands](#useful_commands)
 ## Introduction
 Time-series data often exhibit complex, non-stationary patterns that pose challenges for modeling and compression. Autoencoders (AEs) have long been used for unsupervised learning of low-dimensional representations (embeddings) of data (Hinton, 2006). A classical AE is typically trained to reconstruct its input after compressing it through a low-dimensional “bottleneck” layer in order to capture the most salient features of the input distribution. In the autoregressive version (herein called a “transition encoder” — TE), the same model architecture takes the current state as input and is trained to predict the next state of a time series, effectively learning to compress the underlying temporal dynamics.
 
