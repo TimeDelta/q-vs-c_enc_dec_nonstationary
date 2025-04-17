@@ -133,7 +133,7 @@ def generate_data(base_dir):
     series_metric_grid = {}
     max_series_in_grid_per_dataset = num_series_per_dataset // 3
     dataset_series_count = {}
-    max_datasets_in_grid = 50
+    max_datasets_in_grid = 25
     num_datasets_seen = 0
     np.random.shuffle(series_metrics)
     for metrics, series in series_metrics:
