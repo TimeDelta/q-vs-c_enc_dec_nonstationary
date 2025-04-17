@@ -54,7 +54,7 @@ def generate_data(base_dir):
     num_series_per_dataset = 30
     num_blocks_per_series = 20
     from analysis import num_states_per_block # other direction creates cyclical dependency
-    num_datasets = 250
+    num_datasets = 125
     required_length = num_blocks_per_series * num_states_per_block
     dset_hurst_min = .9
     dset_hurst_max = 1
