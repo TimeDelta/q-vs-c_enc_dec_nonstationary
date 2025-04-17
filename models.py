@@ -175,38 +175,34 @@ class QuantumEncoderDecoder:
                 self.hidden_weight = params_dict[self.hidden_state_weight_param]
 
 
-class RestrictedParamCountIndividualCayleyLinear(nn.Module):
+class RingGivensRotationLayer(nn.Module):
     """
-    A linear layer with a specified even number of free parameters equal to both the input and output dimension.
-    To achieve this, they are split in half between an two smaller matrices, each with half dimensions. One is
-    an orthogonal rotation matrix created via a Cayley transform and the other is a diagonal scaling matrix. The
-    core transformation is a scaled rotation. The dimensionality of this core transformation is then increased by
-    repeatedly adding (with overlap) the lower-dimensional result along the diagonal of the higher dimensional
-    matrix so that each individual node has a unique rotation while still forcing the free parameters to be
-    "coupled" across the layer. While this is not a perfect analogue to the quantum architecture — since in a
-    quantum system the qubits themselves are inherently correlated — it does allow a correlation between the
-    effects of the rotations. This engineered coupling mimics, to some extent, the way local gate parameters
-    interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement.
-    """
-    def __init__(self, num_params):
-        super(RestrictedParamCountIndividualCayleyLinear, self).__init__()
-        if num_params % 2 == 1:
-            raise Exception('Need even number of features')
-        self.num_params = num_params
-        self.rotation_params = nn.Parameter(torch.randn(self.num_params // 2))
-        self.diagonal_scaling_params = nn.Parameter(torch.randn(self.num_params // 2))
+    An SO(n)-group layer built from n Givens rotation angles reused in a ring, so
+    that each of the n features participates in exactly two rotations: one with
+    its successor and one with its predecessor (wrapping around).
 
-    def forward(self, x):
-        skew_symmetric_matrix = self.rotation_params.unsqueeze(1) - self.rotation_params.unsqueeze(0)
-        I = torch.eye(self.num_params // 2, device=x.device, dtype=x.dtype)
-        rotation = torch.linalg.solve(I - skew_symmetric_matrix, I + skew_symmetric_matrix)
-        scaling = torch.diag(self.diagonal_scaling_params)
-        core = scaling @ rotation
-        lifted_core = torch.zeros(self.num_params, self.num_params, dtype=core.dtype)
-        for offset in range(self.num_params//2 + 1):
-            rotated_core = torch.rot90(core, k=offset, dims=(0, 1)) # to get a different rotation per feature
-            lifted_core[offset:offset+self.num_params // 2, offset:offset+self.num_params // 2] += rotated_core
-        return x @ lifted_core.T
+    This uses exactly n parameters, preserves orthogonality (R^T R = I, det=+1),
+    and couples all features through sequential plane rotations.
+    """
+    def __init__(self, num_params: int):
+        super().__init__()
+        self.num_params = num_params
+        self.angles = nn.Parameter(torch.randn(self.num_params))
+        # Precompute the sequence of (i,j) planes in a ring
+        self.planes = [(i, (i+1) % self.num_params) for i in range(self.num_params)]
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        rotations = torch.eye(self.num_params, device=x.device, dtype=x.dtype)
+        # sequentially apply each Givens rotation
+        for (i, j), angle in zip(self.planes, self.angles):
+            c = torch.cos(angle)
+            s = torch.sin(angle)
+            givens_rotation = torch.eye(self.num_params, device=x.device, dtype=x.dtype)
+            # 2×2 block in the (i,j) plane
+            givens_rotation[i, i] = c;  givens_rotation[j, i] = s
+            givens_rotation[i, j] = -s; givens_rotation[j, j] = c
+            rotations = rotations @ givens_rotation
+        return x @ rotations.T
 
 
 class ClassicalEncoderDecoder(nn.Module):
@@ -218,9 +214,9 @@ class ClassicalEncoderDecoder(nn.Module):
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
-            self.encoder.append(RestrictedParamCountIndividualCayleyLinear(num_features))
+            self.encoder.append(RingGivensRotationLayer(num_features))
             # bottleneck enforced via cost function similar to Quantum version
-            self.decoder.append(RestrictedParamCountIndividualCayleyLinear(num_features))
+            self.decoder.append(RingGivensRotationLayer(num_features))
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
             # always start at zero to give better starting gradient

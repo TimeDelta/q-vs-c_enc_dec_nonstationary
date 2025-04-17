@@ -44,9 +44,9 @@ This study evaluates all 2×2×2 combinations of the above factors, and is, to m
 ## Model Architectures and Methods
 To make a fair comparison between classical and quantum approaches, the [classical network architecture](./models.py#L212) is designed to mirror the [quantum one](./models.py#L14) in terms of structure and parameter count as closely as possible. Both are essentially encoder-decoder pairs with one or more layers (blocks) of transformation in the encoder and a corresponding inverse transformation in the decoder. All models have their latent dimensionality enforced via a cost function term - heretoforth referred to as the "bottleneck trash feature penalty" (BTFP) loss term. The key differences are in the way that correlationary coupling is introduced, the size of the space in which each fetaure's rotations can happen (the Hilbert space of the quantum architecture being exponentially larger) and the exact function used to calculate the BTFP. For simiplicity, all architectures are restricted to a linear regime. Even the recurrence is linear, being implemented as minimalistically as possible with a single scalar parameter that is transformed to be a value between 0 and 1 using a sigmoid function. This effective free parameter range enforcement is necessary for the quantum bottleneck state to maintain validity after the recurrence operation and is copied to the classical version for parity. Other than this, parameter count parity is maintained across all models. However this single extra parameter does constitute an entire 1/8 extra parameters over the non-recurrent models because the parameter counts were kept low in order to keep the training time per model low enough that 8 * (number of datasets) models could be trained in time. During training, the weighting for the trash feature information penalty starts just above 0 and is linearly increased each epoch until it reaches a desired maximum. This helps prevent mode collapse while still allowing time to learn the encoding before having to learn to compress.
 
-For simplicity in creating a classical analogue, the quantum architecture restricts each block to a layer with single-qubit rotation gates followed by a linear entanglement layer and embeds each feature into its own qubit. [It's BTFP](./loss.py#L27) is calculated by sorting the marginal probability of the bottleneck density matrix (between the encoder and decoder) and then summing the (number of qubits - bottleneck size) lowest marginals. All quantum circuits were simulated on classical hardware in order to rule out noise as a complicating factor for the conclusions and due to the difficulty in implementing a dynamic trash qubit index determination without the use of a simulator.
+For simplicity in creating a classical analogue, the quantum architecture restricts each block to a layer with single-qubit rotation gates followed by a ring entanglement layer and embeds each feature into its own qubit. [It's BTFP](./loss.py#L27) is calculated by sorting the marginal probability of the bottleneck density matrix (between the encoder and decoder) and then summing the (number of qubits - bottleneck size) lowest marginals. All quantum circuits were simulated on classical hardware in order to rule out noise as a complicating factor for the conclusions and due to the difficulty in implementing a dynamic trash qubit index determination without the use of a simulator.
 
-In the classical architecture, each block is a linear layer ([RestrictedParamCountIndividualCayleyLinear](./models.py#L178)) with a specified even number of free parameters equal to both the input and output dimension. To achieve this, they are split in half between an two smaller matrices, each with half dimensions. One is an orthogonal rotation matrix created via a Cayley transform and the other is a diagonal scaling matrix. The core transformation is a scaled rotation. The dimensionality of this core transformation is then increased by repeatedly adding (with overlap) the lower-dimensional result along the diagonal of the higher dimensional matrix so that each individual node has a unique rotation while still forcing the free parameters to be "coupled" across the layer. In the figure below, only the 4x4 part in the dark black border is kept. The third rotation of the core matrix when increasing the dimensionality is to ensure that each feature gets a unique rotation. The white cells are all 0 and the color of the other cells reflect which two free parameters were mixed to produce the value. ![figure x](./images/core-linear-layer-rotating-diagonal-sum-dimensionality-increase.png)
+In the classical architecture, each block is a [RingGivensRotationLayer](./models.py#L178) with a number of free parameters equal to both the input and output dimension. It is well documented that givens matrices impose unitarity on the contained rotations (Givens, 1958). This layer construction uses each free parameter as an angle and constructs unique rotations for each feature that all have the lie group of special orthogonal (SO), which is a subset of the unitary (U) Lie group. Importantly, the SO group is preserved under matrix multiplication (Golub, 2013). This allows the use of individual 2x2 matrices multiplied together along the diagonal of the full-dimensional weight matrix for the linear layer while still restricting to the SO group. This construction maintains parity with the type of transformations available to the simple quantum block ansatz that is used (one 2x2 single-axis rotation unitary matrix per feature with ring entanglement). ![figure x: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-matrix-construction.png)
 
 While this is not a perfect analogue to the quantum architecture — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations. This engineered coupling mimics, to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement. In the Cayley transform parameterization, the coupling is a consequence of the mapping process itself. In entanglement, the coupling arises due to the physical evolution governed by the Hamiltonian of an interacting system and the tensor product structure of the Hilbert space.
 - In a quantum system, the non-separability of the state (entanglement) is a fundamental property with deep implications—for example, violating Bell inequalities and enabling non-classical information processing. These correlations are intrinsic to the quantum state and are subject to rules of quantum mechanics.
@@ -94,7 +94,9 @@ Multivariate time series are synthesized by concatenating blocks where each feat
 - HE = Hurst Exponent
 - HFD = Higuchi Fractal Dimension
 - LZC = Lempel-Ziv Complexity
+- SO = Special Orthogonal
 - TE = Transition Encoder (autoregressive encoder / decoder)
+- U = Unitary
 - VNE = VonNeumann Entropy
 
 ## References (BibTex)
@@ -108,14 +110,14 @@ number = {5786},
 pages = {504-507},
 year = {2006},
 doi = {10.1126/science.1127647},
-URL = {https://www.science.org/doi/abs/10.1126/science.1127647},
-eprint = {https://www.science.org/doi/pdf/10.1126/science.1127647},
+URL = { https://www.science.org/doi/abs/10.1126/science.1127647 },
+eprint = { https://www.science.org/doi/pdf/10.1126/science.1127647 },
 abstract = {High-dimensional data can be converted to low-dimensional codes by training a multilayer neural network with a small central layer to reconstruct high-dimensional input vectors. Gradient descent can be used for fine-tuning the weights in such “autoencoder” networks, but this works well only if the initial weights are close to a good solution. We describe an effective way of initializing the weights that allows deep autoencoder networks to learn low-dimensional codes that work much better than principal components analysis as a tool to reduce the dimensionality of data.}}
 1. @article{Romero_2017,
 title={Quantum autoencoders for efficient compression of quantum data},
 volume={2},
 ISSN={2058-9565},
-url={http://dx.doi.org/10.1088/2058-9565/aa8072},
+url={ http://dx.doi.org/10.1088/2058-9565/aa8072 },
 DOI={10.1088/2058-9565/aa8072},
 number={4},
 journal={Quantum Science and Technology},
@@ -140,8 +142,30 @@ year={2024},
 eprint={2402.14515},
 archivePrefix={arXiv},
 primaryClass={quant-ph},
-url={https://arxiv.org/abs/2402.14515},
+url={ https://arxiv.org/abs/2402.14515 },
 }
+1. @article{doi:10.1137/0106004,
+  author  = {Givens, Wallace},
+  title   = {Computation of Plain Unitary Rotations Transforming a General Matrix to Triangular Form},
+  journal = {Journal of the Society for Industrial and Applied Mathematics},
+  volume  = {6},
+  number  = {1},
+  pages   = {26-50},
+  year    = {1958},
+  doi     = {10.1137/0106004},
+  URL     = { https://doi.org/10.1137/0106004 },
+  eprint  = { https://doi.org/10.1137/0106004 }
+}
+1. @book{golub2013matrix,
+  title     = {Matrix Computations},
+  author    = {Golub, Gene H. and Van Loan, Charles F.},
+  edition   = {4},
+  year      = {2013},
+  publisher = {Johns Hopkins University Press},
+  address   = {Baltimore, MD},
+  isbn      = {978-1421407944},
+}
+
 
 ## Useful Commands
 To determine how many datasets need models trained over them based on the saved grid files ("series_cell_..."), use `find generated_datasets.4qubits/ -iname series_cell_\*dataset\*.npy | sed -E 's/.*series_cell.*dataset(.*)\.npy/\1/' | sort | uniq | wc -l`
