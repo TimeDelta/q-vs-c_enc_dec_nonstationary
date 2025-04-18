@@ -12,7 +12,7 @@ def sample_hyperparameters(num_features):
     return {
         'bottleneck_size': num_features // 2,
         'num_blocks': np.random.randint(1, MAX_NUM_BLOCKS+1), # per encoder AND per decoder
-        'learning_rate': 10 ** np.random.uniform(-3, -1),
+        'learning_rate': 10 ** np.random.uniform(-4, -1),
         'max_penalty_weight': 2.0,
         'entanglement_topology': 'circular', # np.random.choice(ENTANGLEMENT_OPTIONS),
         'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
