@@ -75,7 +75,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         gradients = np.zeros_like(param_values)
         # progressively increase the probability that the model will have to deal with it's own noise from the previous time step
         for j in range(len(param_values)):
-            print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' = ' + str((j)/len(param_values)*100) + '% done')
+            print('    calculating gradient for param ' + str(j+1) + ' / ' + str(len(param_values)) + ' ... (' + str((j)/len(param_values)*100) + '% done)')
             params_eps = param_values.copy()
             params_eps[j] += gradient_width
             param_dict = {param: value for param, value in zip(model.trainable_params, params_eps)}
