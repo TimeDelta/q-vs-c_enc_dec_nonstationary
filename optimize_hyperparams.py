@@ -58,7 +58,7 @@ def get_loss(data, model_type, config, allocated_epochs):
     # scale the cost by the % of max num of blocks used
     # TODO: incorporate bottleneck size
     scale = float(config['num_blocks']) / float(MAX_NUM_BLOCKS)
-    return sum(cost_history[-1]) * scale
+    return np.sum(np.array(validation_costs)[:,1:]) * scale
 
 def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
     """
