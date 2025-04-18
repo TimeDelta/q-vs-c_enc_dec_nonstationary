@@ -58,7 +58,7 @@ Multivariate time series are synthesized by concatenating blocks where each feat
 
 ### Hyperparameter Optimization
 Hyperparameter optimization was done over the same validation set for each config, following the standard definition of hyperparameter tuning. Hyperband was used to efficiently search this space, which allocates the number of training epochs as a resource and uses successive halving to prune underperforming configurations (Lisha, 2018). In the implementation used, a series of “brackets” are created based on the maximum number of training epochs and a reduction factor, iterating from the most exploratory (many configurations, few epochs) to the most exploitative (few configurations, many epochs) phases ([`hyperband_search(...)`](./optimize_hyperparams.py#L63)).
-- **Data Sampling:** One training and one validation series are randomly sampled from each dataset partition using the `get_best_config` routine, providing a representative but lightweight evaluation set.
+- **Data Sampling:** One training and one validation series are randomly sampled from each dataset partition inside the [`get_best_config(...)`](./optimize_hyperparams.py#L111) routine, providing a representative but lightweight evaluation set. One potential negative consequence of using a single hyperparameter configuration for all datasets, however, is that the hyperparameters could get tuned to be more effective on the moderate complexity data.
 - **Configuration Sampling:** The [`sample_hyperparameters(...)`](./optimize_hyperparams.py#L11) function draws candidate settings by:
   - Sampling the learning rate uniformly in log₁₀-space between 10⁻⁴ and 10⁻¹
   - Setting `bottleneck_size` to half the number of features
