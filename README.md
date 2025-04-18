@@ -46,7 +46,7 @@ To make a fair comparison between classical and quantum approaches, the [classic
 
 For simplicity in creating a classical analogue, the quantum architecture restricts each block to a layer with single-qubit rotation gates followed by a ring entanglement layer and embeds each feature into its own qubit. [It's BTFP](./loss.py#L27) is calculated by sorting the marginal probability of the bottleneck density matrix (between the encoder and decoder) and then summing the (number of qubits - bottleneck size) lowest marginals. All quantum circuits were simulated on classical hardware in order to rule out noise as a complicating factor for the conclusions and due to the difficulty in implementing a dynamic trash qubit index determination without the use of a simulator.
 
-In the classical architecture, each block is a [RingGivensRotationLayer](./models.py#L178) with a number of free parameters equal to both the input and output dimension. Unfortunately, due to dimensionality constraints, it is not possible to maintain perfect transformational parity with the quantum ansatz. This experiment breaks that parity by not enforcing the special orthogonal (SO) Lie group for the per-feature rotations but still maintains global SO adherance for the final weight matrix. SO is a subgroup of the unitary (U) Lie group (lies inside it's manifold since the complex part is 0). It is well documented that Givens matrices have the U Lie group (Givens, 1958). This layer construction uses each free parameter as an angle in a n/2 x n/2 Givens matrix and constructs unique rotations for each feature (as in the quantum ansatz). Importantly, the SO group is preserved under matrix multiplication (Golub, 2013). This allows the use of individual 2x2 SO matrices (one per feature) embedded along the diagonal of the full-dimensional identity matrix in a banded fashion, which most closely resembles ring entanglement in the final linear layer weight matrix (see [definition of planes in a ring](./models.py#L192) and Figure figure_num_a below) to be multiplied together while still restricting to the SO group at the global level. Unfortunately, this necessarily breaks the enforcement of unitarity on each individual rotation due the the afore-mentioned dimensionality constraints. ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-matrix-construction.png)
+In the classical architecture, each block is a [RingGivensRotationLayer](./models.py#L178) with a number of free parameters equal to both the input and output dimension. Unfortunately, due to dimensionality constraints, it is not possible to maintain perfect transformational parity with the quantum ansatz. This experiment breaks that parity by not enforcing the special orthogonal (SO) Lie group for the per-feature rotations but still maintains global SO adherance for the final weight matrix. SO is a subgroup of the unitary (U) Lie group (lies inside it's manifold since the complex part is 0). It is well documented that Givens matrices have the U Lie group (Givens, 1958). This layer construction uses each free parameter as an angle in a n/2 × n/2 Givens matrix and constructs unique rotations for each feature (as in the quantum ansatz). Importantly, the SO group is preserved under matrix multiplication (Golub, 2013). This allows the use of individual 2×2 SO matrices (one per feature) embedded along the diagonal of the full-dimensional identity matrix in a banded fashion, which most closely resembles ring entanglement in the final linear layer weight matrix (see [definition of planes in a ring](./models.py#L192) and Figure figure_num_a below) to be multiplied together while still restricting to the SO group at the global level. Unfortunately, this necessarily breaks the enforcement of unitarity on each individual rotation due the the afore-mentioned dimensionality constraints. ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-matrix-construction.png)
 
 While this "coupling" is not a perfect analogue to the quantum architecture — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations. This engineered coupling mimics, to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement. In the Banded givens rotations parameterization, the coupling is a consequence of the mapping process itself. In entanglement, the coupling arises due to the physical evolution governed by the Hamiltonian of an interacting system and the tensor product structure of the Hilbert space. In a quantum system, the non-separability of the state (entanglement) is a fundamental property with deep implications—for example, violating Bell inequalities and enabling non-classical information processing. These correlations are intrinsic to the quantum state and are subject to rules of quantum mechanics.
 
@@ -56,10 +56,21 @@ The [BTFP for the classical architecture](./loss.py#L60) is the sum of the lowes
 Multivariate time series are synthesized by concatenating blocks where each feature is a separate fractional Brownian motion (FBM) series, which is a zero‑mean Gaussian process characterized by a target HE to control long‑range dependence. The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity based on another FBM sequence that gets passed through a sine to introduce nonlinearity and control amplitude. Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible Lempel-Ziv complexity value. Sequences are then randomly shuffled and then representative sequences are then selected via 3D binning in the space of LZC, HE, and HFD. These sample sequences are ensured to be in the validation set so that there is a good spread of metric values to use when looking at relationships during the analysis. In order to ensure a reasonable amount of training data for each dataset, the grid was limited to choosing at most a third of the series in each dataset. The unchosen sequences are then split between each dataset's training and validation partitions as close as possible to a desired split ratio and the size of each validation partition is then standardized to the maximum validation partition size. For the experimental results in this paper, a ratio of 2/3 training to 1/3 validation is used.
 
 ### Hyperparameter Optimization
-- hyperband
-- one example from training and one example from validation partitions of each dataset
-- train one of each model type per configuration, then take mean of total losses
-- ignore configurations that lead to obvious overfitting when number of trained epochs is ≥ 10 by returning infinite cost for any configuration whose validation cost is higher than its final training cost by more than 50% of its training cost
+Hyperparameter optimization was done over the same validation set for each config, following the standard definition of hyperparameter tuning. Hyperband was used to efficiently search this space, which allocates the number of training epochs as a resource and uses successive halving to prune underperforming configurations (Lisha, 2018). In the implementation used, a series of “brackets” are created based on the maximum number of training epochs and a reduction factor, iterating from the most exploratory (many configurations, few epochs) to the most exploitative (few configurations, many epochs) phases ([`hyperband_search(...)`](./optimize_hyperparams.py#L63)).
+- **Data Sampling:** One training and one validation series are randomly sampled from each dataset partition using the `get_best_config` routine, providing a representative but lightweight evaluation set.
+- **Configuration Sampling:** The [`sample_hyperparameters(...)`](./optimize_hyperparams.py#L11) function draws candidate settings by:
+  - Sampling the learning rate uniformly in log₁₀-space between 10⁻⁴ and 10⁻¹
+  - Setting `bottleneck_size` to half the number of features
+  - Selecting `num_blocks` uniformly from {1,…,MAX_NUM_BLOCKS} (here, forced to 1 for time constraints)
+  - Fixing `max_penalty_weight` at 2.0
+  - Randomly choosing `entanglement_gate`, `embedding_gate`, and `block_gate` from predefined lists.
+- **Random‑Search Principle:** This stochastic sampling approach is grounded in empirical evidence that random search is more efficient than grid search in high‑dimensional hyperparameter spaces (Bergstra, 2012).
+- **Model Evaluation:** Each sampled configuration is evaluated across all eight model variants (quantum/classical × reconstruction/prediction × recurrent/non‑recurrent) by training with the ADAM optimizer ([`train_adam(...)`](./training.py#L23)) and computing the mean training and validation losses from the final `cost_history` entries.
+- **Overfitting Detection:** Configurations for which the validation loss exceeds 150% of the training loss after at least 10 epochs are penalized with an infinite cost via, effectively discarding overfitting settings.
+- **Complexity Scaling:** To account for model capacity, the raw loss is scaled by the ratio of `num_blocks` to `MAX_NUM_BLOCKS` (1), penalizing more complex configurations proportionally.
+- **Successive Halving:** Within each Hyperband bracket, the candidate pool is reduced by the `reduction_factor` (default 4 due to time constraints) each round while the epoch budget per surviving configuration increases, ensuring that the best-performing settings are progressively refined and ultimately selected based on minimum scaled loss.
+
+This Hyperband‑based strategy efficiently balances the exploration of diverse hyperparameter regions with the exploitation of promising configurations, providing a single optimal set of hyperparameters for all model types in the experiment.
 
 ### Training
 - ADAM (standard beta1=0.9, beta2=0.999)
@@ -169,6 +180,26 @@ url={ https://arxiv.org/abs/2402.14515 },
   publisher = {Johns Hopkins University Press},
   address   = {Baltimore, MD},
   isbn      = {978-1421407944},
+}
+1. @article{JMLR:v18:16-558,
+  author  = {Lisha Li and Kevin Jamieson and Giulia DeSalvo and Afshin Rostamizadeh and Ameet Talwalkar},
+  title   = {Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization},
+  journal = {Journal of Machine Learning Research},
+  year    = {2018},
+  volume  = {18},
+  number  = {185},
+  pages   = {1--52},
+  url     = {http://jmlr.org/papers/v18/16-558.html}
+}
+1. @article{JMLR:v13:bergstra12a,
+  author  = {James Bergstra and Yoshua Bengio},
+  title   = {Random Search for Hyper-Parameter Optimization},
+  journal = {Journal of Machine Learning Research},
+  year    = {2012},
+  volume  = {13},
+  number  = {10},
+  pages   = {281--305},
+  url     = {http://jmlr.org/papers/v13/bergstra12a.html}
 }
 
 
