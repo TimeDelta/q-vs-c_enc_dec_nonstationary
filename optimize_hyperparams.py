@@ -52,7 +52,7 @@ def get_loss(data, model_type, config, allocated_epochs):
     print(' ', validation_costs)
     if allocated_epochs >= 10:
         mean_training_costs = np.array(cost_history[-1]) / len(training)
-        mean_validation_costs = np.sum(validation_costs[:,1:], axis=0) / len(validation)
+        mean_validation_costs = np.sum(np.array(validation_costs)[:,1:], axis=0) / len(validation)
         if check_for_overfitting(mean_training_costs, mean_validation_costs, threshold=.5): # throw away any configs that lead to obvious overfitting
             return float('inf')
     # scale the cost by the % of max num of blocks used
