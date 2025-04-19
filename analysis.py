@@ -60,36 +60,6 @@ def multimodal_differential_entropy_per_feature(data):
         entropy_per_feature.append(de)
     return entropy_per_feature
 
-def joint_differential_entropy(data):
-    """
-    data (np.ndarray): shape (sequence_length, num_features), where each column is a sample
-    """
-    num_features = data.shape[1]
-
-    bins = []
-    for d in range(num_features):
-        feature_data = samples[:, d]
-        q75, q25 = np.percentile(feature_data, [75, 25])
-        IQR = q75 - q25
-        bin_width = 2 * IQR / np.cbrt(len(feature_data))
-        nb = int(np.ceil((np.max(feature_data) - np.min(feature_data)) / bin_width))
-        bins.append(nb)
-
-    hist, edges = np.histogramdd(samples, bins=bins, density=True)
-
-    widths_list = [np.diff(edge) for edge in edges]
-    # create a meshgrid to combine bin widths across dimensions
-    mesh = np.meshgrid(*widths_list, indexing='ij')
-    bin_volumes = np.ones_like(mesh[0])
-    for w in mesh:
-        bin_volumes *= w
-
-    bin_prob_mass = hist * bin_volumes
-
-    nonzero = bin_prob_mass > 0
-    joint_entropy = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero] / bin_volumes[nonzero]))
-    return joint_entropy
-
 def von_neumann_entropy(dm, log_base=2) -> float:
     dm_eigenvalues = np.linalg.eigvalsh(dm.data)
     dm_eigenvalues = dm_eigenvalues[dm_eigenvalues > 1e-12] # for stability
