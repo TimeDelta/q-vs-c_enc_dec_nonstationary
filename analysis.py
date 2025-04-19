@@ -60,25 +60,6 @@ def multimodal_differential_entropy_per_feature(data):
         entropy_per_feature.append(de)
     return entropy_per_feature
 
-def gaussian_total_differential_entropy(data):
-    # data: numpy array of shape (num_states, num_features)
-    variances = np.var(data, axis=0)
-    entropies = np.log(2 * np.pi * np.e * (variances + 1E-13)) / 2
-    return np.sum(entropies)
-
-def series_gaussian_differential_entropy(series):
-    # Fractional brownian motion is a gaussian process but the concatenation
-    # of multiple blocks each with different params means multimodality.
-    # Thankfully, we know exactly when the distribution changes based on the
-    # data generation process.
-    current_index = 0
-    diff_entropy = 0.0
-    while current_index < len(series):
-        gaussian_block = series[current_index : current_index+num_states_per_block]
-        diff_entropy += gaussian_total_differential_entropy(gaussian_block)
-        current_index += num_states_per_block
-    return diff_entropy
-
 def joint_differential_entropy(data):
     """
     data (np.ndarray): shape (sequence_length, num_features), where each column is a sample
