@@ -18,7 +18,7 @@ def compute_series_hash(series):
     """
     return hashlib.sha256(series.tobytes()).hexdigest()
 
-def import_generated(generated_datasets_dir, train_ratio=2.0/3.0, seed=42):
+def import_generated(generated_datasets_dir='generated_datasets', train_ratio=2.0/3.0, seed=42):
     """
     Load training and validation partitions separately for each dataset.
     For each series file in a dataset, compute its hash. If the hash is in the set of grid

@@ -33,6 +33,7 @@ for _, (t, v) in partitions.items():
 print('mean', np.mean(differences))
 print('median', np.median(differences))
 print('max', np.max(differences))
+print('std dev', np.std(differences))
 
 print('min correct value', np.min(correct_values))
 print('percentage:', np.max(differences) / np.min(correct_values))
