@@ -14,6 +14,7 @@
   - [Prediction vs Reconstruction](#prediction-vs-reconstruction)
   - [Recurrence](#recurrence)
 - [Discussion](#discussion)
+  - [Sources of Error](#sources-of-error)
 - [Conclusion](#conclusion)
 - [Future Work](#future-work)
 - [Abbreviations](#abbreviations)
@@ -37,7 +38,7 @@ This work conducts a comprehensive comparison on non-stationary data of eight se
 By evaluating these models on the same sets of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics.
 
 Four metrics to quantify time-series complexity:
-- **Lempel‑Ziv Complexity (LZC):** Number of unique substrings in a discrete sequence (Lempel, Ziv 1976).
+- **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv 1976).
 - **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence).
 - **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals.
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
@@ -159,6 +160,8 @@ For further analysis in the quantum realm only, correlations are made between ea
 ### Reccurence
 
 ## Discussion
+### Sources of Error
+- Bug in LZC calculation that allowed overlap of symbols was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with following statistics for their differences: mean=1.04; median=1; max=5. The correct value was always higher because allowing overlap means you can use a symbol that has already be seen. The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%). The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
 
 ## Conclusion
 
