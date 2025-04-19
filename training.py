@@ -35,7 +35,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
             entanglement_gate:       options are ['CX', 'CZ', 'RZX']
             learning_rate:
             bottleneck_size:         number of qubits for the latent space
-            penalty_weight:          weight for the bottleneck penalty term
+            max_penalty_weight:      max weight for the bottleneck penalty cost term
       - num_epochs: number of training iterations
 
     Returns trained_model, cost_history, validation_costs
@@ -104,7 +104,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
     validation_costs = []
     for (i, series) in validation_data:
         series_costs = [i]
-        for c in cost_function([(i, series)], model, penalty_weight):
+        for c in cost_function([(i, series)], model, penalty_weight=1):
             series_costs.append(c)
         validation_costs.append(series_costs)
 
