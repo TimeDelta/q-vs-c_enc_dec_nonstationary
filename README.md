@@ -136,7 +136,8 @@ This Hyperband‑based strategy efficiently balances the exploration of diverse 
 ### Training
 All models are trained using an ADAM optimizer together with finite‑difference gradient estimation to accommodate the non‑differentiable quantum circuits.
 A truncated version of finite differences (only single, shared, calculation for first point in all gradient calculations for that epoch) was used to increase training speed.
-Reproducibility and early‑stage flexibility are balanced via teacher forcing inside the cost functions (so models never deal with their own noise) and a linearly increasing BTFP weight based on percentage of total epochs elapsed, respectively.
+For reproducability, permanent teacher forcing is used inside the cost functions (instead of using a linearly increasing probability of dealing with their own noise).
+Early‑stage flexibility is attained via a linearly increasing BTFP weight based on percentage of total epochs elapsed.
 Trainable parameters are initialized from a uniform distribution in \([-π, π]\), and the first- and second-moment vectors (moment1, moment2) are set to zero.
 Finally, `np.random.seed(RANDOM_SEED)` is set before each model training to ensure consistent initialization across runs.
 
