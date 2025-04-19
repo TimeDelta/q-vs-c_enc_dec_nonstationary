@@ -28,7 +28,7 @@ def get_loss(data, model_type, config, allocated_epochs):
     validation = data[1]
     num_features = len(training[0][1][0])
 
-    print(f'Training {model_type.upper()} for {allocated_epochs}')
+    print(f'Training {model_type.upper()} for {allocated_epochs} epochs')
     is_recurrent = 'r' in model_type
     autoregressive = 'te' in model_type # transition encoder
 
@@ -93,7 +93,19 @@ def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
             epochs_this_round = int(initial_allocated_epochs * reduction_factor ** (round_index))
 
             print('Round', round_index, '-', num_configs_this_round, 'configs for', epochs_this_round, ' epochs this round')
-            round_losses = [np.mean([get_loss(data, m, config, epochs_this_round) for m in MODEL_TYPES]) for config in configs]
+            round_losses = []
+            for config in configs:
+                losses = []
+                ignore = False
+                for m in MODEL_TYPES:
+                    losses.append(get_loss(data, m, config, epochs_this_round))
+                    if losses[-1] == float('inf'):
+                        ignore = True
+                        break
+                if ignore:
+                    round_losses.append(float('inf'))
+                else:
+                    round_losses.append(np.mean(losses))
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
 
             for i, loss in enumerate(round_losses):
