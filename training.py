@@ -20,7 +20,7 @@ def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.9
     new_params = params - lr * bias_corrected_moment1 / (np.sqrt(bias_corrected_moment2) + epsilon)
     return new_params, moment1, moment2
 
-def train_adam(training_data, validation_data, cost_function, config, model, num_epochs=100):
+def train_adam(training_data, validation_data, cost_function, config, model, num_epochs=100, store_gradients=False):
     """
     Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
     the bottleneck via the cost function. This is done in order to balance efficiency w/ added
@@ -54,6 +54,8 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
 
     previous_param_values = param_values.copy()
     penalty_weight = max_penalty_weight # for testing w/ num_epochs == 0
+    if store_gradients:
+        gradient_norms = []
     for t in range(1, num_epochs + 1):
         penalty_weight = max_penalty_weight * t / num_epochs
         print(f'  Epoch {t} (trash penalty weight: {penalty_weight})')
@@ -83,6 +85,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
             perturbed_costs = cost_function(training_data, model, penalty_weight)
             gradients[j] = (sum(perturbed_costs) - initial_cost) / gradient_width
 
+
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
         print(f'    Min param update: {np.min(param_values-previous_param_values)}')
@@ -90,6 +93,10 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         print(f'    Std dev param update: {np.std(param_values-previous_param_values)}')
         print(f'    Median param update: {np.median(param_values-previous_param_values)}')
         print(f'    Max param update: {np.max(param_values-previous_param_values)}')
+        if store_gradients:
+            norm = np.linalg.norm(np.array(gradient_norms))
+            gradient_norms.append(norm)
+            print('    Gradient Norm:', norm)
 
     print('  calculating validation costs')
     param_dict = {param: value for param, value in zip(model.trainable_params, param_values)}
@@ -101,7 +108,10 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
             series_costs.append(c)
         validation_costs.append(series_costs)
 
-    return model, cost_history, validation_costs
+    if store_gradients:
+        return model, cost_history, validation_costs, gradient_norms
+    else:
+        return model, cost_history, validation_costs
 
 def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, num_epochs, config, run_prefix='', model_types=MODEL_TYPES):
     def save(dataset_metrics, metric_desc):
@@ -144,8 +154,12 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
             else:
                 loss_fn = autoregressive_cost_function(trash_penalty_fn)
 
-            trained_model, cost_history, validation_costs = \
-                train_adam(training, validation, loss_fn, config, model, num_epochs)
+            trained_model, cost_history, validation_costs, gradient_norms = \
+                train_adam(training, validation, loss_fn, config, model, num_epochs, store_gradients=True)
+
+            fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_gradient_norms.npy')
+            np.save(fname, np.array(gradient_norms))
+            print('  Saved gradient norms')
 
             print('  Training cost history:', cost_history)
             cost_history = np.array(cost_history)
