@@ -8,6 +8,7 @@
   - [Hyperparameter Optimization](#hyperparameter-optimization)
   - [Training](#training)
   - [Experimental Environment](#experimental-environment)
+  - [Analysis](#analysis)
 - [Results](#results)
   - [Classical vs Quantum](#classical-vs-quantum)
     - [Loss Landscape Similarity](#loss-landscape-similarity)
@@ -145,15 +146,17 @@ Finally, `np.random.seed(RANDOM_SEED)` is set before each model training to ensu
 All quantum circuits are simulated on classical hardware to isolate algorithmic performance from hardware noise.
 Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without GPU acceleration.
 
-## Results
-!TODO! Describe chosen way to extend LZC to continuous signal
-- scaling factor is removed from BTFP cost history (for analysis only)
+### Analysis
+- !TODO! Describe chosen way to extend LZC to continuous signal
 - The assumptions about the data made by the method used to calculate DE are important.
 To calculate DE, this experiment uses the Bayesian Blocks method from the `astropy.stats` pip package.
 This binning method by (Scargle et al. 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
 This yields non‑uniform bin widths that adapt to local data density by creating edges where the statistical properties change, yielding finer resolution in regions of high statistical property fluctuation and coarser bins elsewhere.
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
+- Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
+
+## Results
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
 - For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean entanglement and mean full VonNeumann entropy (EE and VNE) of its bottleneck states when going through each series in that set.
@@ -163,8 +166,8 @@ This prevents the smoothing over of sharp, localized peaks that uniform binning 
 
 ## Discussion
 ### Sources of Error
-- Bug in LZC calculation that allowed overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
-The correct value was always higher because allowing overlap means you can use a symbol that has already be seen.
+- A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
+The correct value was always higher due to this because allowing overlap means you can use a phrase that has already be seen.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
 
