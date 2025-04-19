@@ -280,7 +280,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
         'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series),
         'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
-        'differential_entropy':      lambda series: series_gaussian_differential_entropy(series),
+        'differential_entropy':      lambda series: np.mean(multimodal_differential_entropy_per_feature(series)),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
         'hurst_exponent': ['bottleneck_he', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
