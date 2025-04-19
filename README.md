@@ -149,7 +149,8 @@ Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without G
 To calculate DE, this experiment uses the Bayesian Blocks method from the `astropy.stats` pip package.
 This binning method by (Scargle et al. 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
 This yields non‑uniform bin widths that adapt to local data density by ensuring equal population size per bin, yielding finer resolution in regions of high sample concentration and coarser bins where the data are sparse.
-An adaptive histogram approach such as this better captures multimodal structure because it relies on change‐point detection to determine the size of bin independently, preventing it from washing out steep fluctuations in the probability mass function as much as a fixed-width binning.
+An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
+This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only)
 For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean entanglement and mean full VonNeumann entropy (EE and VNE) of its bottleneck states when going through each series in that set.
