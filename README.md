@@ -93,7 +93,7 @@ This allows the use of individual n/2×n/2 SO matrices (one per feature) embedde
 Unfortunately, this necessarily breaks the enforcement of unitarity on each individual rotation due the the afore-mentioned dimensionality constraints.
 ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-matrix-construction.png)
 
-While this "coupling" is not a perfect analogue to the quantum architecture — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations.
+While this "coupling" is not a perfect analogue to the quantum architecture even beyond the forced break in parity — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations.
 This engineered coupling mimics, to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement.
 In the Banded givens rotations parameterization, the coupling is a consequence of the mapping process itself.
 In quantum entanglement, the coupling arises due to the physical evolution governed by the Hamiltonian of an interacting system and the tensor product structure of the Hilbert space.
@@ -122,7 +122,7 @@ One potential negative consequence of using a single hyperparameter configuratio
 - **Configuration Sampling:** The [`sample_hyperparameters(...)`](./optimize_hyperparams.py#L11) function draws candidate settings by:
   - Sampling the learning rate uniformly in log₁₀-space between 10⁻⁴ and 10⁻¹
   - Setting `bottleneck_size` to half the number of features
-  - Selecting `num_blocks` uniformly from {1,…,MAX_NUM_BLOCKS} (here, forced to 1 for time constraints)
+  - Selecting `num_blocks` uniformly from {1,…,`MAX_NUM_BLOCKS`} (here, forced to 1 for time constraints)
   - Fixing `max_penalty_weight` at 2.0
   - Randomly choosing `entanglement_gate`, `embedding_gate`, and `block_gate` from predefined lists.
 - **Random‑Search Principle:** This stochastic sampling approach is grounded in empirical evidence that random search is more efficient than grid search in high‑dimensional hyperparameter spaces (Bergstra, 2012).
@@ -150,19 +150,19 @@ Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without G
 - The assumptions about the data made by the method used to calculate DE are important.
 To calculate DE, this experiment uses the Bayesian Blocks method from the `astropy.stats` pip package.
 This binning method by (Scargle et al. 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
-This yields non‑uniform bin widths that adapt to local data density by ensuring equal population size per bin, yielding finer resolution in regions of high sample concentration and coarser bins where the data are sparse.
+This yields non‑uniform bin widths that adapt to local data density by creating edges where the statistical properties change, yielding finer resolution in regions of high statistical property fluctuation and coarser bins elsewhere.
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
 ### Classical vs Quantum
-- Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only)
-For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean entanglement and mean full VonNeumann entropy (EE and VNE) of its bottleneck states when going through each series in that set.
+- Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
+- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean entanglement and mean full VonNeumann entropy (EE and VNE) of its bottleneck states when going through each series in that set.
 #### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
 
 ## Discussion
 ### Sources of Error
-- Bug in LZC calculation that allowed overlap of symbols was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
+- Bug in LZC calculation that allowed overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
 The correct value was always higher because allowing overlap means you can use a symbol that has already be seen.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
