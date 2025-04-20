@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, qpy
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix
 
@@ -173,6 +173,49 @@ class QuantumEncoderDecoder:
                 self.hidden_weight = 0
             else:
                 self.hidden_weight = params_dict[self.hidden_state_weight_param]
+        all_params = {k: v for k,v in params_dict.items() if k in self.full_circuit.parameters}
+        self.full_circuit_bound = self.full_circuit.assign_parameters(all_params)
+
+    def load(self, fname: str):
+        """
+        Load a previously-saved .qpy file containing the full_circuit,
+        then split it back into embedder, encoder, and decoder subcircuits.
+        """
+        with open(fname + '.qpy', 'rb') as fd:
+            loaded_circuits = qpy.load(fd)
+        if not loaded_circuits:
+            raise ValueError(f'No circuits found in {fname}.qpy')
+        self.full_circuit = loaded_circuits[0]
+
+        # instruction counts
+        len_embed = len(self.embedder.data)
+        len_encoder = len(self.encoder.data)
+        len_decoder = len(self.decoder.data)
+
+        all_ops = self.full_circuit.data
+        self.embedder.data = all_ops[:len_embed]
+        self.encoder.data = all_ops[len_embed : len_embed + len_encoder]
+        self.decoder.data = all_ops[len_embed + len_encoder : len_embed + len_encoder + len_decoder]
+
+        self.encoder_bound = self.encoder
+        self.decoder_bound = self.decoder
+
+        self.input_params = sorted(
+            list(self.embedder.parameters),
+            key=lambda p: int(p.name.split()[-1])
+        )
+
+        if self.is_recurrent:
+            self.hidden_weight = self.full_circuit.metadata['hidden_weight']
+
+    def save(self, fname):
+        if self.is_recurrent:
+            self.full_circuit_bound.metadata = { # (metadata must be JSON-serializable)
+                **getattr(self.full_circuit_bound, 'metadata', {}),
+                'hidden_weight': self.hidden_weight
+            }
+        with open(fname + '.qpy', 'wb') as file:
+            qpy.dump(self.full_circuit_bound, file)
 
 
 class RingGivensRotationLayer(nn.Module):
@@ -275,3 +318,9 @@ class ClassicalEncoderDecoder(nn.Module):
                 continue # skip first assignment to always start w/ 0
             with torch.no_grad():
                 p.copy_(torch.tensor(v, dtype=torch.float32))
+
+    def load(self, fname):
+        self.load_state_dict(torch.load(fname + '.pth'))
+
+    def save(self, fname):
+        torch.save(self.state_dict(), fname + '.pth')

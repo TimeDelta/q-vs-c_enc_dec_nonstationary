@@ -178,6 +178,9 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                 mean_validation_costs = np.sum(validation_costs[:,1:], axis=0) / len(validation)
                 check_for_overfitting(mean_training_costs, mean_validation_costs)
 
+            fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model')
+            model.save(fname)
+
             # === Model metric computations ===
             all_trash_indices = []
             dataset_enc_differential_entropies = []
@@ -251,10 +254,6 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 
                 save(np.array(dataset_enc_entangle_entropies), 'Bottleneck entanglement entropy')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
-
-                fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.qpy')
-                with open(fname, 'wb') as file:
-                    qpy.dump(trained_model.full_circuit, file)
             elif model_type.startswith('c'):
                 all_trash_indices = []
                 for (s_i, series) in validation:
@@ -276,9 +275,6 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                     dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks))))
                     dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks))))
 
-                fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model.pth')
-                torch.save(model, fname)
-
             save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
             save(np.array(dataset_bottleneck_hes), 'Bottleneck HE')
             save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
@@ -296,6 +292,7 @@ if __name__ == '__main__':
     parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
     parser.add_argument("--seed", type=int, default=RANDOM_SEED, help="Seed value to set before creation of each model.")
     parser.add_argument("--num_epochs", type=int, default=100)
+    parser.add_argument("--config", type=str, default=None, help="Path to custom config JSON file")
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
@@ -307,15 +304,18 @@ if __name__ == '__main__':
     RANDOM_SEED = args.seed
 
     num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
-    bottleneck_size = num_features // 2
-    config = {
-        'bottleneck_size': bottleneck_size,
-        'num_blocks': 1,
-        'learning_rate': 0.08,
-        'max_penalty_weight': 2.0,
-        'entanglement_topology': 'full',
-        'entanglement_gate': 'cz',
-        'embedding_gate': 'rz',
-        'block_gate': 'rz',
-    }
+    if args.config:
+        with open(args.config, 'r') as file:
+            config = json.load(file)
+    else:
+        config = {
+            'bottleneck_size': num_features // 2,
+            'num_blocks': 1,
+            'learning_rate': 0.021450664374153845,
+            'max_penalty_weight': 2.0,
+            'entanglement_topology': 'circular',
+            'entanglement_gate': 'cz',
+            'embedding_gate': 'rz',
+            'block_gate': 'rz',
+        }
     train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, config, run_prefix, model_types)
