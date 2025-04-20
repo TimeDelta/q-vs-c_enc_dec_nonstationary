@@ -108,7 +108,7 @@ Multivariate time series are synthesized by concatenating blocks where each feat
 This was done via the Davies-Harte method, which is characterized by a target HE to control long‑range dependence, allowing the creation of series with a wide range of values for this metric.
 The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity based on another FBM sequence that gets passed through a sine to introduce nonlinearity and control amplitude.
 Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible LZC value.
-Sequences are then randomly shuffled and then representative sequences are then selected via 3D binning in the space of LZC, HE, and HFD.
+Sequences are then randomly shuffled and representative sequences are selected via 3D binning in the space of LZC, HE, and HFD.
 These sample sequences are ensured to be in the validation set so that there is a good spread of metric values to use when looking at relationships during the analysis.
 In order to ensure a reasonable amount of training data for each dataset, the grid was limited to choosing at most a third of the series in each dataset.
 The unchosen sequences are then split between each dataset's training and validation partitions as close as possible to a desired split ratio and the size of each validation partition is then standardized to the maximum validation partition size.
