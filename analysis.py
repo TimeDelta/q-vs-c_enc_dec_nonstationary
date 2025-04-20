@@ -50,7 +50,7 @@ def multimodal_differential_entropy_per_feature(data):
         feature_data = data[:, f]
         # use bayesian_blocks from astropy to adaptively determine bin edges
         # use density normalization so that the integral is one
-        hist, edges = np.histogram(feature_data, bins=, density=True)
+        hist, edges = np.histogram(feature_data, bins=bayesian_blocks(feature_data), density=True)
 
         bin_widths = np.diff(edges) # 1D differences from the histogram edges
         bin_prob_mass = hist * bin_widths
