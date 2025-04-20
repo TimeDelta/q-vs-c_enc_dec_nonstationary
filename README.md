@@ -23,11 +23,11 @@
 - [Useful Commands](#useful-commands)
 ## Introduction
 Time-series data often exhibit complex, non-stationary patterns that pose challenges for modeling and compression.
-Autoencoders (AEs) have long been used for unsupervised learning of low-dimensional representations (embeddings) of data (Hinton, 2006).
+Autoencoders (AEs) have long been used for unsupervised learning of low-dimensional representations (embeddings) of data (Hinton, Salakhutdinov; 2006).
 A classical AE is typically trained to reconstruct its input after compressing it through a low-dimensional “bottleneck” layer in order to capture the most salient features of the input distribution.
 In the autoregressive (AR) version, the same model architecture takes the current state as input and is trained to predict the next state of a time series, effectively learning to compress the underlying temporal dynamics.
 
-Quantum equivalents have also emerged (Romero, Olsen, Aspuru-Guzik 2017), exploiting quantum superposition and entanglement to achieve more efficient compression or to learn patterns inaccessible to classical networks.
+Quantum equivalents have also emerged (Romero, Olsen, Aspuru-Guzik; 2017), exploiting quantum superposition and entanglement to achieve more efficient compression or to learn patterns inaccessible to classical networks.
 In principle, quantum models can represent certain complex transformations with fewer parameters or different capacities than classical neural networks, although their training dynamics can differ significantly due to quantum effects (e.g., interference, measurement noise).
 This raises questions about how quantum vs. classical AE architectures compare when applied to learning compression of non-stationary time-series.
 
@@ -39,7 +39,7 @@ This work conducts a comprehensive comparison on non-stationary data of eight se
 By evaluating these models on the same sets of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics.
 
 Four metrics to quantify time-series complexity:
-- **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv 1976).
+- **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv; 1976).
 - **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence).
 - **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals.
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
@@ -62,7 +62,7 @@ Additionally, an examination will be done into whether the learned latent repres
 > - ***Recurrent vs Feedforward:*** Recurrent models will outperform non-recurrent models in final loss because the hidden state contains temporal information relevant to the nonstationarity but the difference will be smaller in the quantum architecture because of the facts that its latent state is exponentially larger than its classical counterpart despite having a single qubit per feature and that the quantum embedding only uses single-qubit rotation gates, thus preventing full utilization of the embedding space.
 Moreover, recurrent encoders will exhibit different bottleneck characteristics, potentially higher entropy, since the hidden state provides an additional pathway to carry information.
 Another hypothesis is that recurrence being added to the autoencoder objective will not be enough to outcompete the autoregressive versions without recursion, especially since the implemented recursion adds only a single extra parameter.
-> - ***Quantum vs Classical:*** In their cost histories, quantum models will have higher mean absolute first and second derivatives during training because they often exhibit highly non-linear loss landscapes (Holzer, Turkalj 2024) despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures).
+> - ***Quantum vs Classical:*** In their cost histories, quantum models will have higher mean absolute first and second derivatives during training because they often exhibit highly non-linear loss landscapes (Holzer, Turkalj; 2024) despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures).
 Upon analyzing the power spectrum of the loss gradients over training iterations, an additional expectation is to see more high-frequency fluctuations for quantum models, reflecting parameter interference effects and more rapid changes as the quantum circuit parameters navigate a more rugged loss landscape.
 
 ## Methods
@@ -87,9 +87,9 @@ In the classical architecture, each block is a [RingGivensRotationLayer](./model
 Unfortunately, due to dimensionality constraints, it is not possible to maintain perfect transformational parity with the quantum ansatz.
 This experiment breaks that parity by not enforcing the special orthogonal (SO) Lie group for the per-feature rotations but still maintains global SO adherance for the final weight matrix.
 SO is a subgroup of the unitary (U) Lie group (lies inside it's manifold since the complex part is 0).
-It is well documented that Givens matrices have the U Lie group (Givens, 1958).
+It is well documented that Givens matrices have the U Lie group (Givens; 1958).
 This layer construction uses each free parameter as an angle in a n/2 × n/2 Givens matrix and constructs unique rotations for each feature (as in the quantum ansatz).
-Importantly, the SO group is preserved under matrix multiplication (Golub, Van Loan 2013).
+Importantly, the SO group is preserved under matrix multiplication (Golub, Van Loan; 2013).
 This allows the use of individual n/2×n/2 SO matrices (one per feature) embedded along the diagonal of the full-dimensional identity matrix in a banded fashion, which most closely resembles ring entanglement in the final linear layer weight matrix (see [definition of planes in a ring](./models.py#L192) and Figure figure_num_a below) to be multiplied together while still restricting to the SO group at the global level.
 Unfortunately, this necessarily breaks the enforcement of unitarity on each individual rotation due the the afore-mentioned dimensionality constraints.
 ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-matrix-construction.png)
@@ -116,7 +116,7 @@ For the experimental results in this paper, a ratio of 2/3 training to 1/3 valid
 
 ### Hyperparameter Optimization
 Hyperparameter optimization was done over the same validation set for each config, following the standard definition of hyperparameter tuning.
-Hyperband was used to efficiently search this space, which allocates the number of training epochs as a resource and uses successive halving to prune underperforming configurations (Lisha et al. 2018).
+Hyperband was used to efficiently search this space, which allocates the number of training epochs as a resource and uses successive halving to prune underperforming configurations (Lisha et al.; 2018).
 In the implementation used, a series of “brackets” are created based on the maximum number of training epochs and a reduction factor, iterating from the most exploratory (many configurations, few epochs) to the most exploitative (few configurations, many epochs) phases ([`hyperband_search(...)`](./optimize_hyperparams.py#L63)).
 - **Data Sampling:** One training and one validation series are randomly sampled from each dataset partition inside the [`get_best_config(...)`](./optimize_hyperparams.py#L111) routine, providing a representative but lightweight evaluation set.
 - **Configuration Sampling:** The [`sample_hyperparameters(...)`](./optimize_hyperparams.py#L11) function draws candidate settings by:
@@ -151,7 +151,7 @@ Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without G
 - !TODO! Describe chosen way to extend LZC to continuous signal
 - The assumptions about the data made by the method used to calculate DE are important.
 To calculate DE, this experiment uses the Bayesian Blocks method from the `astropy.stats` pip package.
-This binning method by (Scargle et al. 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
+This binning method by (Scargle et al.; 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
 This yields non‑uniform bin widths that adapt to local data density by creating edges where the statistical properties change, yielding finer resolution in regions of high statistical property fluctuation and coarser bins elsewhere.
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
