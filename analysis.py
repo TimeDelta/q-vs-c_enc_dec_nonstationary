@@ -210,9 +210,7 @@ def per_patient(func, data, **kwargs):
 
 def run_analysis(datasets, data_dir, overfit_threshold):
     num_training_series = len(next(iter(datasets.values()))[0])
-    print(num_training_series)
     num_validation_series = len(next(iter(datasets.values()))[1])
-    print(num_validation_series)
 
     # lambda to parse each individual series into a single value
     # lambda to aggregate all series of a dataset into a single value
@@ -662,4 +660,4 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
-    run_analysis(datasets, args.overfit_threshold)
+    run_analysis(datasets, args.datasets_directory, args.overfit_threshold)
