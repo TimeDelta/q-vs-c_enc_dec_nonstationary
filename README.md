@@ -176,6 +176,7 @@ The corrected values are used in analysis, however, so the effect of this is inf
 
 ## Future Work
 - Give the reconstruction objective two consecutive points and ask it to reconstruct them both to see if it learns temporal dynamics better than single state reconstruction
+- When time allows, each block (including embedding) should have at least rotation gates for each quantum axis per block (w/ 3 layers per block for classical as well), eliminating the gate choices other than entanglement from hyperparam search
 - Many blocks per model half
   - Look at total information content in each block along encoder and decoder
     - Would expect encoder to *slowly decrease* and decoder to *quickly increase*
