@@ -19,7 +19,7 @@ class QuantumEncoderDecoder:
         self.num_blocks = config.get('num_blocks', 1)
         self.entanglement_topology = config.get('entanglement_topology', 'full')
         self.entanglement_gate = config.get('entanglement_gate', 'cx')
-        self.block_gate = config.get('block_gate', 'ry')
+        self.block_gate = config.get('block_gate', 'rz')
         self.embedding_gate = config.get('embedding_gate', 'rz')
         self.bottleneck_size = config.get('bottleneck_size', num_qubits//2)
         self.is_recurrent = is_recurrent

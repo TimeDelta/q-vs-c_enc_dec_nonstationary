@@ -316,5 +316,6 @@ if __name__ == '__main__':
         'entanglement_topology': 'full',
         'entanglement_gate': 'cz',
         'embedding_gate': 'rz',
+        'block_gate': 'rz',
     }
     train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, config, run_prefix, model_types)
