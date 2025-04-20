@@ -50,7 +50,7 @@ def multimodal_differential_entropy_per_feature(data):
         feature_data = data[:, f]
         # use bayesian_blocks from astropy to adaptively determine bin edges
         # use density normalization so that the integral is one
-        hist, edges = np.histogram(feature_data, bins=bayesian_blocks(feature_data), density=True)
+        hist, edges = np.histogram(feature_data, bins=, density=True)
 
         bin_widths = np.diff(edges) # 1D differences from the histogram edges
         bin_prob_mass = hist * bin_widths
@@ -65,7 +65,7 @@ def von_neumann_entropy(dm, log_base=2) -> float:
     dm_eigenvalues = dm_eigenvalues[dm_eigenvalues > 1e-12] # for stability
     return -np.sum(dm_eigenvalues * np.log(dm_eigenvalues)) / np.log(log_base)
 
-def entanglement_entropy(state):
+def meyer_wallach_global_entanglement(state):
     """
     Computes the Meyer-Wallach global entanglement measure for an n-qubit pure state as
     (2/n) * sum_{r=1}^{n} [1 - Tr(dm_r^2)]
@@ -235,7 +235,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             ) for i in range(len(LOSS_TYPES))
         },
         'bottleneck_differential_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
-        'bottleneck_entanglement_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_mw_global_entanglement': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_lzc': MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS,
         'bottleneck_he': MODEL_MEAN_MEAN_STAT_LAMBDAS,
@@ -253,10 +253,10 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         'differential_entropy':      lambda series: np.mean(multimodal_differential_entropy_per_feature(series)),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
-        'hurst_exponent': ['bottleneck_he', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
-        'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
-        'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
-        'differential_entropy': ['bottleneck_differential_entropy', 'bottleneck_entanglement_entropy', 'bottleneck_full_vn_entropy'],
+        'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'differential_entropy': ['bottleneck_differential_entropy', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
     dependent_keys = []
@@ -360,7 +360,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
                     individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
                     aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
 
-            ent_entropy = dependent_individual['bottleneck_entanglement_entropy'].get(s_i)
+            ent_entropy = dependent_individual['bottleneck_mw_global_entanglement'].get(s_i)
             full_vn = dependent_individual['bottleneck_full_vn_entropy'].get(s_i)
             if ent_entropy is None:
                 raise Exception(f'ERROR: missing entanglement entropy for dataset {d_i} series {s_i} {model_type} model')

@@ -160,7 +160,7 @@ This prevents the smoothing over of sharp, localized peaks that uniform binning 
 ## Results
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
-- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean entanglement and mean full VonNeumann entropy (EE and VNE) of its bottleneck states when going through each series in that set.
+- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean Meyer-Wallach global entanglement (MWGE) and mean full VonNeumann entropy (VNE) of its bottleneck states when going through each series in that set.
 #### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
@@ -193,12 +193,12 @@ The corrected values are used in analysis, however, so the effect of this is inf
 - AR = Autoregressive
 - BTFP = Bottleneck Trash Feature Penalty
 - DE = Differential Entropy
-- EE = Entanglement entropy
 - ENC-DEC = Encoder-Decoder
 - FBM = Fractional Brownian Motion
 - HE = Hurst Exponent
 - HFD = Higuchi Fractal Dimension
 - LZC = Lempel-Ziv Complexity
+- MWGE = Meyer-Wallach Global Entanglement
 - SO = Special Orthogonal
 - TE = Transition Encoder (autoregressive encoder / decoder)
 - U = Unitary

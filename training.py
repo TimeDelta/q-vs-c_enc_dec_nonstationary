@@ -237,7 +237,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_dm))
 
-                        enc_entangle_entropies.append(entanglement_entropy(bottleneck_dm))
+                        enc_entangle_entropies.append(meyer_wallach_global_entanglement(bottleneck_dm))
                         enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
 
                     dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
@@ -252,7 +252,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                     dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks_features))))
                     dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks_features))))
 
-                save(np.array(dataset_enc_entangle_entropies), 'Bottleneck entanglement entropy')
+                save(np.array(dataset_enc_entangle_entropies), 'Bottleneck MW global entanglement')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
             elif model_type.startswith('c'):
                 all_trash_indices = []
