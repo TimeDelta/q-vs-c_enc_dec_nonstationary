@@ -224,7 +224,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         lambda rows: {row[0]: np.sum(row[1:]) for row in rows},
         lambda rows: np.mean([np.sum(row[1:]) for row in rows])
     )
-    MODEL_MEAN_PLAIN_STAT_LAMBDAS = (
+    MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS = (
         lambda rows: {row[0]: row[1] for row in rows},
         lambda rows: np.mean([row[1] for row in rows])
     )
@@ -239,7 +239,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         'bottleneck_differential_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_entanglement_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
-        'bottleneck_lzc': MODEL_MEAN_PLAIN_STAT_LAMBDAS,
+        'bottleneck_lzc': MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS,
         'bottleneck_he': MODEL_MEAN_MEAN_STAT_LAMBDAS,
         'bottleneck_hfd': MODEL_MEAN_MEAN_STAT_LAMBDAS,
     }
@@ -284,6 +284,8 @@ def run_analysis(datasets, data_dir, overfit_threshold):
                         self.data[k] = self.data[key]
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_cost_history.npy')
             self.data['cost_history'] = np.load(filepath)
+            filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_gradient_norms.npy')
+            self.data['gradient_norms'] = np.load(filepath)
 
     @dataclass
     class SeriesStats:
@@ -448,66 +450,79 @@ def run_analysis(datasets, data_dir, overfit_threshold):
                 filename=f'{run_prefix}{d_key}_vs_{i_key}_aggregated.png'
             )
 
-    # aggregate cost history for each model type across datasets
-    cost_history_by_model = {m: [] for m in MODEL_TYPES}
-    for (dataset_index, model_type), model_stats in stats_per_model.items():
-        cost_history_by_model[model_type].append(model_stats.data['cost_history'])
-    mean_cost_history_per_model_type = {}
-    for (model_type, cost_history_list) in cost_history_by_model.items():
-        cost_history_arrays = np.array(cost_history_list) # shape: (num_runs, num_epochs, num_loss_types)
-        if cost_history_arrays.ndim >= 3 and cost_history_arrays.shape[0] > 1:
-            mean_cost_history = cost_history_arrays.mean(axis=0)
-        elif cost_history_arrays.shape[0] == 1:
-            mean_cost_history = cost_history_arrays[0]
-        elif args.test:
-            print(f'WARNING: Missing {model_type} cost history')
-            continue
-        else:
-            raise Exception(f'Unable to find any {model_type} model cost history')
-        mean_cost_history_per_model_type[model_type] = mean_cost_history
 
-    sample = next(iter(mean_cost_history_per_model_type.values()))
-    num_epochs, num_loss_types = sample.shape
+
+    ####################################
+    # Training Metric History Analysis #
+    ####################################
 
     # randomly sample 10% datasets to plot individual histories per model type to avoid too much clutter
+    # choose indices outside of function to ensure consistent plotting
     individual_datasets_to_plot = list(set(d_i for (d_i, model_type) in stats_per_model.keys()))
     random.shuffle(individual_datasets_to_plot)
     individual_datasets_to_plot = individual_datasets_to_plot[:max(len(individual_datasets_to_plot)//10, 1)]
-    for cost_part_index in range(num_loss_types):
+
+    def get_mean_training_metric_history(metric_key):
+        # aggregate history for each model type across datasets
+        history_by_model_type = {m: [] for m in MODEL_TYPES}
+        for (dataset_index, model_type), model_stats in stats_per_model.items():
+            history_by_model_type[model_type].append(model_stats.data[metric_key])
+        mean_history_by_model_type = {}
+        for (model_type, history_list) in history_by_model_type.items():
+            history_arrays = np.array(history_list) # shape: (num_runs, num_epochs, num_loss_types)
+            if history_arrays.ndim >= 3 and history_arrays.shape[0] > 1:
+                mean_history = history_arrays.mean(axis=0)
+            elif history_arrays.shape[0] == 1:
+                mean_history = history_arrays[0]
+            elif args.test:
+                print(f'WARNING: Missing {model_type} {metric_key}')
+                continue
+            else:
+                raise Exception(f'Unable to find any {model_type} model {metric_key}')
+            mean_history_by_model_type[model_type] = mean_history
+        return mean_history_by_model_type
+
+    def plot_training_metric_histories(metric_history_lambda, metric_description, mean_history_by_model_type):
         plt.figure()
         for (d_i, model_type), model_stats in stats_per_model.items():
             if d_i not in individual_datasets_to_plot:
                 continue
-            cost_series = model_stats.data['cost_history'][:, cost_part_index]
-            plt.plot(range(len(cost_series)), cost_series, label=model_type.upper(), color=colors[model_type])
-
-        loss_label = LOSS_TYPES[cost_part_index]
+            history = metric_history_lambda(model_stats.data)
+            plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
         plt.xlabel('Epoch')
-        plt.ylabel(f'{loss_label} Loss')
-        plt.title(f'Sample {loss_label} Loss Histories')
+        plt.ylabel(f'{metric_description}')
+        plt.title(f'Sample {metric_description} Histories')
         plt.legend()
-        save_filepath = os.path.join(data_dir, f'{run_prefix}{model_type}_sample_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
+        save_filepath = os.path.join(data_dir, f'{run_prefix}_sample_{metric_description.replace(" ", "_").lower()}.png')
         plt.savefig(save_filepath)
-        print(f'Saved cost history plot for {loss_label} to {save_filepath}')
+        print(f'Saved sample {metric_description} histories plot to {save_filepath}')
+
+        plt.figure()
+        for model_type, history in mean_history_by_model_type.items():
+            epoch_indices = np.arange(num_epochs)
+            cost_series = history[:, cost_part_index]
+            plt.plot(epoch_indices, cost_series, label=model_type.upper(), color=colors[model_type])
+        plt.xlabel('Epoch')
+        plt.ylabel(f'Mean {metric_description}')
+        plt.title(f'Mean {metric_description} History per Model Type')
+        plt.legend()
+
+        save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{metric_description.replace(" ", "_").lower()}.png')
+        plt.savefig(save_filepath)
+        print(f'Saved mean {metric_description} history plot to {save_filepath}')
+
+    mean_cost_history_per_model_type = get_mean_training_metric_history('cost_history')
+    sample = next(iter(mean_cost_history_per_model_type.values()))
+    num_epochs, num_loss_types = sample.shape
 
     # plot cost history for each cost part separately
     for cost_part_index in range(num_loss_types):
-        plt.figure()
-        for model_type, cost_history in mean_cost_history_per_model_type.items():
-            epoch_indices = np.arange(num_epochs)
-            cost_series = cost_history[:, cost_part_index]
-            plt.plot(epoch_indices, cost_series, label=model_type.upper(), color=colors[model_type])
-
         loss_label = LOSS_TYPES[cost_part_index]
-        plt.xlabel('Epoch')
-        plt.ylabel(f'Mean {loss_label} Loss')
-        plt.title(f'Mean {loss_label} Loss History per Model Type')
-        plt.legend()
+        metric_description = f'{loss_label} Loss'
+        plot_training_metric_histories(lambda data: data['cost_history'][:, cost_part_index], metric_description, mean_cost_history_per_model_type)
 
-        save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{loss_label.replace(" ", "_").lower()}_cost_histories.png')
-        plt.savefig(save_filepath)
-        print(f'Saved cost history plot for {loss_label} to {save_filepath}')
-
+    mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norms')
+    plot_training_metric_histories(lambda data: data['gradient_norms'], 'Gradient Norms', mean_gradient_norm_history_per_model_type)
     plt.show()
 
     # precompute and cache 1st/2nd derivatives, FFTs per model/loss type combo
