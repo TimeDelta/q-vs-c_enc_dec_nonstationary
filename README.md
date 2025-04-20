@@ -160,7 +160,7 @@ This prevents the smoothing over of sharp, localized peaks that uniform binning 
 ## Results
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
-- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean Meyer-Wallach global entanglement (MWGE) and mean full VonNeumann entropy (VNE) of its bottleneck states when going through each series in that set.
+- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean Meyer-Wallach global entanglement (MWGE) as well as the mean full VonNeumann entropy (VNE) of its bottleneck states when going through each series in that set.
 #### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
