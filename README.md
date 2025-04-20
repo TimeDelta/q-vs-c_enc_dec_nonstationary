@@ -132,7 +132,7 @@ In the implementation used, a series of “brackets” are created based on the 
 - **Successive Halving:** Within each Hyperband bracket, the candidate pool is reduced by the `reduction_factor` (default 4 due to time constraints) each round while the epoch budget per surviving configuration increases, ensuring that the best-performing settings are progressively refined and ultimately selected based on minimum scaled loss.
 
 This Hyperband‑based strategy efficiently balances the exploration of diverse hyperparameter regions with the exploitation of promising configurations, providing a single optimal set of hyperparameters for all model types in the experiment.
-One potential negative consequence of using a single hyperparameter configuration for all datasets, however, is that the hyperparameters could get tuned to be more effective on the moderate complexity data.
+One potential negative consequence of using a single hyperparameter configuration for all datasets, however, is that the hyperparameters could get tuned to be more effective on the data with complexity metric values in higher density areas.
 Final configuration (just the non-forced values) = {'learning_rate': 0.021450664374153845, 'entanglement_gate': 'cz', 'embedding_gate': 'rz', 'block_gate': 'rz'}
 
 ### Training
