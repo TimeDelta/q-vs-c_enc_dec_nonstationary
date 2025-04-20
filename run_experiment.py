@@ -1,4 +1,6 @@
 import os
+import json
+import glob
 
 from data_generation import generate_data
 from optimize_hyperparams import get_best_config
@@ -31,6 +33,7 @@ if __name__ == '__main__':
         with open(best_config_path, 'w') as file:
             json.dump(best_config, file, indent=2)
 
+    num_epochs = 32
     num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
     pytorch_models = len(glob.glob(os.path.join(args.data_directory, '*.pth')))
     qiskit_models = len(glob.glob(os.path.join(args.data_directory, '*.qpy')))
