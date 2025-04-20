@@ -104,7 +104,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
     validation_costs = []
     for (i, series) in validation_data:
         series_costs = [i]
-        for c in cost_function([(i, series)], model, penalty_weight=1):
+        for c in cost_function([(i, series)], model, trash_penalty_weight=1):
             series_costs.append(c)
         validation_costs.append(series_costs)
 
