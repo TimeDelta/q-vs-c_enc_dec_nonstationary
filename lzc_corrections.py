@@ -1,11 +1,11 @@
 import numpy as np
 
-from analysis import lempel_ziv_complexity_continuous, quantize_signal
+from analysis import *
 from data_importers import import_generated
 partitions = import_generated('generated_datasets')
 
-def lempel_ziv_complexity_continuous2(data, num_symbols=30):
-    symbol_seq = quantize_signal(data, num_symbols)
+def lempel_ziv_complexity_continuous2(data):
+    symbol_seq = quantize_signal_equal_feature_bins(data)
     i = 0
     complexity = 0
     while i < len(symbol_seq):

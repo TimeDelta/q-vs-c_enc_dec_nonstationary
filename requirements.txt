@@ -8,3 +8,5 @@ numpy
 qiskit
 qiskit-aer
 qiskit[visualization]
+hdbscan
+scikit-learn

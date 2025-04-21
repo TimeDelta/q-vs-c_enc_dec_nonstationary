@@ -180,13 +180,10 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 
             fname = os.path.join(data_dir, f'{run_prefix}dataset{d_i}_{model_type}_trained_model')
             model.save(fname)
+            print(f"Saved trained model to {fname}")
 
             # === Model metric computations ===
             all_trash_indices = []
-            dataset_enc_differential_entropies = []
-            dataset_bottleneck_lzcs = []
-            dataset_bottleneck_hes = []
-            dataset_bottleneck_hfds = []
             if model_type.startswith('q'):
                 def extract_marginal_features(bottlenecks):
                     # One feature per qubit: the marginal probability of |0>
@@ -221,17 +218,15 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                     return np.array(features)
                 dataset_enc_entangle_entropies = []
                 dataset_enc_vn_entropies = []
+                all_marginal_bottlenecks = []
+                all_z_bottlenecks = []
                 for (s_i, series) in validation:
                     enc_entangle_entropies = []
                     enc_vn_entropies = []
                     bottlenecks = []
 
-                    num_examples = len(series)
-                    if autoregressive:
-                        num_examples -= 1
-                    for t in range(num_examples):
-                        input_state = model.prepare_state(series[t])
-                        initial_dm = DensityMatrix(input_state)
+                    for state in series:
+                        initial_dm = DensityMatrix(model.prepare_state(state))
                         bottleneck_dm, _ = model.forward(initial_dm)
                         bottlenecks.append(bottleneck_dm)
 
@@ -243,19 +238,15 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                     dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
                     dataset_enc_vn_entropies.append(np.concatenate(([s_i], enc_vn_entropies)))
 
-                    bottlenecks_features = extract_marginal_features(bottlenecks)
-
-                    diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks_features)
-                    dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
-
-                    dataset_bottleneck_lzcs.append([[s_i, lempel_ziv_complexity_continuous(bottlenecks_features)]])
-                    dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks_features))))
-                    dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks_features))))
+                    all_marginal_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_marginal_features(bottlenecks))))
+                    all_z_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_bloch_z_features(bottlenecks))))
 
                 save(np.array(dataset_enc_entangle_entropies), 'Bottleneck MW global entanglement')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
+                save(np.array(all_marginal_bottlenecks), 'Marginal bottlenecks')
+                save(np.array(all_z_bottlenecks), 'Bloch Z bottlenecks')
             elif model_type.startswith('c'):
-                all_trash_indices = []
+                all_bottlenecks = []
                 for (s_i, series) in validation:
                     enc_differential_entropies = []
                     num_examples = len(series)
@@ -268,18 +259,8 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                         bottlenecks.append(bottleneck_state)
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_state))
-                    bottlenecks = np.array(bottlenecks)
-                    diff_entropies = multimodal_differential_entropy_per_feature(bottlenecks)
-                    dataset_enc_differential_entropies.append([s_i, np.sum(diff_entropies)])
-                    dataset_bottleneck_lzcs.append([[s_i, lempel_ziv_complexity_continuous(bottlenecks)]])
-                    dataset_bottleneck_hes.append(np.concatenate(([s_i], hurst_exponent(bottlenecks))))
-                    dataset_bottleneck_hfds.append(np.concatenate(([s_i], higuchi_fractal_dimension(bottlenecks))))
-
-            save(np.array(dataset_bottleneck_lzcs), 'Bottleneck LZC')
-            save(np.array(dataset_bottleneck_hes), 'Bottleneck HE')
-            save(np.array(dataset_bottleneck_hfds), 'Bottleneck HFD')
-            save(np.array(dataset_enc_differential_entropies), 'Bottleneck Differential Entropy')
-            print(f"Saved trained model to {fname}")
+                    all_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], bottlenecks)))
+                save(np.array(all_bottlenecks), 'Bottlenecks')
             save_trash_indices_histogram(all_trash_indices)
 
 if __name__ == '__main__':

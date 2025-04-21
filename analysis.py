@@ -5,6 +5,8 @@ from qiskit.quantum_info import partial_trace, entropy
 import antropy
 from astropy.stats import bayesian_blocks
 import matplotlib.pyplot as plt
+from sklearn.neighbors import NearestNeighbors
+from hdbscan import HDBSCAN
 
 from typing import Dict
 import random
@@ -38,27 +40,19 @@ def check_for_overfitting(training_costs, validation_costs, threshold=.15):
     total_validation_cost = np.sum(validation_costs)
     return check_overfit(total_training_cost, total_validation_cost, 'Total')
 
-def multimodal_differential_entropy_per_feature(data):
+def differential_entropy(data, quantizer):
+    data = quantizer(data)
+    hist, _ = np.histogram(data, density=True)
+    nonzero = hist > 0
+    return -np.sum(hist[nonzero] * np.log(hist[nonzero]))
+
+def differential_entropy_per_feature(data, quantizer):
     """
     data (np.ndarray): shape should be (sequence_length, num_features)
     Uses adaptive width per bin to allow for multimodality in underlying series.
     """
-    entropy_per_feature = []
     num_features = data.shape[1]
-
-    for f in range(num_features):
-        feature_data = data[:, f]
-        # use bayesian_blocks from astropy to adaptively determine bin edges
-        # use density normalization so that the integral is one
-        hist, edges = np.histogram(feature_data, bins=bayesian_blocks(feature_data), density=True)
-
-        bin_widths = np.diff(edges) # 1D differences from the histogram edges
-        bin_prob_mass = hist * bin_widths
-
-        nonzero = bin_prob_mass > 0
-        de = -np.sum(bin_prob_mass[nonzero] * np.log(bin_prob_mass[nonzero]))
-        entropy_per_feature.append(de)
-    return entropy_per_feature
+    return [differential_entropy(data[:, f], quantizer) for f in range(num_features)]
 
 def von_neumann_entropy(dm, log_base=2) -> float:
     dm_eigenvalues = np.linalg.eigvalsh(dm.data)
@@ -83,10 +77,8 @@ def meyer_wallach_global_entanglement(state):
     # Meyer-Wallach normalizes by the number of qubits
     return (2 / n) * total
 
-# TODO: better method for deciding number of symbols
-def quantize_signal(data, num_symbols=30):
-    if isinstance(data, torch.Tensor):
-        data = data.detach().cpu().numpy()
+def quantize_signal_equal_feature_bins(data):
+    num_symbols = data.shape[0] // 10
     if data.ndim == 1:
         data_min, data_max = np.min(data), np.max(data)
         if data_max == data_min:
@@ -114,8 +106,50 @@ def quantize_signal(data, num_symbols=30):
     else:
         raise ValueError("Data must be 1D or 2D.")
 
-def lempel_ziv_complexity_continuous(data, num_symbols=30):
-    symbol_seq = quantize_signal(data, num_symbols)
+def quantize_signal_bayesian_block_feature_bins(data):
+    if data.ndim == 1:
+        edges = bayesian_blocks(data[:, i])
+        quantized = np.digitize(data[:, i], edges) - 1
+        return quantized.tolist()
+    elif data.ndim == 2:
+        n_samples, n_features = data.shape
+        quantized_features = []
+        bases = []
+
+        # quantize each feature and record its number of bins
+        for i in range(n_features):
+            edges = bayesian_blocks(data[:, i])
+            quantized_features.append(np.digitize(data[:, i], edges) - 1)
+            bases.append(len(edges))
+
+        quantized_features = np.stack(quantized_features, axis=1)
+        bases = np.array(bases, dtype=int)
+
+        # compute mixed‑radix weights: product of previous bases
+        # weights[0] = 1, weights[i] = prod(bases[:i])
+        weights = np.cumprod(np.concatenate(([1], bases[:-1])))
+        composite_symbols = np.sum(quantized_features * weights, axis=1)
+        return composite_symbols.tolist()
+    else:
+        raise ValueError("Data must be 1D or 2D.")
+
+def quantize_signal_hdbscan(data):
+    n_samples, _ = data.shape
+    nbrs = NearestNeighbors(n_neighbors=max(n_samples//20, 2)).fit(data)
+    interpoint_distances, _ = nbrs.kneighbors(data)
+    interpoint_distances = interpoint_distances[:,1:] # ignore the 0s
+    mean = np.mean(interpoint_distances)
+    std_dev = np.std(interpoint_distances)
+
+    return HDBSCAN(
+        min_cluster_size=2,
+        min_samples=None,
+        cluster_selection_epsilon=float(mean + std_dev),
+        cluster_selection_method='leaf'
+    ).fit_predict(data)
+
+def lempel_ziv_complexity_continuous(data, quantizer):
+    symbol_seq = quantizer(data)
     phrase_start = 0
     complexity = 0
 
@@ -208,7 +242,15 @@ def per_patient(func, data, **kwargs):
         final_values.append(func(data[p], **kwargs))
     return final_values
 
-def run_analysis(datasets, data_dir, overfit_threshold):
+def run_analysis(datasets, data_dir, overfit_threshold, quantizer, quantum_bottleneck_feature):
+    if quantizer == 'bayesian_block':
+        quantizer = quantize_signal_bayesian_block_feature_bins
+    elif quantizer == 'hdbscan':
+        quantizer = quantize_signal_hdbscan
+    elif quantizer == 'equal_width':
+        quantizer = quantize_signal_equal_feature_bins
+    else:
+        raise Exception('Unknown quantizer')
     num_training_series = len(next(iter(datasets.values()))[0])
     num_validation_series = len(next(iter(datasets.values()))[1])
 
@@ -248,9 +290,9 @@ def run_analysis(datasets, data_dir, overfit_threshold):
     SERIES_STATS_CONFIG = {
         # lambda to map series into single value
         'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
-        'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series),
+        'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series, quantizer),
         'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
-        'differential_entropy':      lambda series: np.mean(multimodal_differential_entropy_per_feature(series)),
+        'differential_entropy':      lambda series: differential_entropy(series, quantizer),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
@@ -275,6 +317,8 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             for key in MODEL_STATS_CONFIG.keys():
                 if model_type.startswith('c') and ('vn' in key or 'entangle' in key):
                     continue
+                if key.startswith('bottleneck'):
+                    continue # calculated in this analysis
                 filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{key}.npy')
                 self.data[key] = np.load(filepath)
                 if key == 'validation_costs':
@@ -284,6 +328,18 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             self.data['cost_history'] = np.load(filepath)
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_gradient_norms.npy')
             self.data['gradient_norm_history'] = np.load(filepath)
+            if model_type.startswith('q'):
+                filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{quantum_bottleneck_feature}_bottlenecks.npy')
+            elif model_type.startswith('c'):
+                filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_bottlenecks.npy')
+            else:
+                raise Exception("Unknown model type: don't know how to get bottlenecks")
+            bottlenecks = np.load(filepath)
+            self.data['bottlenecks'] = bottlenecks
+            self.data['bottleneck_differential_entropy'] = differential_entropy(bottlenecks, quantizer)
+            self.data['bottleneck_lzc'] = lempel_ziv_complexity_continuous(bottlenecks, quantizer)
+            self.data['bottleneck_he'] = np.mean(hurst_exponent(bottlenecks))
+            self.data['bottleneck_hfd'] = np.mean(higuchi_fractal_dimension(bottlenecks))
 
     @dataclass
     class SeriesStats:
@@ -295,7 +351,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
 
     bar = '=-=-=-=-=-=-=-=-=-=-=-=-=-=-='
 
-    # load model statistics for each dataset and model type (qae and qte)
+    # load model statistics for each (dataset, model_type)
     stats_per_model = {}
     for d_i in datasets:
         dataset_stats = {}
@@ -683,8 +739,10 @@ if __name__ == '__main__':
     parser.add_argument("--test", action='store_true', default=False)
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
     parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
+    parser.add_argument("--quantizer", type=str, default='bayesian_block', choices=['bayesian_block', 'hdbscan', 'equal_width'])
+    parser.add_argument("--quantum_bottleneck_feature", type=str, default='z', choices=['z', 'marginal'])
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
-    run_analysis(datasets, args.datasets_directory, args.overfit_threshold)
+    run_analysis(datasets, args.datasets_directory, args.overfit_threshold, args.quantizer, args.quantum_bottleneck_feature)
