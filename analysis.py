@@ -283,7 +283,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_cost_history.npy')
             self.data['cost_history'] = np.load(filepath)
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_gradient_norms.npy')
-            self.data['gradient_norms'] = np.load(filepath)
+            self.data['gradient_norm_history'] = np.load(filepath)
 
     @dataclass
     class SeriesStats:
@@ -394,8 +394,8 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         colormap_colors.append((red_value, green_value, blue_value))
     colors = {model: color for (model, color) in zip(MODEL_TYPES, colormap_colors)}
 
-    def plot_data(data_dict, x_label, y_label, title, filename):
-        def plot_model_data_and_save(data, label_prefix, color):
+    def plot_data_and_save(data_dict, x_label, y_label, title, filename):
+        def plot_model_data(data, label_prefix, color):
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
             plt.scatter(x_vals, y_vals, color=color, s=5)
@@ -411,11 +411,11 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             for loss_type, model_data in data_dict.items():
                 for model_type, data in model_data.items():
                     label_prefix = f"{model_type.upper()}-{loss_type}"
-                    plot_model_data_and_save(data, label_prefix, colors[model_type])
+                    plot_model_data(data, label_prefix, colors[model_type])
         else:
             for model_type, data in data_dict.items():
                 label_prefix = model_type.upper()
-                plot_model_data_and_save(data, label_prefix, colors[model_type])
+                plot_model_data(data, label_prefix, colors[model_type])
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
@@ -431,7 +431,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             x_label = i_key.replace('_', ' ').title()
             y_label = d_key.replace('_', ' ').title()
             print(f'Plotting individual data for {y_label} vs {x_label}')
-            plot_data(
+            plot_data_and_save(
                 data_dict=individual_plot_data[i_key][d_key],
                 x_label=f'{x_label} (Individual)',
                 y_label=f'{y_label} (Validation)',
@@ -440,7 +440,7 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             )
 
             print(f'Plotting aggregated data for {y_label} vs {x_label}')
-            plot_data(
+            plot_data_and_save(
                 data_dict=aggregated_plot_data[i_key][d_key],
                 x_label=f'Mean {x_label}',
                 y_label=f'{y_label} (Validation)',
@@ -467,8 +467,8 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             history_by_model_type[model_type].append(model_stats.data[metric_key])
         mean_history_by_model_type = {}
         for (model_type, history_list) in history_by_model_type.items():
-            history_arrays = np.array(history_list) # shape: (num_runs, num_epochs, num_loss_types)
-            if history_arrays.ndim >= 3 and history_arrays.shape[0] > 1:
+            history_arrays = np.array(history_list) # shape: (num_runs, num_epochs)
+            if history_arrays.ndim >= 2 and history_arrays.shape[0] > 1:
                 mean_history = history_arrays.mean(axis=0)
             elif history_arrays.shape[0] == 1:
                 mean_history = history_arrays[0]
@@ -482,11 +482,16 @@ def run_analysis(datasets, data_dir, overfit_threshold):
 
     def plot_training_metric_histories(metric_history_lambda, metric_description, mean_history_by_model_type):
         plt.figure()
+        model_types_plotted = set()
         for (d_i, model_type), model_stats in stats_per_model.items():
             if d_i not in individual_datasets_to_plot:
                 continue
             history = metric_history_lambda(model_stats.data)
-            plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            if model_type in model_types_plotted:
+                plt.plot(range(len(history)), history, color=colors[model_type])
+            else:
+                plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            model_types_plotted.add(model_type)
         plt.xlabel('Epoch')
         plt.ylabel(f'{metric_description}')
         plt.title(f'Sample {metric_description} Histories')
@@ -496,10 +501,13 @@ def run_analysis(datasets, data_dir, overfit_threshold):
         print(f'Saved sample {metric_description} histories plot to {save_filepath}')
 
         plt.figure()
+        model_types_plotted = set()
         for model_type, history in mean_history_by_model_type.items():
-            epoch_indices = np.arange(num_epochs)
-            cost_series = history[:, cost_part_index]
-            plt.plot(epoch_indices, cost_series, label=model_type.upper(), color=colors[model_type])
+            if model_type in model_types_plotted:
+                plt.plot(range(len(history)), history, color=colors[model_type])
+            else:
+                plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            model_types_plotted.add(model_type)
         plt.xlabel('Epoch')
         plt.ylabel(f'Mean {metric_description}')
         plt.title(f'Mean {metric_description} History per Model Type')
@@ -517,73 +525,92 @@ def run_analysis(datasets, data_dir, overfit_threshold):
     for cost_part_index in range(num_loss_types):
         loss_label = LOSS_TYPES[cost_part_index]
         metric_description = f'{loss_label} Loss'
-        plot_training_metric_histories(lambda data: data['cost_history'][:, cost_part_index], metric_description, mean_cost_history_per_model_type)
+        mean_history_per_model_type = {k: v[:, cost_part_index] for k,v in mean_cost_history_per_model_type.items()}
+        plot_training_metric_histories(lambda data: data['cost_history'][:, cost_part_index], metric_description, mean_history_per_model_type)
 
-    mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norms')
-    plot_training_metric_histories(lambda data: data['gradient_norms'], 'Gradient Norms', mean_gradient_norm_history_per_model_type)
+    mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norm_history')
+    plot_training_metric_histories(lambda data: data['gradient_norm_history'], 'Gradient Norms', mean_gradient_norm_history_per_model_type)
     plt.show()
 
-    # precompute and cache 1st/2nd derivatives, FFTs per model/loss type combo
-    model_computation_cache = {}
+    # precompute and cache 1st/2nd derivatives, FFTs per model type per metric history
+    costs_cache = {
+        'history': {},
+        'first_derivatives': {},
+        'second_derivatives': {},
+        'fft_first': {},
+        'fft_second': {},
+    }
+    gradient_norms_cache = {
+        'history': {},
+        'first_derivatives': {},
+        'second_derivatives': {},
+        'fft_first': {},
+        'fft_second': {},
+    }
     for model_type in MODEL_TYPES:
         cost_history = mean_cost_history_per_model_type[model_type] # shape: (num_epochs, num_loss_types)
+        gradient_norm_history = mean_gradient_norm_history_per_model_type[model_type] # shape: (num_epochs)
 
-        first_derivatives = np.gradient(cost_history, axis=0)
-        model_fft_first = {}
+        cost_first_derivatives = np.gradient(cost_history, axis=0)
+        model_fft_cost_first = {}
         for cost_part_index in range(num_loss_types):
-            model_fft_first[cost_part_index] = fft.fft(first_derivatives[:, cost_part_index])
+            model_fft_cost_first[cost_part_index] = fft.fft(cost_first_derivatives[:, cost_part_index])
+        gradient_first_derivatives = np.gradient(gradient_norm_history)
+        model_fft_gradient_first = fft.fft(gradient_first_derivatives)
 
-        second_derivatives = np.gradient(first_derivatives, axis=0)
-        model_fft_second = {}
+        cost_second_derivatives = np.gradient(cost_first_derivatives, axis=0)
+        model_fft_cost_second = {}
         for cost_part_index in range(num_loss_types):
-            model_fft_second[cost_part_index] = fft.fft(second_derivatives[:, cost_part_index])
+            model_fft_cost_second[cost_part_index] = fft.fft(cost_second_derivatives[:, cost_part_index])
+        gradient_second_derivatives = np.gradient(gradient_first_derivatives) # gradients of gradients of gradient norms lol
+        model_fft_gradient_second = fft.fft(gradient_second_derivatives)
 
-        frequencies = fft.fftfreq(cost_history.shape[0]) # freqs available based on nyquist sampling
-        model_computation_cache[model_type] = {
-            'cost_history': cost_history,
-            'first_derivatives': first_derivatives,
-            'second_derivatives': second_derivatives,
-            'fft_first': model_fft_first,
-            'fft_second': model_fft_second,
-            'frequencies': frequencies
-        }
-
-    # mean absolute 1st & 2nd derivatives
-    steepness_metrics = {}
-    curvature_metrics = {}
-    for model in MODEL_TYPES:
-        steepness_metrics[model] = {}
-        curvature_metrics[model] = {}
-        for cost_part_index in range(num_loss_types):
-            first = model_computation_cache[model]['first_derivatives'][:, cost_part_index]
-            second = model_computation_cache[model]['second_derivatives'][:, cost_part_index]
-            steepness_metrics[model][cost_part_index] = np.mean(np.abs(first))
-            curvature_metrics[model][cost_part_index] = np.mean(np.abs(second))
+        frequencies = fft.fftfreq(cost_history.shape[0]) # freqs available based on nyquist sampling (from epoch indices)
+        costs_cache['history'][model_type] = cost_history
+        costs_cache['first_derivatives'][model_type] = cost_first_derivatives
+        costs_cache['second_derivatives'][model_type] = cost_second_derivatives
+        costs_cache['fft_first'][model_type] = model_fft_cost_first
+        costs_cache['fft_second'][model_type] = model_fft_cost_second
+        gradient_norms_cache['history'][model_type] = gradient_norm_history
+        gradient_norms_cache['first_derivatives'][model_type] = gradient_first_derivatives
+        gradient_norms_cache['second_derivatives'][model_type] = gradient_second_derivatives
+        gradient_norms_cache['fft_first'][model_type] = model_fft_gradient_first
+        gradient_norms_cache['fft_second'][model_type] = model_fft_gradient_second
 
     model_types_header = '\t'.join([m.upper().replace('_', ' ') for m in MODEL_TYPES])
-    for cost_part_index in range(num_loss_types):
-        print(f'\n\n\n{bar}\n{LOSS_TYPES[cost_part_index]} Loss Landscapes:\n{bar}')
+    def analyze_history(cache, label):
+        histories = cache['history']
+        first_derivatives = cache['first_derivatives']
+        second_derivatives = cache['second_derivatives']
+        print(f'\n\n\n{bar}\n{label}:\n{bar}')
         print('  Pairwise Pearson Correlations:')
         print('\t\t' + model_types_header)
         for i, model_i in enumerate(MODEL_TYPES):
             row_values = [model_i.upper()]
-            series_i = model_computation_cache[model_i]['cost_history'][:, cost_part_index]
+            series_i = histories[model_i]
             for j, model_j in enumerate(MODEL_TYPES):
-                series_j = model_computation_cache[model_j]['cost_history'][:, cost_part_index]
+                series_j = histories[model_j]
                 corr_coeff = np.corrcoef(series_i, series_j)[0, 1]
                 row_values.append(f'{corr_coeff:.3f}')
             print('\t' + '\t'.join(row_values))
-        print('  Mean Absolute Slope per Model Type:')
+
+        # mean absolute 1st & 2nd derivatives
+        first_derivatives_means = {}
+        second_derivatives_means = {}
+        for model in MODEL_TYPES:
+            first_derivatives_means[model] = np.mean(np.abs(first_derivatives[model]))
+            second_derivatives_means[model] = np.mean(np.abs(second_derivatives[model]))
+        print('  Mean Absolute 1st Derivative per Model Type:')
         for model_type in MODEL_TYPES:
-            print(f'    {model_type.upper()}: {steepness_metrics[model_type][cost_part_index]:.10f}')
+            print(f'    {model_type.upper()}: {first_derivatives_means[model_type]:.10f}')
         print('  Mean Absolute 2nd Derivative per Model Type:')
         for model_type in MODEL_TYPES:
-            print(f'    {model_type.upper()}: {curvature_metrics[model_type][cost_part_index]:.10f}')
+            print(f'    {model_type.upper()}: {second_derivatives_means[model_type]:.10f}')
 
-        def compute_and_print_cross_corr_similarity(model_computation_cache, key):
+        def compute_and_print_cross_corr_similarity(metric_history_per_type):
             mean_centered_values = {}
             for model_type in MODEL_TYPES:
-                values = model_computation_cache[model_type][key][:, cost_part_index]
+                values = metric_history_per_type[model_type]
                 mean_centered_values[model_type] = values - np.mean(values)
             print('\t\t' + model_types_header)
             for i, model_i in enumerate(MODEL_TYPES):
@@ -597,25 +624,23 @@ def run_analysis(datasets, data_dir, overfit_threshold):
                     similarity = np.max(np.abs(cross_corr)) / norm_product if norm_product > 0 else np.nan
                     row_values.append(f'{similarity:.3f}')
                 print('\t' + '\t'.join(row_values))
-        print('  Pairwise Max Normalized Cross-Correlation of Mean-Centered 1st Derivatives:')
-        compute_and_print_cross_corr_similarity(model_computation_cache, 'first_derivatives')
+        print('  Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:')
+        compute_and_print_cross_corr_similarity(histories)
+        print('  ... 1st Derivatives:')
+        compute_and_print_cross_corr_similarity(first_derivatives)
         print('  ... 2nd Derivatives:')
-        compute_and_print_cross_corr_similarity(model_computation_cache, 'second_derivatives')
+        compute_and_print_cross_corr_similarity(second_derivatives)
 
-        # compute PSD over high frequency 1st / 2nd derivatives loss curves to determine
-        # "high" frequency cutoff threshold for each one in each part of loss landscape
+        # compute PSD over high frequency 1st / 2nd derivatives to determine
+        # "high" frequency cutoff threshold for each derivative order
         energy_cutoff_ratio = 0.95
         for derivative_type in ['first', 'second']:
             # compute aggregated cumulative energy distribution
             aggregated_thresholds = {}
             aggregated_power = None
-            frequencies = None
-            # threshold is determined by (derivative_order, loss_type) and is the same across model types
-            for model_type in MODEL_TYPES:
-                fft_result = model_computation_cache[model_type][f'fft_{derivative_type}'][cost_part_index]
+            for model_type in MODEL_TYPES: # threshold is the same across model types
+                fft_result = cache[f'fft_{derivative_type}'][model_type]
                 power_spectrum = np.abs(fft_result) ** 2
-                if frequencies is None:
-                    frequencies = model_computation_cache[model_type]['frequencies']
                 if aggregated_power is None:
                     aggregated_power = power_spectrum.copy()
                 else:
@@ -629,23 +654,25 @@ def run_analysis(datasets, data_dir, overfit_threshold):
             # find frequency such that energy_cutoff_ratio of energy is below it
             dynamic_threshold_index = np.searchsorted(cumulative_energy, energy_cutoff_ratio * total_energy)
             threshold = sorted_freqs[dynamic_threshold_index]
-            aggregated_thresholds[cost_part_index] = threshold
             print(f'  High Frequency {derivative_type.title()} Derivative Threshold (based on {int(100*energy_cutoff_ratio)}% energy cutoff ratio): {threshold:.4f}')
 
             # compute the high-frequency energy ratio
             hf_energy_uniform = {}
             for model_type in MODEL_TYPES:
                 hf_energy_uniform[model_type] = {}
-                fft_result = model_computation_cache[model_type][f'fft_{derivative_type}'][cost_part_index]
+                fft_result = cache[f'fft_{derivative_type}'][model_type]
                 power_spectrum = np.abs(fft_result) ** 2
-                frequencies = model_computation_cache[model_type]['frequencies']
-                threshold = aggregated_thresholds[cost_part_index]
                 high_freq_mask = np.abs(frequencies) > threshold
                 high_freq_energy = np.sum(power_spectrum[high_freq_mask])
                 total_energy = np.sum(power_spectrum)
                 hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
-                hf_energy_uniform[model_type][cost_part_index] = hf_ratio
+                hf_energy_uniform[model_type] = hf_ratio
                 print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
+    for cost_part_index in range(num_loss_types):
+        label = f'{LOSS_TYPES[cost_part_index]} Loss Analysis'
+        cache = {k: {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES} for k in costs_cache.keys()}
+        analyze_history(cache, label)
+    analyze_history(gradient_norms_cache, 'Gradient Norm Analysis')
 
 if __name__ == '__main__':
     import argparse
