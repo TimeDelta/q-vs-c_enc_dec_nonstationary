@@ -148,13 +148,19 @@ All quantum circuits are simulated on classical hardware to isolate algorithmic 
 Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without GPU acceleration.
 
 ### Analysis
-- !TODO! Describe chosen way to extend LZC to continuous signal
-- The assumptions about the data made by the method used to calculate DE are important.
-To calculate DE, this experiment uses the Bayesian Blocks method from the `astropy.stats` pip package.
-This binning method by (Scargle et al.; 2013) finds an optimal segmentation of one‑dimensional data by maximizing a fitness function under a Poisson (event) or density model rather than partitioning each feature’s range into uniform bins.
+#### Quantization Methods
+- When extending a discrete metric to cover continuous data (LZC and DE), multiple quantization methods are used to improve conclusion robustness.
+Specifically, the included methods are:
+  - [Equal Bin-Width](./analysis.py#L80): Partitions each feature’s range into equal‑width bins based on a fixed symbol count (here, 1/10 of the sequence length) then turn each state into a symbol via mixed-radix encoding.
+Fails to adapt to skewed or multimodal distributions.
+  - [Bayesian Blocks by (Scargle et al.; 2013)](./analysis.py#L109): Finds an optimal segmentation of one‑dimensional data (quantizes each feature separately) by maximizing a fitness function under a Poisson (event) model.
 This yields non‑uniform bin widths that adapt to local data density by creating edges where the statistical properties change, yielding finer resolution in regions of high statistical property fluctuation and coarser bins elsewhere.
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
+  - [HDBSCAN](./analysis.py#L136)): Assigns symbols via hierarchical density‑based clustering, uncovering clusters of varying shapes and densities without requiring preset bin counts for each feature.
+As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation.
+The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
+The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
 
 ## Results
