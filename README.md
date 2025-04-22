@@ -39,7 +39,7 @@ This work conducts a comprehensive comparison on non-stationary data of eight se
 
 By evaluating these models on the same sets of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics.
 
-Four metrics to quantify time-series complexity:
+Four main metrics to quantify time-series complexity:
 - **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv; 1976).
 - **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence).
 - **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals.
@@ -52,19 +52,23 @@ The experimental setup and initial expectations are outlined below, and provide 
 The key hypotheses examined include:
 > - ***Latent Complexity Matching:*** An effective encoder of a time-series should reflect the complexity characteristics of the time series on which it was trained in its bottleneck (the absolute difference between the metrics should negatively correlate to the loss).
 In particular, the above-mentioned complexity metrics are expected to correlate between features extracted from the model bottlenecks over its validation series and the validation series themselves from the same dataset on which the model was trained.
-A high complexity signal might require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal’s variability, especially in a highly non-stationary regime.
+A high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime.
 This is expected for DE in particular because the quantum versions being able to maintain superpositions and mixtures of basis states in the bottleneck that retain uncertainty (entropy), whereas a classical bottleneck might collapse information more consistently into a few active features, especially given the linear nature of the model architectures.
 > - ***Prediction vs Reconstruction Objective:*** Autoregressive tasks (predicting the next state) will converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
-I posit that, in such a highly non-stationary regime, predicting the next state is an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
+In such a highly non-stationary regime, predicting the next state should be an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
 A transition-based training signal directly emphasizes learning the evolving pattern.
-This should translate into better alignment with the dataset’s complexity (e.g., chaotic or highly complex sequences should force the model to utilize its capacity more effectively) because .
+This should produce a closer match between the dataset’s complexity metrics and those of the model’s bottleneck representations, since those metrics are based on state differences, which is exactly what the reconstruction objective emphasizes.
 This paper will also assess if transition encoders indeed show improved training efficiency (more negative slope to the reconstruction/prediction loss history).
 Additionally, an examination will be done into whether the learned latent representations from transition models correlate more strongly with known complexity measures (i.e. higher latent entropy for higher complexity data), supporting the idea that they “encode complexity” more faithfully than an ENC-DEC trained on reconstruction.
-> - ***Recurrent vs Feedforward:*** Recurrent models will outperform non-recurrent models in final loss because the hidden state contains temporal information relevant to the nonstationarity but the difference will be smaller in the quantum architecture because of the facts that its latent state is exponentially larger than its classical counterpart despite having a single qubit per feature and that the quantum embedding only uses single-qubit rotation gates, thus preventing full utilization of the embedding space.
+> - ***Recurrent vs Feedforward:*** Recurrent models will exacerbate the ruggedness of the landscapes (increased steepness, curvature, etc.) but ultimately outperform non-recurrent models in final loss because the hidden state contains temporal information relevant to the nonstationarity.
+However, the difference will be smaller in the quantum architecture because of the facts that its latent state is exponentially larger than its classical counterpart despite having a single qubit per feature and that the quantum embedding only uses single-qubit rotation gates, thus preventing full utilization of the embedding space.
 Moreover, recurrent encoders will exhibit different bottleneck characteristics, potentially higher entropy, since the hidden state provides an additional pathway to carry information.
 Another hypothesis is that recurrence being added to the autoencoder objective will not be enough to outcompete the autoregressive versions without recursion, especially since the implemented recursion adds only a single extra parameter.
 > - ***Quantum vs Classical:*** In their cost histories, quantum models will have higher mean absolute first and second derivatives during training because they often exhibit highly non-linear loss landscapes (Holzer, Turkalj; 2024) despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures).
 Upon analyzing the power spectrum of the loss gradients over training iterations, an additional expectation is to see more high-frequency fluctuations for quantum models, reflecting parameter interference effects and more rapid changes as the quantum circuit parameters navigate a more rugged loss landscape.
+For quantum models, an additional hypothesis is that both the Meyer-Wallach global entanglement (MWGE) and the VonNeumann entropy (VNE) of their bottleneck representations should positively correlate to the main complexity metrics (LZC, HE, HFD, DE).
+A final expectation is that the quantum models will generalize more poorly (higher ratio of normalized validation cost: normalized training cost) due to the expected higher loss landscape complexity.
+***! TODO: figure out how to normalize quantum and classical trash losses for fair comparison***
 
 ## Methods
 ### Model Architectures
@@ -152,12 +156,13 @@ Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without G
 #### Quantization Methods
 - When extending a discrete metric to cover continuous data (LZC and DE), multiple quantization methods are used to improve conclusion robustness.
 Specifically, the included methods are:
-  - [Equal Bin-Width](./analysis.py#L80): Partitions each feature’s range into equal‑width bins based on a fixed symbol count (here, 1/10 of the sequence length) then turn each state into a symbol via mixed-radix encoding.
+  - [Equal Bin-Width](./analysis.py#L80): Partitions each feature's range into equal‑width bins based on a fixed symbol count (here, 1/10 of the sequence length) then turn each state into a symbol via equal-base mixed-radix encoding.
 Fails to adapt to skewed or multimodal distributions.
   - [Bayesian Blocks by (Scargle et al.; 2013)](./analysis.py#L109): Finds an optimal segmentation of one‑dimensional data (quantizes each feature separately) by maximizing a fitness function under a Poisson (event) model.
 This yields non‑uniform bin widths that adapt to local data density by creating edges where the statistical properties change, yielding finer resolution in regions of high statistical property fluctuation and coarser bins elsewhere.
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
+The final symbols are then obtained via mixed-radix encoding with each feature's base being equal to the number of symbols (bins) found for that feature.
   - [HDBSCAN](./analysis.py#L136)): Assigns symbols via hierarchical density‑based clustering, uncovering clusters of varying shapes and densities without requiring preset bin counts for each feature.
 As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation of the interpoint distances between each pair of nearest neighbors.
 The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
@@ -167,7 +172,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 ## Results
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
-- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean Meyer-Wallach global entanglement (MWGE) as well as the mean full VonNeumann entropy (VNE) of its bottleneck states when going through each series in that set.
+- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean MWGE as well as the mean VNE of its bottleneck states when going through each series in that set.
 #### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
@@ -175,7 +180,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 ## Discussion
 ### Sources of Error
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
-The correct value was always higher due to this because allowing overlap means you can use a phrase that has already be seen.
+The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
 
