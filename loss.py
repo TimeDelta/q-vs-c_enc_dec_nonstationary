@@ -33,8 +33,7 @@ def trash_qubit_penalty(state, bottleneck_size):
     num_trash = state.num_qubits - bottleneck_size
 
     # marginals are probabilities that qubit is in |0>
-    penalty = sum(1 - p for p in sorted_marginals[:num_trash])
-    return penalty
+    return sum(1 - p for p in sorted_marginals[:num_trash])
 
 def classical_trash_penalty(state, bottleneck_size):
     num_trash = state.shape[0] - bottleneck_size

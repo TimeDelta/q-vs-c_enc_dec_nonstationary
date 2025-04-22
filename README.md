@@ -41,8 +41,8 @@ By evaluating these models on the same sets of time-series data, the aim is to t
 
 Four main metrics to quantify time-series complexity:
 - **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv; 1976).
-- **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence).
-- **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals.
+- **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence) (Hurst; 1951).
+- **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals (Higuchi, 1988).
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
 
 In summary, this paper drafts a systematic study of how learning objective (reconstruction vs. prediction), sequence modeling capability (recurrent vs. not), and computational paradigm (quantum vs. classical) affect performance when trained on complex, highly nonstationary time-series data.
@@ -50,16 +50,16 @@ The experimental setup and initial expectations are outlined below, and provide 
 
 ### Hypotheses
 The key hypotheses examined include:
-> - ***Latent Complexity Matching:*** An effective encoder of a time-series should reflect the complexity characteristics of the time series on which it was trained in its bottleneck (the absolute difference between the metrics should negatively correlate to the loss).
-In particular, the above-mentioned complexity metrics are expected to correlate between features extracted from the model bottlenecks over its validation series and the validation series themselves from the same dataset on which the model was trained.
-A high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime.
-This is expected for DE in particular because the quantum versions being able to maintain superpositions and mixtures of basis states in the bottleneck that retain uncertainty (entropy), whereas a classical bottleneck might collapse information more consistently into a few active features, especially given the linear nature of the model architectures.
-> - ***Prediction vs Reconstruction Objective:*** Autoregressive tasks (predicting the next state) will converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
-In such a highly non-stationary regime, predicting the next state should be an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
-A transition-based training signal directly emphasizes learning the evolving pattern.
-This should produce a closer match between the dataset’s complexity metrics and those of the model’s bottleneck representations, since those metrics are based on state differences, which is exactly what the prediction objective emphasizes.
-This paper will also assess if transition encoders indeed show improved training efficiency (more negative slope to the reconstruction/prediction loss history).
-Additionally, an examination will be done into whether the learned latent representations from transition models correlate more strongly with known complexity measures (i.e. higher latent entropy for higher complexity data), supporting the idea that they “encode complexity” more faithfully than an ENC-DEC trained on reconstruction.
+> - ***Latent Complexity Matching:*** An effective encoder of a time-series is hypothesized to reflect the complexity characteristics of the time series on which it was trained in its bottleneck.
+Specifically, the absolute squared difference between each metric over each model's validation data and over the model's latent representations from the validation data will positively correlate to the loss.
+The intuition behind this prediction is an expectation that a high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime where the variability is volatile.
+> - ***Prediction vs Reconstruction Objective:*** AR tasks (predicting the next state) are expected to converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
+In such a highly non-stationary regime, predicting the next state is an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
+A transition-based training signal directly emphasizes learning the evolving pattern, which should produce a closer match between the dataset's complexity metrics and those of the model's bottleneck representations since the chosen metrics (except for DE) are based on state ordering, which is something the prediction objective emphasizes but the reconstructive objective doesn't.
+Because DE does not directly emphasize the differences between states but instead focuses on the global distribution, an additional hypothesis is that the advantage seen by the predictive-trained models will be less pronounced for it (!!!!TODO!!!!! CHOOSE AND IMPLEMENT METRIC RANGE NORMALIZATION FOR SCALE DIFFERENCES).
+To assess if ENC-DEC models trained on the predictive task indeed show improved training efficiency, a check is done for more negative mean slope to the prediction vs reconstruction loss history as well as for less area under the loss history curve.
+Another hypothesis this paper proposes is that the learned latent representations from prediction-trained models correlate more strongly with the chosen complexity metrics than the reconstruction-trained ones, supporting the idea that they “encode complexity” more faithfully than an ENC-DEC trained on reconstruction.
+Specifically, a check will be made for higher positive slope for first-order line of best fit between each complexity metric calculated over the validation series as well as for a lower mean squared difference between the metric over each series and the metric over the model's bottleneck states.
 > - ***Recurrent vs Feedforward:*** Recurrent models will exacerbate the ruggedness of the landscapes (increased steepness, curvature, etc.) but ultimately outperform non-recurrent models in final loss because the hidden state contains temporal information relevant to the nonstationarity.
 However, the difference will be smaller in the quantum architecture because of the facts that its latent state is exponentially larger than its classical counterpart despite having a single qubit per feature and that the quantum embedding only uses single-qubit rotation gates, thus preventing full utilization of the embedding space.
 Moreover, recurrent encoders will exhibit different bottleneck characteristics, potentially higher entropy, since the hidden state provides an additional pathway to carry information.
@@ -67,8 +67,8 @@ Another hypothesis is that recurrence being added to the autoencoder objective w
 > - ***Quantum vs Classical:*** In their cost histories, quantum models will have higher mean absolute first and second derivatives during training because they often exhibit highly non-linear loss landscapes (Holzer, Turkalj; 2024) despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures).
 Upon analyzing the power spectrum of the loss gradients over training iterations, an additional expectation is to see more high-frequency fluctuations for quantum models, reflecting parameter interference effects and more rapid changes as the quantum circuit parameters navigate a more rugged loss landscape.
 For quantum models, an additional hypothesis is that both the Meyer-Wallach global entanglement (MWGE) and the VonNeumann entropy (VNE) of their bottleneck representations should positively correlate to the main complexity metrics (LZC, HE, HFD, DE).
+This is expected for DE in particular because the quantum versions being able to maintain superpositions and mixtures of basis states in the bottleneck that retain uncertainty (entropy), whereas a classical bottleneck might collapse information more consistently into a few active features, especially given the linear nature of the model architectures.
 A final expectation is that the quantum models will generalize more poorly (higher ratio of normalized validation cost: normalized training cost) due to the expected higher loss landscape complexity.
-***! TODO: figure out how to normalize quantum and classical trash losses for fair comparison***
 
 ## Methods
 ### Model Architectures
@@ -110,7 +110,7 @@ The [BTFP for the classical architecture](./loss.py#L60) is the sum of the lowes
 
 ### Data Generation
 Multivariate time series are synthesized by concatenating blocks where each feature is a separate fractional Brownian motion (FBM) series, which is a nonstationary zero‑mean Gaussian process.
-This was done via the Davies-Harte method, which is characterized by a target HE to control long‑range dependence, allowing the creation of series with a wide range of values for this metric.
+This was done via the Davies-Harte method (Davies, Harte; 1987), which is characterized by a target HE to control long‑range dependence, allowing the creation of and sampling from series with a wide range of values for this metric.
 The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity based on another FBM sequence that gets passed through a sine to introduce nonlinearity and control amplitude.
 Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible LZC value.
 Sequences are then randomly shuffled and representative sequences are selected via 3D binning in the space of LZC, HE, and HFD.
@@ -212,7 +212,6 @@ The corrected values are used in analysis, however, so the effect of this is inf
 - LZC = Lempel-Ziv Complexity
 - MWGE = Meyer-Wallach Global Entanglement
 - SO = Special Orthogonal
-- TE = Transition Encoder (autoregressive encoder / decoder)
 - U = Unitary
 - VNE = VonNeumann Entropy
 
@@ -323,6 +322,47 @@ The corrected values are used in analysis, however, so the effect of this is inf
   primaryClass  = {astro-ph.IM},
   adsurl        = { https://ui.adsabs.harvard.edu/abs/2013ApJ...764..167S },
   adsnote       = {Provided by the SAO/NASA Astrophysics Data System}
+}
+1. @article{doi:10.1061/TACEAT.0006518,
+  author   = {H. E. Hurst },
+  title    = {Long-Term Storage Capacity of Reservoirs},
+  year     = {1951},
+  journal  = {Transactions of the American Society of Civil Engineers},
+  volume   = {116},
+  number   = {1},
+  pages    = {770-799},
+  doi      = {10.1061/TACEAT.0006518},
+  URL      = { https://ascelibrary.org/doi/abs/10.1061/TACEAT.0006518 },
+  eprint   = { https://ascelibrary.org/doi/pdf/10.1061/TACEAT.0006518 },
+  abstract = { A solution of the problem of determining the reservoir storage required on a given stream, to guarantee a given draft, is presented in this paper. For example, if a long-time record of annual total discharges from the stream is available, the storage required to yield the average flow, each year, is obtained by computing the cumulative sums of the departures of the annual totals from the mean annual total discharge. The range from the maximum to the minimum of these cumulative totals is taken as the required stornge. }
+}
+1. @article{HIGUCHI1988277,
+  author   = {T. Higuchi},
+  title    = {Approach to an irregular time series on the basis of the fractal theory},
+  year     = {1988},
+  journal  = {Physica D: Nonlinear Phenomena},
+  volume   = {31},
+  number   = {2},
+  pages    = {277-283},
+  issn     = {0167-2789},
+  doi      = { https://doi.org/10.1016/0167-2789(88)90081-4 },
+  url      = { https://www.sciencedirect.com/science/article/pii/0167278988900814 },
+  abstract = {We present a technique to measure the fractal dimension of the set of points (t, f(t)) forming the graph of a function f defined on the unit interval. First we apply it to a fractional Brownian function [1] which has a property of self-similarity for all scales, and we can get the stable and precise fractal dimension. This technique is also applied to the observational data of natural phenomena. It does not show self-similarity all over the scale but has a different self-similarity across the characteristic time scale. The present method gives us a stable characteristic time scale as well as the fractal dimension.}
+}
+1. @article{10.1093/biomet/74.1.95,
+  author   = {DAVIES, R. B. and HARTE, D. S.},
+  title    = {Tests for Hurst effect},
+  year     = {1987},
+  month    = {03},
+  journal  = {Biometrika},
+  volume   = {74},
+  number   = {1},
+  pages    = {95-101},
+  abstract = {We consider the power of tests for distinguishing between fractional Gaussian noise and white noise of a first-order autoregressive process. Our tests are based on the beta-optimal principle (Davies, 1969), local optimality and the rescaled range test.},
+  issn     = {0006-3444},
+  doi      = {10.1093/biomet/74.1.95},
+  url      = {https://doi.org/10.1093/biomet/74.1.95},
+  eprint   = {https://academic.oup.com/biomet/article-pdf/74/1/95/578634/74-1-95.pdf},
 }
 
 
