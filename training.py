@@ -266,7 +266,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="Train both a quantum and a classical version of: autoregressive Encoder/Decoder and Auto-Encoder (w/ and w/o time step) over each relevant dataset."
+        description="Train both a quantum and a classical version of each model architecture over each dataset chosen as part of the grid."
     )
     parser.add_argument("data_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated data.")
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")

@@ -96,4 +96,3 @@ for d_i, (_, validation) in dataset_partitions.items():
         else:
             fname = os.path.join(datasets_dir, f'dataset{d_i}_{model_type}_bottlenecks.npy')
             np.save(fname, np.array(all_bottlenecks))
-
