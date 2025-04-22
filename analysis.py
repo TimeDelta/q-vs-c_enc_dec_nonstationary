@@ -433,9 +433,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
-    Each color is evenly spaced in hue, with a random brightness:
-    - If the system background is white (e.g., a light theme), brightness is chosen randomly between 0.4 and 0.8.
-    - Otherwise, brightness is chosen randomly between 0.6 and 1.0.
+    Each color is evenly spaced in hue, with a random brightness between .4 and .8
     * Based on my code at https://github.com/TimeDelta/introspective/blob/32af5154e2c6bd0bc4c7196d44f76076281abebc/Introspective/UI/Graphing/GraphDataGenerators/XYGraphDataGenerator.swift#L299
     """
     colormap_colors = []
