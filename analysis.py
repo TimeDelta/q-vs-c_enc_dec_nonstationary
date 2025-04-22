@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
 
+import math
 from typing import Dict
 import random
 from dataclasses import dataclass, field
@@ -222,17 +223,14 @@ def hurst_exponent(data):
         hurst_vals.append(_hurst_exponent_1d(col, window_sizes))
     return hurst_vals
 
-def higuchi_fractal_dimension(data, kmax=10):
+def higuchi_fractal_dimension(data):
     n_samples, n_features = data.shape
+    kmax = n_samples//3
 
     hfds = []
     for feature in range(n_features):
         feature_series = data[:, feature]
-        try:
-            hfd = antropy.higuchi_fd(feature_series, kmax=kmax)
-        except Exception as e:
-            hfd = np.nan
-            print('HFD NaN for kmax of ', kmax, ':', feature_series.shape)
+        hfd = antropy.higuchi_fd(feature_series.tolist(), kmax=kmax)
         hfds.append(hfd)
     return hfds
 
@@ -289,6 +287,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'differential_entropy':      lambda series: differential_entropy(series, quantizer),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
+        # ALWAYS PUT METRIC SELF-COMPARISON IN FIRST INDEX
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
@@ -349,7 +348,10 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
         def compute(self, series):
             for key, func in SERIES_STATS_CONFIG.items():
-                self.data[key] = func(series)
+                value = func(series)
+                if np.isnan(value) or math.isnan(value):
+                    raise Exception(f'{key} is NaN')
+                self.data[key] = value
 
     bar = '=-=-=-=-=-=-=-=-=-=-=-=-=-=-='
 
@@ -387,7 +389,11 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             num_features = len(series[0])
             print(f'Computing complexity metrics for dataset {d_i} series {s_i} ({num_features} features)')
             series_stats = SeriesStats()
-            series_stats.compute(series)
+            try:
+                series_stats.compute(series)
+            except Exception as e:
+                print(series)
+                raise e
             # store as tuple (s_i, series_stats) for later annotation
             dataset_series_stats.setdefault(d_i, []).append((s_i, series_stats))
 
@@ -456,11 +462,17 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             y_vals = [d[1] for d in data]
             plt.scatter(x_vals, y_vals, color=color, s=5)
 
-            coeffs = np.polyfit(x_vals, y_vals, 1)
-            slope = float(coeffs[0])
-            poly_eqn = np.poly1d(coeffs)
-            x_fit = np.linspace(min(x_vals), max(x_vals), 100)
-            plt.plot(x_fit, poly_eqn(x_fit), color=color, linestyle='--', label=f'{label_prefix} (slope={slope:.5f})')
+            try:
+                coeffs = np.polyfit(x_vals, y_vals, 1)
+                slope = float(coeffs[0])
+                poly_eqn = np.poly1d(coeffs)
+                x_fit = np.linspace(min(x_vals), max(x_vals), 100)
+                plt.plot(x_fit, poly_eqn(x_fit), color=color, linestyle='--', label=f'{label_prefix} (slope={slope:.5f})')
+            except np.linalg.LinAlgError as e:
+                for point in zip(x_vals, y_vals):
+                    print(point)
+                print('Line of best fit failure for above series')
+                raise e
 
         plt.figure()
         if isinstance(next(iter(data_dict.values())), dict):
@@ -486,21 +498,27 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         for d_key in dependent_keys:
             x_label = i_key.replace('_', ' ').title()
             y_label = d_key.replace('_', ' ').title()
+            title = f'{y_label} vs {x_label}'
+            if d_key == dependent_keys[0]:
+                y_label = f'Bottleneck {x_label}'
+                title = x_label
             print(f'Plotting individual data for {y_label} vs {x_label}')
             plot_data_and_save(
                 data_dict=individual_plot_data[i_key][d_key],
-                x_label=f'{x_label} (Individual)',
-                y_label=f'{y_label} (Validation)',
-                title=f'{x_label} vs {y_label} Per Series',
+                x_label=f'Series {x_label}',
+                y_label=y_label,
+                title=f'{title} Per Series',
                 filename=f'{run_prefix}{d_key}_vs_{i_key}_individual.png'
             )
 
+            x_label = f'Mean {x_label}'
+            title = f'{y_label} vs {x_label}'
             print(f'Plotting aggregated data for {y_label} vs {x_label}')
             plot_data_and_save(
                 data_dict=aggregated_plot_data[i_key][d_key],
-                x_label=f'Mean {x_label}',
-                y_label=f'{y_label} (Validation)',
-                title=f'Mean {x_label} vs {y_label} Per Dataset',
+                x_label=f'Dataset {x_label}',
+                y_label=y_label,
+                title=f'{title} Per Dataset',
                 filename=f'{run_prefix}{d_key}_vs_{i_key}_aggregated.png'
             )
 
