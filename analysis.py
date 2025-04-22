@@ -242,7 +242,7 @@ def per_patient(func, data, **kwargs):
         final_values.append(func(data[p], **kwargs))
     return final_values
 
-def run_analysis(datasets, data_dir, overfit_threshold, quantizer, quantum_bottleneck_feature):
+def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z'):
     if quantizer == 'bayesian_block':
         quantizer = quantize_signal_bayesian_block_feature_bins
     elif quantizer == 'hdbscan':
@@ -324,10 +324,12 @@ def run_analysis(datasets, data_dir, overfit_threshold, quantizer, quantum_bottl
                 if key == 'validation_costs':
                     for k in MODEL_STATS_CONFIG[key].keys():
                         self.data[k] = self.data[key]
+
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_cost_history.npy')
             self.data['cost_history'] = np.load(filepath)
             filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_gradient_norms.npy')
             self.data['gradient_norm_history'] = np.load(filepath)
+
             if model_type.startswith('q'):
                 filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{quantum_bottleneck_feature}_bottlenecks.npy')
             elif model_type.startswith('c'):
@@ -336,10 +338,16 @@ def run_analysis(datasets, data_dir, overfit_threshold, quantizer, quantum_bottl
                 raise Exception(f"Unknown model type ({model_type}): don't know how to get bottlenecks")
             bottlenecks = np.load(filepath)
             self.data['bottlenecks'] = bottlenecks
-            self.data['bottleneck_differential_entropy'] = differential_entropy(bottlenecks, quantizer)
-            self.data['bottleneck_lzc'] = lempel_ziv_complexity_continuous(bottlenecks, quantizer)
-            self.data['bottleneck_he'] = np.mean(hurst_exponent(bottlenecks))
-            self.data['bottleneck_hfd'] = np.mean(higuchi_fractal_dimension(bottlenecks))
+            de, lzc, he, hfd = [], [], [], []
+            for series_bottlenecks in bottlenecks: # start with state full of associated series index
+                de.append([series_bottlenecks[1][0], differential_entropy(series_bottlenecks[1:], quantizer)])
+                lzc.append([series_bottlenecks[1][0], lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
+                he.append([series_bottlenecks[1][0], np.mean(hurst_exponent(series_bottlenecks[1:]))])
+                hfd.append([series_bottlenecks[1][0], np.mean(higuchi_fractal_dimension(series_bottlenecks[1:]))])
+            self.data['bottleneck_differential_entropy'] = np.array(de)
+            self.data['bottleneck_lzc'] = np.array(lzc)
+            self.data['bottleneck_he'] = np.array(he)
+            self.data['bottleneck_hfd'] = np.array(hfd)
 
     @dataclass
     class SeriesStats:
