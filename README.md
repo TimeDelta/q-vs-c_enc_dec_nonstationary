@@ -69,6 +69,7 @@ Upon analyzing the power spectrum of the loss gradients over training iterations
 For quantum models, an additional hypothesis is that both the Meyer-Wallach global entanglement (MWGE) and the VonNeumann entropy (VNE) of their bottleneck representations should positively correlate to the main complexity metrics (LZC, HE, HFD, DE).
 This is expected for DE in particular because the quantum versions being able to maintain superpositions and mixtures of basis states in the bottleneck that retain uncertainty (entropy), whereas a classical bottleneck might collapse information more consistently into a few active features, especially given the linear nature of the model architectures.
 A final expectation is that the quantum models will generalize more poorly (higher ratio of normalized validation cost: normalized training cost) due to the expected higher loss landscape complexity.
+To rule out scale differences between the quantum and classical BTFP functions during analysis, their values are normalized by the initial trash cost.
 
 ## Methods
 ### Model Architectures
