@@ -333,7 +333,7 @@ def run_analysis(datasets, data_dir, overfit_threshold, quantizer, quantum_bottl
             elif model_type.startswith('c'):
                 filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_bottlenecks.npy')
             else:
-                raise Exception("Unknown model type: don't know how to get bottlenecks")
+                raise Exception(f"Unknown model type ({model_type}): don't know how to get bottlenecks")
             bottlenecks = np.load(filepath)
             self.data['bottlenecks'] = bottlenecks
             self.data['bottleneck_differential_entropy'] = differential_entropy(bottlenecks, quantizer)
@@ -737,7 +737,7 @@ if __name__ == '__main__':
     )
     parser.add_argument("datasets_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated datasets.")
     parser.add_argument("--test", action='store_true', default=False)
-    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run")
+    parser.add_argument("--prefix", type=str, default=None, help="Prefix to use when loading saved files")
     parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
     parser.add_argument("--quantizer", type=str, default='bayesian_block', choices=['bayesian_block', 'hdbscan', 'equal_width'])
     parser.add_argument("--quantum_bottleneck_feature", type=str, default='z', choices=['z', 'marginal'])

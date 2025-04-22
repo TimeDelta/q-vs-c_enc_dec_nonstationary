@@ -9,6 +9,7 @@
   - [Training](#training)
   - [Experimental Environment](#experimental-environment)
   - [Analysis](#analysis)
+    - [Quantization Methods](#quantization-methods)
 - [Results](#results)
   - [Classical vs Quantum](#classical-vs-quantum)
     - [Loss Landscape Similarity](#loss-landscape-similarity)
@@ -158,7 +159,7 @@ This yields non‑uniform bin widths that adapt to local data density by creatin
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
   - [HDBSCAN](./analysis.py#L136)): Assigns symbols via hierarchical density‑based clustering, uncovering clusters of varying shapes and densities without requiring preset bin counts for each feature.
-As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation.
+As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation of the interpoint distances between each pair of nearest neighbors.
 The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
 The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
@@ -188,7 +189,7 @@ The corrected values are used in analysis, however, so the effect of this is inf
     - Would expect encoder to *slowly decrease* and decoder to *quickly increase*
 - More features w/ different entanglement topologies and equivalent classical "coupling" mechanisms
 - Add nonlinearities
-- Attempt to use data generation that has opposing trends for complexity metric targets (target HE)
+- Attempt to use data generation that has opposing trends for complexity metric targets (target HE vs target LZC)
 - Chaotic time series
 - Composite regimes (same randomly sampled sequence of generators for each series in dataset and different sequence per dataset)
 - Try without pre-specifying a bottleneck size by extending the trash cost functions to just sum across all features to get something like total n-dimensional distance from 0 at the bottleneck
