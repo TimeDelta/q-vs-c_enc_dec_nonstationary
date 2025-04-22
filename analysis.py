@@ -236,12 +236,6 @@ def higuchi_fractal_dimension(data, kmax=10):
         hfds.append(hfd)
     return hfds
 
-def per_patient(func, data, **kwargs):
-    final_values = []
-    for p in range(data.shape[0]):
-        final_values.append(func(data[p], **kwargs))
-    return final_values
-
 def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z'):
     if quantizer == 'bayesian_block':
         quantizer = quantize_signal_bayesian_block_feature_bins
