@@ -3,27 +3,6 @@ from qiskit.quantum_info import Statevector, state_fidelity, partial_trace, Dens
 from utility import *
 from models import *
 
-def avg_per_qubit_fidelity(ideal_state, reconstructed_state):
-    """
-    1 - (average fidelity over individual qubits)
-    """
-    if not isinstance(ideal_state, DensityMatrix):
-        ideal_state = DensityMatrix(ideal_state)
-    if not isinstance(reconstructed_state, DensityMatrix):
-        reconstructed_state = DensityMatrix(reconstructed_state)
-
-    num_qubits = int(np.log2(ideal_state.dim))
-
-    fidelities = []
-    for i in range(num_qubits):
-        trace_out = [j for j in range(num_qubits) if j != i]
-        reduced_ideal = partial_trace(ideal_state, trace_out)
-        reduced_recon = partial_trace(reconstructed_state, trace_out)
-        fidel = state_fidelity(reduced_ideal, reduced_recon)
-        fidelities.append(fidel)
-
-    return 1 - np.mean(fidelities)
-
 def trash_qubit_penalty(state, bottleneck_size):
     """
     Compute a penalty based on the marginal probability of each qubit being in |0>.
