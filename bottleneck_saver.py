@@ -1,4 +1,5 @@
 import os
+import json
 
 import numpy as np
 
@@ -38,13 +39,13 @@ def extract_bloch_z_features(bottlenecks):
         features.append(qubit_features)
     return np.array(features)
 
-datasets_dir = './small_datasets'
+datasets_dir = './generated_datasets'
 dataset_partitions = import_generated(datasets_dir)
 num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
 best_config_path = os.path.join(datasets_dir, 'best_config.json')
 if os.path.exists(best_config_path):
     with open(best_config_path, 'r') as file:
-        best_config = json.load(file)
+        config = json.load(file)
     print('Loaded best config from hyperparameter optimization')
 else:
     config = {
@@ -68,7 +69,12 @@ for d_i, (_, validation) in dataset_partitions.items():
             model = QuantumEncoderDecoder(num_features, config, is_recurrent)
         else:
             raise Exception('Unexpected model type: ' + model_type)
-        model.load(f'{datasets_dir}/dataset{d_i}_{model_type}_trained_model')
+        try:
+            model.load(f'{datasets_dir}/dataset{d_i}_{model_type}_trained_model')
+            print(f'Loaded {model_type} for dataset {d_i}')
+        except Exception as e:
+            print(f'Failed to load {model_type} model for dataset {d_i}: {e}')
+            continue
         all_bottlenecks = []
         all_z_bottlenecks = []
         all_marginal_bottlenecks = []
