@@ -85,7 +85,6 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
             perturbed_costs = cost_function(training_data, model, penalty_weight)
             gradients[j] = (sum(perturbed_costs) - initial_cost) / gradient_width
 
-
         previous_param_values = param_values.copy()
         param_values, moment1, moment2 = adam_update(param_values, gradients, moment1, moment2, t, learning_rate)
         print(f'    Min param update: {np.min(param_values-previous_param_values)}')
@@ -94,7 +93,7 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         print(f'    Median param update: {np.median(param_values-previous_param_values)}')
         print(f'    Max param update: {np.max(param_values-previous_param_values)}')
         if store_gradients:
-            norm = np.linalg.norm(np.array(gradient_norms))
+            norm = np.linalg.norm(np.array(gradients))
             gradient_norms.append(norm)
             print('    Gradient Norm:', norm)
 
