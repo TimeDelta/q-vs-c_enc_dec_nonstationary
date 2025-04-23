@@ -215,12 +215,12 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                             qubit_features.append(exp_z)
                         features.append(qubit_features)
                     return np.array(features)
-                dataset_enc_entangle_entropies = []
+                dataset_enc_mw_entangles = []
                 dataset_enc_vn_entropies = []
                 all_marginal_bottlenecks = []
                 all_z_bottlenecks = []
                 for (s_i, series) in validation:
-                    enc_entangle_entropies = []
+                    enc_mw_entangles = []
                     enc_vn_entropies = []
                     bottlenecks = []
 
@@ -231,16 +231,16 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_dm))
 
-                        enc_entangle_entropies.append(meyer_wallach_global_entanglement(bottleneck_dm))
+                        enc_mw_entangles.append(meyer_wallach_global_entanglement(bottleneck_dm))
                         enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
 
-                    dataset_enc_entangle_entropies.append(np.concatenate(([s_i], enc_entangle_entropies)))
+                    dataset_enc_mw_entangles.append(np.concatenate(([s_i], enc_mw_entangles)))
                     dataset_enc_vn_entropies.append(np.concatenate(([s_i], enc_vn_entropies)))
 
                     all_marginal_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_marginal_features(bottlenecks))))
                     all_z_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_bloch_z_features(bottlenecks))))
 
-                save(np.array(dataset_enc_entangle_entropies), 'Bottleneck MW global entanglement')
+                save(np.array(dataset_enc_mw_entangles), 'Bottleneck MW global entanglement')
                 save(np.array(dataset_enc_vn_entropies), 'Bottleneck full VN entropy')
                 save(np.array(all_marginal_bottlenecks), 'Marginal bottlenecks')
                 save(np.array(all_z_bottlenecks), 'Bloch Z bottlenecks')
