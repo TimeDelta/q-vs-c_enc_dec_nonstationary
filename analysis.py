@@ -287,7 +287,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_lzc': MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS,
         'bottleneck_he': MODEL_MEAN_MEAN_STAT_LAMBDAS,
-        'bottleneck_hfd': MODEL_MEAN_MEAN_STAT_LAMBDAS,
+        'bottleneck_mpe': MODEL_MEAN_MEAN_STAT_LAMBDAS,
     }
     MODEL_STATS_CONFIG['validation_costs']['Total'] = (
         # series index gets stored as a complex value and sometimes has rounding errors
@@ -305,7 +305,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         # ALWAYS PUT METRIC SELF-COMPARISON IN FIRST INDEX
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
-        'optimized_mpe': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'optimized_mpe': ['bottleneck_mpe', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'differential_entropy': ['bottleneck_de', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
@@ -325,7 +325,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             for key in MODEL_STATS_CONFIG.keys():
                 if model_type.startswith('c') and ('vn' in key or 'entangle' in key):
                     continue
-                if key in ['bottleneck_lzc', 'bottleneck_he', 'bottleneck_hfd', 'bottleneck_de']:
+                if key in ['bottleneck_lzc', 'bottleneck_he', 'bottleneck_mpe', 'bottleneck_de']:
                     continue # calculated in this analysis
                 filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{key}.npy')
                 self.data[key] = np.load(filepath)
@@ -346,17 +346,17 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 raise Exception(f"Unknown model type ({model_type}): don't know how to get bottlenecks")
             bottlenecks = np.load(filepath)
             self.data['bottlenecks'] = bottlenecks
-            de, lzc, he, hfd = [], [], [], []
+            de, lzc, he, mpe = [], [], [], []
             for series_bottlenecks in bottlenecks: # start with state full of associated series index
                 s_i = int(np.real(series_bottlenecks[0][0]))
                 de.append([s_i, differential_entropy(series_bottlenecks[1:], quantizer)])
                 lzc.append([s_i, lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
                 he.append([s_i, np.mean(hurst_exponent(series_bottlenecks[1:]))])
-                hfd.append([s_i, np.mean(optimized_multiscale_permutation_entropy(series_bottlenecks[1:]))])
+                mpe.append([s_i, np.mean(optimized_multiscale_permutation_entropy(series_bottlenecks[1:]))])
             self.data['bottleneck_de'] = np.array(de)
             self.data['bottleneck_lzc'] = np.array(lzc)
             self.data['bottleneck_he'] = np.array(he)
-            self.data['bottleneck_hfd'] = np.array(hfd)
+            self.data['bottleneck_mpe'] = np.array(mpe)
 
     @dataclass
     class SeriesStats:
@@ -371,7 +371,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
     bar = '=-=-=-=-=-=-=-=-=-=-=-=-=-=-='
 
-    max_hfd = 0.0
     # load model statistics for each (dataset, model_type)
     stats_per_model = {}
     for d_i in datasets:
@@ -383,8 +382,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             try:
                 stats.load(d_i, model_type, data_dir, run_prefix)
                 dataset_stats[model_type] = stats
-                if stats.data['bottleneck_hfd'] > max_hfd:
-                    max_hfd = stats.data['bottleneck_hfd']
                 mean_training_costs = stats.data['cost_history'][-1] / num_training_series
                 mean_validation_costs = np.sum(stats.data['validation_costs'][:,1:], axis=0) / num_validation_series
                 check_for_overfitting(mean_training_costs, mean_validation_costs, overfit_threshold)
@@ -411,19 +408,11 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             series_stats = SeriesStats()
             try:
                 series_stats.compute(series)
-                if series_stats.data['optimized_mpe'] > max_hfd:
-                    max_hfd = series_stats.data['optimized_mpe']
             except Exception as e:
                 print(series)
                 raise e
             # store as tuple (s_i, series_stats) for later annotation
             dataset_series_stats.setdefault(d_i, []).append((series_index, series_stats))
-
-    # final HFD value normalization step
-    for (d_i, model_type), dataset_stats in stats_per_model.items():
-        dataset_stats.data['bottleneck_hfd'] /= max_hfd
-    for d_i, (s_i, series_stats) in dataset_series_stats.items():
-        series_stats['optimized_mpe'] /= max_hfd
 
     individual_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
     aggregated_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
