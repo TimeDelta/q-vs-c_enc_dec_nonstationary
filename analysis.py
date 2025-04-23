@@ -333,10 +333,11 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             self.data['bottlenecks'] = bottlenecks
             de, lzc, he, hfd = [], [], [], []
             for series_bottlenecks in bottlenecks: # start with state full of associated series index
-                de.append([series_bottlenecks[1][0], differential_entropy(series_bottlenecks[1:], quantizer)])
-                lzc.append([series_bottlenecks[1][0], lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
-                he.append([series_bottlenecks[1][0], np.mean(hurst_exponent(series_bottlenecks[1:]))])
-                hfd.append([series_bottlenecks[1][0], np.mean(higuchi_fractal_dimension(series_bottlenecks[1:]))])
+                s_i = int(np.real(series_bottlenecks[0][0]))
+                de.append([s_i, differential_entropy(series_bottlenecks[1:], quantizer)])
+                lzc.append([s_i, lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
+                he.append([s_i, np.mean(hurst_exponent(series_bottlenecks[1:]))])
+                hfd.append([s_i, np.mean(higuchi_fractal_dimension(series_bottlenecks[1:]))])
             self.data['bottleneck_de'] = np.array(de)
             self.data['bottleneck_lzc'] = np.array(lzc)
             self.data['bottleneck_he'] = np.array(he)
@@ -425,7 +426,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         for s_i, s_stats in series_stats_list:
             for i_key in independent_keys:
                 for d_key in dependent_keys:
-                    print(dependent_individual[d_key].keys())
+                    if model_type.startswith('c') and ('entangle' in d_key or 'vn' in d_key):
+                        continue
                     individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
                     aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
 
