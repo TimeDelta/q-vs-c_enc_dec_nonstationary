@@ -10,6 +10,7 @@
   - [Experimental Environment](#experimental-environment)
   - [Analysis](#analysis)
     - [Quantization Methods](#quantization-methods)
+    - [Metric Normalization](#metric-normalization)
 - [Results](#results)
   - [Classical vs Quantum](#classical-vs-quantum)
     - [Loss Landscape Similarity](#loss-landscape-similarity)
@@ -55,8 +56,8 @@ Specifically, the absolute squared difference between each metric over each mode
 The intuition behind this prediction is an expectation that a high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime where the variability is volatile.
 > - ***Prediction vs Reconstruction Objective:*** AR tasks (predicting the next state) are expected to converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
 In such a highly non-stationary regime, predicting the next state is an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
-A transition-based training signal directly emphasizes learning the evolving pattern, which should produce a closer match between the dataset's complexity metrics and those of the model's bottleneck representations since the chosen metrics (except for DE) are based on state ordering, which is something the prediction objective emphasizes but the reconstructive objective doesn't.
-Because DE does not directly emphasize the differences between states but instead focuses on the global distribution, an additional hypothesis is that the advantage seen by the predictive-trained models will be less pronounced for it (!!!!TODO!!!!! CHOOSE AND IMPLEMENT METRIC RANGE NORMALIZATION FOR SCALE DIFFERENCES).
+A transition-based training signal directly emphasizes learning the evolving pattern, which should produce a closer match (lower mean squared difference) between the dataset's complexity metrics and those of the model's bottleneck representations since the chosen metrics (except for DE) are based on state ordering, which is something the prediction objective emphasizes but the reconstruction objective does not.
+Because it does not directly rely on the ordering of states but instead focuses on the global distribution, an additional hypothesis is that the advantage seen by the prediction-trained models will be less pronounced for DE (see [metric normalization](#metric-normalization)).
 To assess if ENC-DEC models trained on the predictive task indeed show improved training efficiency, a check is done for more negative mean slope to the prediction vs reconstruction loss history as well as for less area under the loss history curve.
 Another hypothesis this paper proposes is that the learned latent representations from prediction-trained models correlate more strongly with the chosen complexity metrics than the reconstruction-trained ones, supporting the idea that they “encode complexity” more faithfully than an ENC-DEC trained on reconstruction.
 Specifically, a check will be made for higher positive slope for first-order line of best fit between each complexity metric calculated over the validation series as well as for a lower mean squared difference between the metric over each series and the metric over the model's bottleneck states.
@@ -154,8 +155,15 @@ All quantum circuits are simulated on classical hardware to isolate algorithmic 
 Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without GPU acceleration.
 
 ### Analysis
+- Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
+#### Metric Normalization
+For comparison across metrics with different scales, the normalization used is specific to each metric:
+- HE: No normalization necessary because it's already limited to [0,1] by definition.
+- HFD: Since, for fractional Brownian motion with specific HE, HFD=2−HE => HFD∈[1,2] for 1D (Wanliss, Wanliss; 2022), one is subtracted from each feature's raw value and then max value normalization is used after this since there are some observed raw values slightly above 2.
+- LZC: Theoretical maximum normalization is used, which calculates the maximum as the sequence length divided by the log of (the sequence length) in base (number of unique symbols).
+- DE: Theoretical maximum normalization is used, which simply divides by the log of the number of unique symbols in the discretized signal.
 #### Quantization Methods
-- When extending a discrete metric to cover continuous data (LZC and DE), multiple quantization methods are used to improve conclusion robustness.
+When extending a discrete metric to cover continuous data (LZC and DE), multiple quantization methods are used to improve conclusion robustness.
 Specifically, the included methods are:
   - [Equal Bin-Width](./analysis.py#L80): Partitions each feature's range into equal‑width bins based on a fixed symbol count (here, 1/10 of the sequence length) then turn each state into a symbol via equal-base mixed-radix encoding.
 Fails to adapt to skewed or multimodal distributions.
@@ -168,7 +176,6 @@ The final symbols are then obtained via mixed-radix encoding with each feature's
 As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation of the interpoint distances between each pair of nearest neighbors.
 The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
 The `min_cluster_size` is set at 2 to minimize labeling points as noise.
-- Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
 
 ## Results
 ### Classical vs Quantum
@@ -362,8 +369,26 @@ The corrected values are used in analysis, however, so the effect of this is inf
   abstract = {We consider the power of tests for distinguishing between fractional Gaussian noise and white noise of a first-order autoregressive process. Our tests are based on the beta-optimal principle (Davies, 1969), local optimality and the rescaled range test.},
   issn     = {0006-3444},
   doi      = {10.1093/biomet/74.1.95},
-  url      = {https://doi.org/10.1093/biomet/74.1.95},
-  eprint   = {https://academic.oup.com/biomet/article-pdf/74/1/95/578634/74-1-95.pdf},
+  url      = { https://doi.org/10.1093/biomet/74.1.95 },
+  eprint   = { https://academic.oup.com/biomet/article-pdf/74/1/95/578634/74-1-95.pdf },
+}
+1. ***!TODO!  READ THIS PAPER:*** @misc{dijk2018deep,
+  author = {David van Dijk and Scott Gigante and Alexander Strzalkowski and Guy Wolf and Smita Krishnaswamy},
+  title  = {Deep Transition-Encoding Networks for Learning Dynamics},
+  year   = {2018},
+  url    = { https://openreview.net/forum?id=S1VG0F1Dz }
+}
+1. @article{Wanliss2022Higuchi,
+  author  = {Wanliss, J. A. and Wanliss, Grace E.},
+  title   = {Efficient Calculation of Fractal Properties via the Higuchi Method},
+  journal = {Nonlinear Dynamics},
+  year    = {2022},
+  volume  = {109},
+  number  = {4},
+  pages   = {2893--2904},
+  month   = sep,
+  doi     = {10.1007/s11071-022-07353-2},
+  url     = { https://doi.org/10.1007/s11071-022-07353-2 }
 }
 
 

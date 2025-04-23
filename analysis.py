@@ -42,10 +42,10 @@ def check_for_overfitting(training_costs, validation_costs, threshold=.15):
     return check_overfit(total_training_cost, total_validation_cost, 'Total')
 
 def differential_entropy(data, quantizer):
-    data = quantizer(data)
-    hist, _ = np.histogram(data, density=True)
+    discrete_signal = quantizer(data)
+    hist, _ = np.histogram(discrete_signal, density=True)
     nonzero = hist > 0
-    return -np.sum(hist[nonzero] * np.log(hist[nonzero]))
+    return -np.sum(hist[nonzero] * np.log(hist[nonzero])) / np.log(len(np.unique(discrete_signal)))
 
 def differential_entropy_per_feature(data, quantizer):
     """
@@ -183,7 +183,9 @@ def lempel_ziv_complexity_continuous(data, quantizer):
                 break
         complexity += 1
         phrase_start += phrase_length
-    return complexity
+    alphabet_size = len(np.unique(symbol_seq))
+    max_complexity = len(symbol_seq) / np.emath.logn(alphabet_size, len(symbol_seq))
+    return complexity / max_complexity
 
 def _hurst_exponent_1d(data, window_sizes):
     """
@@ -230,7 +232,7 @@ def higuchi_fractal_dimension(data):
     hfds = []
     for feature in range(n_features):
         feature_series = data[:, feature]
-        hfd = antropy.higuchi_fd(feature_series.tolist(), kmax=kmax)
+        hfd = antropy.higuchi_fd(feature_series.tolist(), kmax=kmax) - 1
         hfds.append(hfd)
     return hfds
 
@@ -358,6 +360,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
     bar = '=-=-=-=-=-=-=-=-=-=-=-=-=-=-='
 
+    max_hfd = 0.0
     # load model statistics for each (dataset, model_type)
     stats_per_model = {}
     for d_i in datasets:
@@ -369,6 +372,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             try:
                 stats.load(d_i, model_type, data_dir, run_prefix)
                 dataset_stats[model_type] = stats
+                if stats.data['bottleneck_hfd'] > max_hfd:
+                    max_hfd = stats.data['bottleneck_hfd']
                 mean_training_costs = stats.data['cost_history'][-1] / num_training_series
                 mean_validation_costs = np.sum(stats.data['validation_costs'][:,1:], axis=0) / num_validation_series
                 check_for_overfitting(mean_training_costs, mean_validation_costs, overfit_threshold)
@@ -395,11 +400,19 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             series_stats = SeriesStats()
             try:
                 series_stats.compute(series)
+                if series_stats.data['higuchi_fractal_dimension'] > max_hfd:
+                    max_hfd = higuchi_fractal_dimension
             except Exception as e:
                 print(series)
                 raise e
             # store as tuple (s_i, series_stats) for later annotation
             dataset_series_stats.setdefault(d_i, []).append((series_index, series_stats))
+
+    # final HFD value normalization step
+    for (d_i, model_type), dataset_stats in stats_per_model.items():
+        dataset_stats.data['bottleneck_hfd'] /= max_hfd
+    for d_i, (s_i, series_stats) in dataset_series_stats.items():
+        series_stats['higuchi_fractal_dimension'] /= max_hfd
 
     individual_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
     aggregated_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
@@ -512,7 +525,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             )
 
             x_label = f'Mean {x_label}'
-            title = f'{y_label} vs {x_label}'
+            if d_key == dependent_keys[0]:
+                title = x_label
             print(f'Plotting aggregated data for {y_label} vs {x_label}')
             plot_data_and_save(
                 data_dict=aggregated_plot_data[i_key][d_key],
