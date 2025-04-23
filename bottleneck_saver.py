@@ -5,7 +5,14 @@ import numpy as np
 
 from models import *
 from data_importers import import_generated
-from analysis import MODEL_TYPES
+from analysis import *
+
+import argparse
+parser = argparse.ArgumentParser(
+    description="Train both a quantum and a classical version of each model architecture over each dataset chosen as part of the grid."
+)
+parser.add_argument("data_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated data.")
+args = parser.parse_args()
 
 def extract_marginal_features(bottlenecks):
     # One feature per qubit: the marginal probability of |0>
@@ -39,10 +46,9 @@ def extract_bloch_z_features(bottlenecks):
         features.append(qubit_features)
     return np.array(features)
 
-datasets_dir = './generated_datasets'
-dataset_partitions = import_generated(datasets_dir)
+dataset_partitions = import_generated(args.data_directory)
 num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
-best_config_path = os.path.join(datasets_dir, 'best_config.json')
+best_config_path = os.path.join(args.data_directory, 'best_config.json')
 if os.path.exists(best_config_path):
     with open(best_config_path, 'r') as file:
         config = json.load(file)
@@ -70,7 +76,7 @@ for d_i, (_, validation) in dataset_partitions.items():
         else:
             raise Exception('Unexpected model type: ' + model_type)
         try:
-            model.load(f'{datasets_dir}/dataset{d_i}_{model_type}_trained_model')
+            model.load(f'{args.data_directory}/dataset{d_i}_{model_type}_trained_model')
             print(f'Loaded {model_type} for dataset {d_i}')
         except Exception as e:
             print(f'Failed to load {model_type} model for dataset {d_i}: {e}')
@@ -78,21 +84,34 @@ for d_i, (_, validation) in dataset_partitions.items():
         all_bottlenecks = []
         all_z_bottlenecks = []
         all_marginal_bottlenecks = []
+        all_mw_entangles = []
+        all_vn_entropies = []
         for (s_i, series) in validation:
             bottlenecks = []
+            mw_entangles = []
+            vn_entropies = []
             for state in series:
                 bottleneck, prediction = model.forward(model.prepare_state(state))
+                if model_type.startswith('q'):
+                    mw_entangles.append(meyer_wallach_global_entanglement(bottleneck))
+                    vn_entropies.append(von_neumann_entropy(bottleneck))
                 bottlenecks.append(bottleneck)
             if model_type.startswith('q'):
                 all_marginal_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_marginal_features(bottlenecks))))
                 all_z_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], extract_bloch_z_features(bottlenecks))))
+                all_mw_entangles.append(np.concatenate(([s_i], mw_entangles)))
+                all_vn_entropies.append(np.concatenate(([s_i], vn_entropies)))
             else:
                 all_bottlenecks.append(np.concatenate(([[s_i for _ in range(num_features)]], bottlenecks)))
         if model_type.startswith('q'):
-            fname = os.path.join(datasets_dir, f'dataset{d_i}_{model_type}_marginal_bottlenecks.npy')
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_marginal_bottlenecks.npy')
             np.save(fname, np.array(all_marginal_bottlenecks))
-            fname = os.path.join(datasets_dir, f'dataset{d_i}_{model_type}_z_bottlenecks.npy')
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_z_bottlenecks.npy')
             np.save(fname, np.array(all_z_bottlenecks))
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_full_vn_entropy.npy')
+            np.save(fname, np.array(all_vn_entropies))
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottleneck_mw_global_entanglement.npy')
+            np.save(fname, np.array(all_mw_entangles))
         else:
-            fname = os.path.join(datasets_dir, f'dataset{d_i}_{model_type}_bottlenecks.npy')
+            fname = os.path.join(args.data_directory, f'dataset{d_i}_{model_type}_bottlenecks.npy')
             np.save(fname, np.array(all_bottlenecks))
