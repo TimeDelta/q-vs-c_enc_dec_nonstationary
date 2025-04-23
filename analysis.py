@@ -7,6 +7,7 @@ from astropy.stats import bayesian_blocks
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
+from pyentrp import entropy
 
 import math
 from typing import Dict
@@ -225,16 +226,26 @@ def hurst_exponent(data):
         hurst_vals.append(_hurst_exponent_1d(col, window_sizes))
     return hurst_vals
 
-def higuchi_fractal_dimension(data):
-    n_samples, n_features = data.shape
-    kmax = n_samples//3
+def optimized_multiscale_permutation_entropy(time_series) -> float:
+    """
+    Compute the mean Multiscale Permutation Entropy (MPE) over:
+      - orders m = 2 and 3 (averaged)
+      - delays swept from min_delay to max_delay (averaged)
+      - scale fixed to 3
+    """
+    # Orders to average over (maintains N ≫ m! guideline)
+    center_delay = np.correlate(time_series, time_series, model='full')
+    min_delay = max(1, int(min(center_delay-sequence_length/20, 0.8*center_delay)))
+    max_delay = max(int(center_delay + span), int(1.2 * center_delay))
+    delays = list(range(min_delay, max_delay + 1))
 
-    hfds = []
-    for feature in range(n_features):
-        feature_series = data[:, feature]
-        hfd = antropy.higuchi_fd(feature_series.tolist(), kmax=kmax) - 1
-        hfds.append(hfd)
-    return hfds
+    scale = 3
+    mpe_vals = []
+    for order in [2, 3]:
+        for delay in delays:
+            mpe = entropy.multiscale_permutation_entropy(time_series, order, delay, scale) / np.log2(math.factorial(order))
+            mpe_vals.append(mpe.mean())
+    return float(np.mean(mpe_vals))
 
 def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z'):
     if quantizer == 'bayesian_block':

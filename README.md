@@ -40,10 +40,10 @@ This work conducts a comprehensive comparison on non-stationary data of eight se
 
 By evaluating these models on the same sets of time-series data, the aim is to test several key hypotheses about their performance and internal dynamics.
 
-Four main metrics to quantify time-series complexity:
+Four main metrics are used to quantify time-series complexity:
 - **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv; 1976).
 - **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence) (Hurst; 1951).
-- **Higuchi Fractal Dimension (HFD):** Captures fractal scaling behavior of continuous signals (Higuchi, 1988).
+- **Multiscale Permutation Entropy (MPE):** Captures fractal scaling behavior of continuous signals (Higuchi, 1988).
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
 
 In summary, this paper drafts a systematic study of how learning objective (reconstruction vs. prediction), sequence modeling capability (recurrent vs. not), and computational paradigm (quantum vs. classical) affect performance when trained on complex, highly nonstationary time-series data.
@@ -67,7 +67,7 @@ Moreover, recurrent encoders will exhibit different bottleneck characteristics, 
 Another hypothesis is that recurrence being added to the autoencoder objective will not be enough to outcompete the autoregressive versions without recursion, especially since the implemented recursion adds only a single extra parameter.
 > - ***Quantum vs Classical:*** In their cost histories, quantum models will have higher mean absolute first and second derivatives during training because they often exhibit highly non-linear loss landscapes (Holzer, Turkalj; 2024) despite attempting to increase the similarity of the classical and quantum loss landscapes by mixing the effects of the classical parameters in the linear layers [(details)](#model-architectures).
 Upon analyzing the power spectrum of the loss gradients over training iterations, an additional expectation is to see more high-frequency fluctuations for quantum models, reflecting parameter interference effects and more rapid changes as the quantum circuit parameters navigate a more rugged loss landscape.
-For quantum models, an additional hypothesis is that both the Meyer-Wallach global entanglement (MWGE) and the VonNeumann entropy (VNE) of their bottleneck representations should positively correlate to the main complexity metrics (LZC, HE, HFD, DE).
+For quantum models, an additional hypothesis is that both the Meyer-Wallach global entanglement (MWGE) and the VonNeumann entropy (VNE) of their bottleneck representations should positively correlate to the main complexity metrics (LZC, HE, MPE, DE).
 This is expected for DE in particular because the quantum versions being able to maintain superpositions and mixtures of basis states in the bottleneck that retain uncertainty (entropy), whereas a classical bottleneck might collapse information more consistently into a few active features, especially given the linear nature of the model architectures.
 A final expectation is that the quantum models will generalize more poorly (higher ratio of normalized validation cost: normalized training cost) due to the expected higher loss landscape complexity.
 To rule out scale differences between the quantum and classical BTFP functions during analysis, their values are normalized by the initial trash cost.
@@ -115,7 +115,7 @@ Multivariate time series are synthesized by concatenating blocks where each feat
 This was done via the Davies-Harte method (Davies, Harte; 1987), which is characterized by a target HE to control long‑range dependence, allowing the creation of and sampling from series with a wide range of values for this metric.
 The mean and variance of the block are then set to different values per feature and change between each consecutive block to induce nonstationarity based on another FBM sequence that gets passed through a sine to introduce nonlinearity and control amplitude.
 Based on the dataset index, its generated series progressively include fewer unique blocks with tiling enforcing a fixed length, which slowly decreases the maximum possible LZC value.
-Sequences are then randomly shuffled and representative sequences are selected via 3D binning in the space of LZC, HE, and HFD.
+Sequences are then randomly shuffled and representative sequences are selected via 3D binning in the space of LZC, HE, and MPE (first experiment run was Higuchi Fractal Dimension instead of MPE).
 These sample sequences are ensured to be in the validation set so that there is a good spread of metric values to use when looking at relationships during the analysis.
 In order to ensure a reasonable amount of training data for each dataset, the grid was limited to choosing at most a third of the series in each dataset.
 The unchosen sequences are then split between each dataset's training and validation partitions as close as possible to a desired split ratio and the size of each validation partition is then standardized to the maximum validation partition size.
@@ -156,10 +156,20 @@ Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without G
 
 ### Analysis
 - Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
+#### Metric Parameter Choices
+- **MPE**
+  - For the order parameter, values of 2 and 3 are used and the mean value is taken.
+This maintains the guideline of sequence length (100) ≫ order! suggested by (Cuesta-Frau et al.; 2019).
+  - Multiple time delays are used and the mean result is taken.
+The center point for the time delay range is is set to the zero crossing of the signal autocorrelation because it is a key indicator of multi-scale patterns (Kafashi et al.; 2008).
+The minimum time delay is calculated as `max(1, min(center_point - 1/20 * sequence_length, 9/10 * center_point))`
+The maximum time delay is calculated as `max(center_point + 1/20 * sequence_length, 11/10 * center_point)`
+  - The scale parameter is set to 3 in order to ensure that (Wang et al.; 2019).
+  - See [implementation](./analysis.py#L229) for further details.
 #### Metric Normalization
 For comparison across metrics with different scales, the normalization used is specific to each metric:
 - HE: No normalization necessary because it's already limited to [0,1] by definition.
-- HFD: Since, for fractional Brownian motion with specific HE, HFD=2−HE => HFD∈[1,2] for 1D (Wanliss, Wanliss; 2022), one is subtracted from each feature's raw value and then max value normalization is used after this since there are some observed raw values slightly above 2.
+- MPE: Theoretical maximum normalization is used, which divides by `log2(order!)`.
 - LZC: Theoretical maximum normalization is used, which calculates the maximum as the sequence length divided by the log of (the sequence length) in base (number of unique symbols).
 - DE: Theoretical maximum normalization is used, which simply divides by the log of the number of unique symbols in the discretized signal.
 #### Quantization Methods
@@ -172,7 +182,7 @@ This yields non‑uniform bin widths that adapt to local data density by creatin
 An adaptive histogram approach such as this better captures multimodal structure by placing narrow bins around abrupt changes in density and wider bins elsewhere.
 This prevents the smoothing over of sharp, localized peaks that uniform binning introduces.
 The final symbols are then obtained via mixed-radix encoding with each feature's base being equal to the number of symbols (bins) found for that feature.
-  - [HDBSCAN](./analysis.py#L136)): Assigns symbols via hierarchical density‑based clustering, uncovering clusters of varying shapes and densities without requiring preset bin counts for each feature.
+  - [HDBSCAN](./analysis.py#L136): Assigns symbols via hierarchical density‑based clustering, uncovering clusters of varying shapes and densities without requiring preset bin counts for each feature.
 As per standard practice, the `cluster_selection_epsilon` parameter is set to the mean plus the standard deviation of the interpoint distances between each pair of nearest neighbors.
 The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
 The `min_cluster_size` is set at 2 to minimize labeling points as noise.
@@ -216,8 +226,8 @@ The corrected values are used in analysis, however, so the effect of this is inf
 - ENC-DEC = Encoder-Decoder
 - FBM = Fractional Brownian Motion
 - HE = Hurst Exponent
-- HFD = Higuchi Fractal Dimension
 - LZC = Lempel-Ziv Complexity
+- MPE = Multiscale Permutation Entropy
 - MWGE = Meyer-Wallach Global Entanglement
 - SO = Special Orthogonal
 - U = Unitary
@@ -381,14 +391,48 @@ The corrected values are used in analysis, however, so the effect of this is inf
 1. @article{Wanliss2022Higuchi,
   author  = {Wanliss, J. A. and Wanliss, Grace E.},
   title   = {Efficient Calculation of Fractal Properties via the Higuchi Method},
-  journal = {Nonlinear Dynamics},
   year    = {2022},
+  journal = {Nonlinear Dynamics},
   volume  = {109},
   number  = {4},
   pages   = {2893--2904},
   month   = sep,
   doi     = {10.1007/s11071-022-07353-2},
   url     = { https://doi.org/10.1007/s11071-022-07353-2 }
+}
+1. @article{article,
+  author  = {Kaffashi, Farhad and Foglyano, Ryan and Wilson, Christopher and Loparo, Kenneth},
+  title   = {The effect of time delay on Approximate & Sample Entropy calculations},
+  year    = {2008},
+  month   = {12},
+  pages   = {3069-3074},
+  volume  = {237},
+  journal = {Physica D: Nonlinear Phenomena},
+  doi     = {10.1016/j.physd.2008.06.005}
+}
+1. @article{Cuesta-Frau2019,
+  author  = {Cuesta-Frau, David and Murillo-Escobar, Juan Pablo and Orrego, Diana Alexandra and Delgado-Trejos, Edilson},
+  title   = {Embedded Dimension and Time Series Length. Practical Influence on Permutation Entropy and Its Applications},
+  year    = {2019},
+  journal = {Entropy},
+  volume  = {21},
+  number  = {4},
+  pages   = {385},
+  doi     = {10.3390/e21040385}
+}
+1. @Article{e21020170,
+  AUTHOR         = {Wang, Xianzhi and Si, Shubin and Wei, Yu and Li, Yongbo},
+  TITLE          = {The Optimized Multi-Scale Permutation Entropy and Its Application in Compound Fault Diagnosis of Rotating Machinery},
+  YEAR           = {2019},
+  JOURNAL        = {Entropy},
+  VOLUME         = {21},
+  NUMBER         = {2},
+  ARTICLE-NUMBER = {170},
+  URL            = { https://www.mdpi.com/1099-4300/21/2/170 },
+  PubMedID       = {33266886},
+  ISSN           = {1099-4300},
+  ABSTRACT       = {Multi-scale permutation entropy (MPE) is a statistic indicator to detect nonlinear dynamic changes in time series, which has merits of high calculation efficiency, good robust ability, and independence from prior knowledge, etc. However, the performance of MPE is dependent on the parameter selection of embedding dimension and time delay. To complete the automatic parameter selection of MPE, a novel parameter optimization strategy of MPE is proposed, namely optimized multi-scale permutation entropy (OMPE). In the OMPE method, an improved Cao method is proposed to adaptively select the embedding dimension. Meanwhile, the time delay is determined based on mutual information. To verify the effectiveness of OMPE method, a simulated signal and two experimental signals are used for validation. Results demonstrate that the proposed OMPE method has a better feature extraction ability comparing with existing MPE methods.},
+  DOI = {10.3390/e21020170}
 }
 
 

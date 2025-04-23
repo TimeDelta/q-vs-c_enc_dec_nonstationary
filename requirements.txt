@@ -10,3 +10,4 @@ qiskit-aer
 qiskit[visualization]
 hdbscan
 scikit-learn
+pyentrp>=0.6.0
