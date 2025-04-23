@@ -247,6 +247,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     num_validation_series = len(next(iter(datasets.values()))[1])
 
     # lambda to parse each individual series into a single value
+    #   * !! series index gets stored as a complex value and sometimes has rounding errors
     # lambda to aggregate all series of a dataset into a single value
     MODEL_MEAN_MEAN_STAT_LAMBDAS = (
         lambda rows: {int(round(float(row[0]))): np.mean(row[1:]) for row in rows},
@@ -276,6 +277,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'bottleneck_hfd': MODEL_MEAN_MEAN_STAT_LAMBDAS,
     }
     MODEL_STATS_CONFIG['validation_costs']['Total'] = (
+        # series index gets stored as a complex value and sometimes has rounding errors
         lambda rows: {int(round(float(row[0]))): sum(row[1:]) for row in rows},
         lambda rows: np.mean([sum(row[1:]) for row in rows])
     )
@@ -472,10 +474,14 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         if isinstance(next(iter(data_dict.values())), dict):
             for loss_type, model_data in data_dict.items():
                 for model_type, data in model_data.items():
+                    if len(data) == 0:
+                        continue
                     label_prefix = f"{model_type.upper()}-{loss_type}"
                     plot_model_data(data, label_prefix, colors[model_type])
         else:
             for model_type, data in data_dict.items():
+                if len(data) == 0:
+                    continue
                 label_prefix = model_type.upper()
                 plot_model_data(data, label_prefix, colors[model_type])
         plt.xlabel(x_label)
