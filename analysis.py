@@ -401,7 +401,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             try:
                 series_stats.compute(series)
                 if series_stats.data['higuchi_fractal_dimension'] > max_hfd:
-                    max_hfd = higuchi_fractal_dimension
+                    max_hfd = series_stats.data['higuchi_fractal_dimension']
             except Exception as e:
                 print(series)
                 raise e
