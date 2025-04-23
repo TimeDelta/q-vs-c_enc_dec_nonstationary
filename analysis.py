@@ -298,14 +298,14 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         # lambda to map series into single value
         'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
         'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series, quantizer),
-        'higuchi_fractal_dimension': lambda series: np.mean(higuchi_fractal_dimension(series)),
+        'optimized_mpe': lambda series: np.mean(optimized_multiscale_permutation_entropy(series)),
         'differential_entropy':      lambda series: differential_entropy(series, quantizer),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
         # ALWAYS PUT METRIC SELF-COMPARISON IN FIRST INDEX
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
-        'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'optimized_mpe': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'differential_entropy': ['bottleneck_de', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
@@ -352,7 +352,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 de.append([s_i, differential_entropy(series_bottlenecks[1:], quantizer)])
                 lzc.append([s_i, lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
                 he.append([s_i, np.mean(hurst_exponent(series_bottlenecks[1:]))])
-                hfd.append([s_i, np.mean(higuchi_fractal_dimension(series_bottlenecks[1:]))])
+                hfd.append([s_i, np.mean(optimized_multiscale_permutation_entropy(series_bottlenecks[1:]))])
             self.data['bottleneck_de'] = np.array(de)
             self.data['bottleneck_lzc'] = np.array(lzc)
             self.data['bottleneck_he'] = np.array(he)
@@ -411,8 +411,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             series_stats = SeriesStats()
             try:
                 series_stats.compute(series)
-                if series_stats.data['higuchi_fractal_dimension'] > max_hfd:
-                    max_hfd = series_stats.data['higuchi_fractal_dimension']
+                if series_stats.data['optimized_mpe'] > max_hfd:
+                    max_hfd = series_stats.data['optimized_mpe']
             except Exception as e:
                 print(series)
                 raise e
@@ -423,7 +423,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     for (d_i, model_type), dataset_stats in stats_per_model.items():
         dataset_stats.data['bottleneck_hfd'] /= max_hfd
     for d_i, (s_i, series_stats) in dataset_series_stats.items():
-        series_stats['higuchi_fractal_dimension'] /= max_hfd
+        series_stats['optimized_mpe'] /= max_hfd
 
     individual_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
     aggregated_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
