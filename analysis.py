@@ -249,26 +249,26 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     # lambda to parse each individual series into a single value
     # lambda to aggregate all series of a dataset into a single value
     MODEL_MEAN_MEAN_STAT_LAMBDAS = (
-        lambda rows: {row[0]: np.mean(row[1:]) for row in rows},
+        lambda rows: {int(round(float(row[0]))): np.mean(row[1:]) for row in rows},
         lambda rows: np.mean([np.mean(row[1:]) for row in rows])
     )
     MODEL_MEAN_SUM_STAT_LAMBDAS = (
-        lambda rows: {row[0]: np.sum(row[1:]) for row in rows},
+        lambda rows: {int(round(float(row[0]))): np.sum(row[1:]) for row in rows},
         lambda rows: np.mean([np.sum(row[1:]) for row in rows])
     )
     MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS = (
-        lambda rows: {row[0]: row[1] for row in rows},
+        lambda rows: {int(round(float(row[0]))): row[1] for row in rows},
         lambda rows: np.mean([row[1] for row in rows])
     )
     MODEL_STATS_CONFIG = {
         # cost_history gets added separately
         'validation_costs': {
             LOSS_TYPES[i]: (
-                lambda rows: {row[0]: row[i+1] for row in rows},
+                lambda rows: {int(round(float(row[0]))): row[i+1] for row in rows},
                 lambda rows: np.mean([row[i+1] for row in rows])
             ) for i in range(len(LOSS_TYPES))
         },
-        'bottleneck_differential_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_de': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_mw_global_entanglement': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_lzc': MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS,
@@ -276,7 +276,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'bottleneck_hfd': MODEL_MEAN_MEAN_STAT_LAMBDAS,
     }
     MODEL_STATS_CONFIG['validation_costs']['Total'] = (
-        lambda rows: {row[0]: sum(row[1:]) for row in rows},
+        lambda rows: {int(round(float(row[0]))): sum(row[1:]) for row in rows},
         lambda rows: np.mean([sum(row[1:]) for row in rows])
     )
     SERIES_STATS_CONFIG = {
@@ -291,7 +291,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'higuchi_fractal_dimension': ['bottleneck_hfd', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
-        'differential_entropy': ['bottleneck_differential_entropy', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'differential_entropy': ['bottleneck_de', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
     dependent_keys = []
@@ -310,7 +310,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             for key in MODEL_STATS_CONFIG.keys():
                 if model_type.startswith('c') and ('vn' in key or 'entangle' in key):
                     continue
-                if key.startswith('bottleneck'):
+                if key in ['bottleneck_lzc', 'bottleneck_he', 'bottleneck_hfd', 'bottleneck_de']:
                     continue # calculated in this analysis
                 filepath = os.path.join(dsets_dir, f'{run_prefix}dataset{dataset_index}_{model_type}_{key}.npy')
                 self.data[key] = np.load(filepath)
@@ -337,7 +337,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 lzc.append([series_bottlenecks[1][0], lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
                 he.append([series_bottlenecks[1][0], np.mean(hurst_exponent(series_bottlenecks[1:]))])
                 hfd.append([series_bottlenecks[1][0], np.mean(higuchi_fractal_dimension(series_bottlenecks[1:]))])
-            self.data['bottleneck_differential_entropy'] = np.array(de)
+            self.data['bottleneck_de'] = np.array(de)
             self.data['bottleneck_lzc'] = np.array(lzc)
             self.data['bottleneck_he'] = np.array(he)
             self.data['bottleneck_hfd'] = np.array(hfd)
@@ -387,7 +387,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     for d_i, (training_series, validation_series) in datasets.items():
         for s_i, series in validation_series:
             num_features = len(series[0])
-            print(f'Computing complexity metrics for dataset {d_i} series {s_i} ({num_features} features)')
+            series_index = int(round(float(s_i))) # gets stored as a complex value and sometimes has rounding errors
+            print(f'Computing complexity metrics for dataset {d_i} series {series_index} ({num_features} features)')
             series_stats = SeriesStats()
             try:
                 series_stats.compute(series)
@@ -395,7 +396,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 print(series)
                 raise e
             # store as tuple (s_i, series_stats) for later annotation
-            dataset_series_stats.setdefault(d_i, []).append((s_i, series_stats))
+            dataset_series_stats.setdefault(d_i, []).append((series_index, series_stats))
 
     individual_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
     aggregated_plot_data = {i_key: {d_key: {model: [] for model in MODEL_TYPES} for d_key in dependent_keys} for i_key in independent_keys}
@@ -404,6 +405,9 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         dependent_individual = {}
         dependent_aggregated = {}
         for dependent_var_key in MODEL_STATS_CONFIG.keys():
+            if model_type.startswith('c') and ('entangle' in dependent_var_key or 'vn' in dependent_var_key):
+                continue
+
             parsers = MODEL_STATS_CONFIG[dependent_var_key]
             if isinstance(parsers, Dict): # allow multiple values from same file
                 for key, (parse_individual, parse_aggregated) in parsers.items():
@@ -411,8 +415,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                     dependent_aggregated[key] = parse_aggregated(m_stats.data[key])
             else:
                 (parse_individual, parse_aggregated) = parsers
-                dependent_individual[dependent_var_key] = parse_individual(m_stats.data[key])
-                dependent_aggregated[dependent_var_key] = parse_aggregated(m_stats.data[key])
+                dependent_individual[dependent_var_key] = parse_individual(m_stats.data[dependent_var_key])
+                dependent_aggregated[dependent_var_key] = parse_aggregated(m_stats.data[dependent_var_key])
 
         # Get the series stats for the current dataset.
         series_stats_list = dataset_series_stats[d_i]
@@ -421,21 +425,9 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         for s_i, s_stats in series_stats_list:
             for i_key in independent_keys:
                 for d_key in dependent_keys:
+                    print(dependent_individual[d_key].keys())
                     individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
                     aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
-
-            ent_entropy = dependent_individual['bottleneck_mw_global_entanglement'].get(s_i)
-            full_vn = dependent_individual['bottleneck_full_vn_entropy'].get(s_i)
-            if ent_entropy is None:
-                raise Exception(f'ERROR: missing entanglement entropy for dataset {d_i} series {s_i} {model_type} model')
-            if full_vn is None:
-                raise Exception(f'ERROR: missing full VN entropy for dataset {d_i} series {s_i} {model_type} model')
-            if full_vn < ent_entropy - 1E-15:
-                print(f'WARNING: full VN entropy < entanglement entropy by {abs(full_vn - ent_entropy)} for dataset {d_i} series {s_i}')
-                num_entropy_warnings += 1
-        if num_entropy_warnings > 0:
-            percent = num_entropy_warnings / len()
-            print(f'{num_entropy_warnings} total warnings ({percent}%) for unexpected quantum entropy relationship w/ dataset {d_i} {model_type}')
 
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
