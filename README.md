@@ -43,7 +43,7 @@ By evaluating these models on the same sets of time-series data, the aim is to t
 Four main metrics are used to quantify time-series complexity:
 - **Lempel‑Ziv Complexity (LZC):** Number of unique substrings needed to span a discrete sequence (Lempel, Ziv; 1976).
 - **Hurst Exponent (HE):** Measures long-range dependence (H=0.5 for random walk; H > 0.5 indicates persistence) (Hurst; 1951).
-- **Multiscale Permutation Entropy (MPE):** Captures fractal scaling behavior of continuous signals (Higuchi, 1988).
+- **Optimized Multiscale Permutation Entropy (MPE):** Extends classic permutation entropy by computing the Shannon entropy of ordinal-pattern distributions over multiple coarse-grained versions of the signal—thereby capturing scale-dependent structural complexity without any amplitude binning (Want et al.; 2019).
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
 
 In summary, this paper drafts a systematic study of how learning objective (reconstruction vs. prediction), sequence modeling capability (recurrent vs. not), and computational paradigm (quantum vs. classical) affect performance when trained on complex, highly nonstationary time-series data.
@@ -227,7 +227,7 @@ The corrected values are used in analysis, however, so the effect of this is inf
 - FBM = Fractional Brownian Motion
 - HE = Hurst Exponent
 - LZC = Lempel-Ziv Complexity
-- MPE = Multiscale Permutation Entropy
+- MPE = Optimized Multiscale Permutation Entropy
 - MWGE = Meyer-Wallach Global Entanglement
 - SO = Special Orthogonal
 - U = Unitary
@@ -354,19 +354,6 @@ The corrected values are used in analysis, however, so the effect of this is inf
   eprint   = { https://ascelibrary.org/doi/pdf/10.1061/TACEAT.0006518 },
   abstract = { A solution of the problem of determining the reservoir storage required on a given stream, to guarantee a given draft, is presented in this paper. For example, if a long-time record of annual total discharges from the stream is available, the storage required to yield the average flow, each year, is obtained by computing the cumulative sums of the departures of the annual totals from the mean annual total discharge. The range from the maximum to the minimum of these cumulative totals is taken as the required stornge. }
 }
-1. @article{HIGUCHI1988277,
-  author   = {T. Higuchi},
-  title    = {Approach to an irregular time series on the basis of the fractal theory},
-  year     = {1988},
-  journal  = {Physica D: Nonlinear Phenomena},
-  volume   = {31},
-  number   = {2},
-  pages    = {277-283},
-  issn     = {0167-2789},
-  doi      = { https://doi.org/10.1016/0167-2789(88)90081-4 },
-  url      = { https://www.sciencedirect.com/science/article/pii/0167278988900814 },
-  abstract = {We present a technique to measure the fractal dimension of the set of points (t, f(t)) forming the graph of a function f defined on the unit interval. First we apply it to a fractional Brownian function [1] which has a property of self-similarity for all scales, and we can get the stable and precise fractal dimension. This technique is also applied to the observational data of natural phenomena. It does not show self-similarity all over the scale but has a different self-similarity across the characteristic time scale. The present method gives us a stable characteristic time scale as well as the fractal dimension.}
-}
 1. @article{10.1093/biomet/74.1.95,
   author   = {DAVIES, R. B. and HARTE, D. S.},
   title    = {Tests for Hurst effect},
@@ -387,18 +374,6 @@ The corrected values are used in analysis, however, so the effect of this is inf
   title  = {Deep Transition-Encoding Networks for Learning Dynamics},
   year   = {2018},
   url    = { https://openreview.net/forum?id=S1VG0F1Dz }
-}
-1. @article{Wanliss2022Higuchi,
-  author  = {Wanliss, J. A. and Wanliss, Grace E.},
-  title   = {Efficient Calculation of Fractal Properties via the Higuchi Method},
-  year    = {2022},
-  journal = {Nonlinear Dynamics},
-  volume  = {109},
-  number  = {4},
-  pages   = {2893--2904},
-  month   = sep,
-  doi     = {10.1007/s11071-022-07353-2},
-  url     = { https://doi.org/10.1007/s11071-022-07353-2 }
 }
 1. @article{article,
   author  = {Kaffashi, Farhad and Foglyano, Ryan and Wilson, Christopher and Loparo, Kenneth},

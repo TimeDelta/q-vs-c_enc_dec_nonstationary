@@ -4,7 +4,7 @@ import os
 import torch
 from fbm import fbm
 
-from analysis import lempel_ziv_complexity_continuous, hurst_exponent, higuchi_fractal_dimension
+from analysis import lempel_ziv_complexity_continuous, hurst_exponent, optimized_multiscale_permutation_entropy
 
 def blend_with_new_block(existing_series, new_block, taper_length):
     """
@@ -113,7 +113,7 @@ def generate_data(base_dir):
             metrics = {
                 'lzc': lempel_ziv_complexity_continuous(series),
                 'he': np.mean(hurst_exponent(series)),
-                'hfd': np.mean(higuchi_fractal_dimension(series)),
+                'mpe': np.mean(optimized_multiscale_permutation_entropy(series)),
                 'dataset': dataset_index + 1
             }
             series_metrics.append((metrics, series))
@@ -128,7 +128,7 @@ def generate_data(base_dir):
 
     lzc_edges = np.linspace(min_lzc, max_lzc, num_bins_per_metric + 1)
     he_edges = np.linspace(0, 1, num_bins_per_metric + 1)
-    hfd_edges = np.linspace(1, 2, num_bins_per_metric + 1)
+    mpe_edges = np.linspace(1, 2, num_bins_per_metric + 1)
 
     series_metric_grid = {}
     max_series_in_grid_per_dataset = num_series_per_dataset // 3
@@ -137,15 +137,15 @@ def generate_data(base_dir):
     num_datasets_seen = 0
     np.random.shuffle(series_metrics)
     for metrics, series in series_metrics:
-        lzc, he, hfd = metrics['lzc'], metrics['he'], metrics['hfd']
-        if np.isnan(he) or np.isnan(hfd):
-            print('WARNING: Invalid complexity metric value: ', he, hfd)
+        lzc, he, mpe = metrics['lzc'], metrics['he'], metrics['mpe']
+        if np.isnan(he) or np.isnan(mpe):
+            print('WARNING: Invalid complexity metric value: ', he, mpe)
             continue
 
         lzc_bin = np.digitize(lzc, lzc_edges) - 1
         he_bin = np.digitize(he, he_edges) - 1
-        hfd_bin = np.digitize(hfd, hfd_edges) - 1
-        metrics_key = (lzc_bin, he_bin, hfd_bin)
+        mpe_bin = np.digitize(mpe, mpe_edges) - 1
+        metrics_key = (lzc_bin, he_bin, mpe_bin)
         dataset_id = metrics["dataset"]
 
         if dataset_id not in dataset_series_count:
