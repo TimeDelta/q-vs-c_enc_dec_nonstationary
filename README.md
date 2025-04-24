@@ -196,9 +196,104 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean MWGE as well as the mean VNE of its bottleneck states when going through each series in that set.
 - All quantum models consistently chose the first two qubits as the trash feature indices at every state in each validation series as seen in the [BTFP index histograms](./images/results/btfp_histograms/).
 - The classical models in contrast showed much more flexibility in their chosen trash indices.
-#### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
+### Loss Landscape Similarities
+- Gradient Norms
+  - Due to an bug with saving the gradient norm history during training, these results are not available
+- Prediction Loss
+  - All pairwise Pearson correlation coefficients for raw histories are 1.0
+  - Mean Absolute 1st Derivative per Model Type:
+    - QAE:  0.0000000000
+    - QRAE: 0.0295603101
+    - QTE:  0.0000000000
+    - QRTE: 0.0292647070
+    - CAE:  0.4579354477
+    - CRAE: 0.1798117561
+    - CTE:  0.4775164051
+    - CRTE: 0.2251897169
+  - Mean Absolute 2nd Derivative per Model Type:
+    - QAE:  0.0000000000
+    - QRAE: 0.0148292331
+    - QTE:  0.0000000000
+    - QRTE: 0.0146809408
+    - CAE:  0.0025985003
+    - CRAE: 0.1104035420
+    - CTE:  0.0034203822
+    - CRTE: 0.1363251462
+  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories are all 1.0
+  - ... 1st Derivatives:
+  |    | QAE| QRAE | QTE| QRTE | CAE  | CRAE | CTE  | CRTE |
+  |QAE | nan| nan  | nan| nan  | nan  | nan  | nan  | nan  |
+  |QRAE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  |QTE | nan| nan  | nan| nan  | nan  | nan  | nan  | nan  |
+  |QRTE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  |CAE | nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  |CRAE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  |CTE | nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  |CRTE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
+  - ... 2nd Derivatives: all 1.0
+  - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.0625
+    - High Frequency Energy Ratio
+      - QAE:  nan
+      - QRAE: nan
+      - QTE:  nan
+      - QRTE: nan
+      - CAE:  0.0300
+      - CRAE: 0.6422
+      - CTE:  0.0303
+      - CRTE: 0.6843
+  - High Frequency Second Derivative Threshold (based on 95% energy cutoff ratio): 0.2812
+    - High Frequency Energy Ratio
+      - QAE:  nan
+      - QRAE: nan
+      - QTE:  nan
+      - QRTE: nan
+      - CAE:  0.0003
+      - CRAE: 0.0431
+      - CTE:  0.0006
+      - CRTE: 0.0428
+- BTFP
+  - All pairwise Pearson correlation coefficients for raw histories are 1.0
+  - Mean Absolute 1st Derivative per Model Type:
+    - QAE:  0.0000000000
+    - QRAE: 0.0147310770
+    - QTE:  0.0000000000
+    - QRTE: 0.0145837662
+    - CAE:  0.4562267551
+    - CRAE: 0.0694082142
+    - CTE:  0.4757796760
+    - CRTE: 0.0888645707
+  - Mean Absolute 2nd Derivative per Model Type:
+    - QAE:  0.0000000000
+    - QRAE: 0.0148239043
+    - QTE:  0.0000000000
+    - QRTE: 0.0146756653
+    - CAE:  0.0013651153
+    - CRAE: 0.1076974426
+    - CTE:  0.0023848520
+    - CRTE: 0.1334352733
+  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories, 1st and 2nd derivatives are all 1.0
+  - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.1250
+    - High Frequency Energy Ratios
+      - QAE:  0.9072
+      - QRAE: 0.5235
+      - QTE:  0.9061
+      - QRTE: 0.5235
+      - CAE:  0.0110
+      - CRAE: 0.5168
+      - CTE:  0.0109
+      - CRTE: 0.4585
+  High Frequency Second Derivative Threshold (based on 95% energy cutoff ratio): 0.2812
+    - High Frequency Energy Ratios
+      - QAE:  0.1366
+      - QRAE: 0.0391
+      - QTE:  0.1157
+      - QRTE: 0.0391
+      - CAE:  0.0010
+      - CRAE: 0.0393
+      - CTE:  0.0009
+      - CRTE: 0.0384
 
 ## Discussion
 ### Sources of Error
