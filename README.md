@@ -52,7 +52,7 @@ The experimental setup and initial expectations are outlined below, and provide 
 ### Hypotheses
 The key hypotheses examined include:
 > - ***Latent Complexity Matching:*** An effective encoder of a time-series is hypothesized to reflect the complexity characteristics of the time series on which it was trained in its bottleneck.
-Specifically, the absolute squared difference between each metric over each model's validation data and over the model's latent representations from the validation data will positively correlate to the loss.
+Specifically, the squared difference between each metric over each model's validation data and over the model's latent representations from the validation data will positively correlate to the loss achieved by the model.
 The intuition behind this prediction is an expectation that a high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime where the variability is volatile.
 > - ***Prediction vs Reconstruction Objective:*** AR tasks (predicting the next state) are expected to converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
 In such a highly non-stationary regime, predicting the next state is an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
@@ -198,6 +198,9 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - The classical models in contrast showed much more flexibility in their chosen trash indices.
 ### Prediction vs Reconstruction
 ### Reccurence
+Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
+The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
+The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 ### Loss Landscape Similarities
 - Gradient Norms
   - Due to an bug with saving the gradient norm history during training, these results are not available
