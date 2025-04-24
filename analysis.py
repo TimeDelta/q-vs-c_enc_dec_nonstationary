@@ -587,40 +587,73 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         return mean_history_by_model_type
 
     def plot_training_metric_histories(metric_history_lambda, metric_description, mean_history_by_model_type):
-        plt.figure()
-        model_types_plotted = set()
+        figure, axis = plt.subplots()
+        lines_by_type = {}
         for (d_i, model_type), model_stats in stats_per_model.items():
             if d_i not in individual_datasets_to_plot:
                 continue
             history = metric_history_lambda(model_stats.data)
-            if model_type in model_types_plotted:
-                plt.plot(range(len(history)), history, color=colors[model_type])
+            if model_type in lines_by_type:
+                line, = axis.plot(range(len(history)), history, color=colors[model_type])
             else:
-                plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
-            model_types_plotted.add(model_type)
-        plt.xlabel('Epoch')
-        plt.ylabel(f'{metric_description}')
-        plt.title(f'Sample {metric_description} Histories')
-        plt.legend()
+                line, = axis.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            lines_by_type.setdefault(model_type, []).append(line)
+        axis.set_xlabel('Epoch')
+        axis.set_ylabel(f'{metric_description}')
+        axis.set_title(f'Sample {metric_description} Histories')
+
+        handles = [lines_by_type[model_type][0] for model_type in lines_by_type]
+        labels  = [model_type.upper() for model_type in lines_by_type]
+        legend = axis.legend(handles, labels, loc="best")
+        for lh in legend.get_lines():
+            lh.set_picker(5)
+        handle_map = {
+            legend.get_lines()[i]: lines_by_type[model_type]
+            for i, model_type in enumerate(lines_by_type)
+        }
+
+        def _on_pick_sample(event):
+            handle = event.artist
+            group  = handle_map[handle]
+            new_vis = not group[0].get_visible()
+            for ln in group:
+                ln.set_visible(new_vis)
+            handle.set_alpha(1.0 if new_vis else 0.2)
+            figure.canvas.draw_idle()
+        figure.canvas.mpl_connect("pick_event", _on_pick_sample)
+
         save_filepath = os.path.join(data_dir, f'{run_prefix}_sample_{metric_description.replace(" ", "_").lower()}.png')
-        plt.savefig(save_filepath)
+        figure.savefig(save_filepath)
+        plt.close(figure)
         print(f'Saved sample {metric_description} histories plot to {save_filepath}')
 
-        plt.figure()
-        model_types_plotted = set()
+        figure, axis = plt.subplots()
+        mean_lines = []
         for model_type, history in mean_history_by_model_type.items():
-            if model_type in model_types_plotted:
-                plt.plot(range(len(history)), history, color=colors[model_type])
-            else:
-                plt.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
-            model_types_plotted.add(model_type)
-        plt.xlabel('Epoch')
-        plt.ylabel(f'Mean {metric_description}')
-        plt.title(f'Mean {metric_description} History per Model Type')
-        plt.legend()
+            line, = axis.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            mean_lines.append(line)
+        axis.set_xlabel('Epoch')
+        axis.set_ylabel(f'Mean {metric_description}')
+        axis.set_title(f'Mean {metric_description} History per Model Type')
+
+        legend = plt.legend(loc='best')
+        legend_handles = legend.get_lines()
+        handle_to_line = dict(zip(legend_handles, mean_lines))
+        for handle in legend_handles:
+            handle.set_picker(5)
+
+        def on_pick_mean(event):
+            handle = event.artist
+            line = handle_to_line[handle]
+            vis = not line.get_visible()
+            line.set_visible(vis)
+            handle.set_alpha(1.0 if vis else 0.2)
+            figure.canvas.draw_idle()
+        figure.canvas.mpl_connect("pick_event", on_pick_mean)
 
         save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{metric_description.replace(" ", "_").lower()}.png')
-        plt.savefig(save_filepath)
+        figure.savefig(save_filepath)
+        plt.close(figure)
         print(f'Saved mean {metric_description} history plot to {save_filepath}')
 
     mean_cost_history_per_model_type = get_mean_training_metric_history('cost_history')
