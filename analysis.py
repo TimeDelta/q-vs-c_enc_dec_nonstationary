@@ -247,7 +247,7 @@ def optimized_multiscale_permutation_entropy(time_series) -> float:
         per_feature.append(float(np.mean(mpe_vals)))
     return per_feature
 
-def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z', test=False):
+def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='marginal', test=False):
     if quantizer == 'bayesian_block':
         quantizer = quantize_signal_bayesian_block_feature_bins
     elif quantizer == 'hdbscan':

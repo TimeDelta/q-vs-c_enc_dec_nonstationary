@@ -191,6 +191,8 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 ### Classical vs Quantum
 - Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
 - For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean MWGE as well as the mean VNE of its bottleneck states when going through each series in that set.
+- All quantum models consistently chose the first two qubits as the trash feature indices at every state in each validation series as seen in the [BTFP index histograms](./images/results/btfp_histograms/).
+- The classical models in contrast showed much more flexibility in their chosen trash indices.
 #### Loss Landscape Similarity
 ### Prediction vs Reconstruction
 ### Reccurence
@@ -201,6 +203,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
+- Since the original data generation grid choices and data partitions were done with 3D binning based on the Higuchi fractal dimension instead of MPE (before the replacement), the variation in MPE values is much lower than desired.
 
 ## Conclusion
 
