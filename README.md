@@ -223,6 +223,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     - CRTE: 0.1363251462
   - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories are all 1.0
   - ... 1st Derivatives:
+
   |    | QAE| QRAE | QTE| QRTE | CAE  | CRAE | CTE  | CRTE |
   |----|----|------|----|------|------|------|------|------|
   |QAE | nan| nan  | nan| nan  | nan  | nan  | nan  | nan  |
