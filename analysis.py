@@ -233,21 +233,21 @@ def optimized_multiscale_permutation_entropy(time_series) -> float:
       - delays swept from min_delay to max_delay (averaged)
       - scale fixed to 3
     """
-    # Orders to average over (maintains N ≫ m! guideline)
-    center_delay = np.correlate(time_series, time_series, model='full')
-    min_delay = max(1, int(min(center_delay-sequence_length/20, 0.8*center_delay)))
-    max_delay = max(int(center_delay + span), int(1.2 * center_delay))
-    delays = list(range(min_delay, max_delay + 1))
+    per_feature = []
+    delays = list(range(1, len(time_series)//20))
+    for f_i in range(len(time_series[0])):
+        feature_series = time_series[:,f_i]
 
-    scale = 3
-    mpe_vals = []
-    for order in [2, 3]:
-        for delay in delays:
-            mpe = entropy.multiscale_permutation_entropy(time_series, order, delay, scale) / np.log2(math.factorial(order))
-            mpe_vals.append(mpe.mean())
-    return float(np.mean(mpe_vals))
+        scale = 3
+        mpe_vals = []
+        for order in [2, 3]: # Orders to average over (maintains N ≫ m! guideline)
+            for delay in delays:
+                mpe = entropy.multiscale_permutation_entropy(feature_series, order, delay, scale) / np.log2(math.factorial(order))
+                mpe_vals.append(mpe.mean())
+        per_feature.append(float(np.mean(mpe_vals)))
+    return per_feature
 
-def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z'):
+def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_block', quantum_bottleneck_feature='z', test=False):
     if quantizer == 'bayesian_block':
         quantizer = quantize_signal_bayesian_block_feature_bins
     elif quantizer == 'hdbscan':
@@ -298,7 +298,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         # lambda to map series into single value
         'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
         'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series, quantizer),
-        'optimized_mpe': lambda series: np.mean(optimized_multiscale_permutation_entropy(series)),
+        'optimized_mpe':             lambda series: np.mean(optimized_multiscale_permutation_entropy(series)),
         'differential_entropy':      lambda series: differential_entropy(series, quantizer),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
@@ -777,4 +777,4 @@ if __name__ == '__main__':
 
     run_prefix = args.prefix if args.prefix else ''
     datasets = import_generated(args.datasets_directory)
-    run_analysis(datasets, args.datasets_directory, args.overfit_threshold, args.quantizer, args.quantum_bottleneck_feature)
+    run_analysis(datasets, args.datasets_directory, args.overfit_threshold, args.quantizer, args.quantum_bottleneck_feature, args.test)
