@@ -809,7 +809,13 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
     for cost_part_index in range(num_loss_types):
         label = f'{LOSS_TYPES[cost_part_index]} Loss Analysis'
-        cache = {k: {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES} for k in costs_cache.keys()}
+        array_keys = ('history', 'first_derivatives', 'second_derivatives')
+        cache = {}
+        for k in costs_cache:
+            if k in ('history', 'first_derivatives', 'second_derivatives'): # need sliced
+                cache[k] = {m: costs_cache[k][m][:, cost_part_index] for m in MODEL_TYPES}
+            else:
+                cache[k] = {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES}
         analyze_history(cache, label)
     analyze_history(gradient_norms_cache, 'Gradient Norm Analysis')
 
