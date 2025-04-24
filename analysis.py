@@ -42,6 +42,9 @@ def check_for_overfitting(training_costs, validation_costs, threshold=.15):
     total_validation_cost = np.sum(validation_costs)
     return check_overfit(total_training_cost, total_validation_cost, 'Total')
 
+def turn_nan_to_zero(values):
+    return np.nan_to_num(values, nan=0.0)
+
 def differential_entropy(data, quantizer):
     discrete_signal = quantizer(data)
     hist, _ = np.histogram(discrete_signal, density=True)
@@ -472,6 +475,10 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         def plot_model_data(data, label_prefix, color):
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
+            clean = [(x,y) for x,y in zip(x_vals,y_vals) if not np.isnan(y)]
+            if not clean:
+                raise Exception(f'Unable to plot {label_prefix}')
+            x_vals, y_vals = zip(*clean)
             scatter = axis.scatter(x_vals, y_vals, color=color, s=5)
 
             try:
@@ -624,7 +631,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
         save_filepath = os.path.join(data_dir, f'{run_prefix}_sample_{metric_description.replace(" ", "_").lower()}.png')
         figure.savefig(save_filepath)
-        plt.close(figure)
         print(f'Saved sample {metric_description} histories plot to {save_filepath}')
 
         figure, axis = plt.subplots()
@@ -653,7 +659,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
         save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{metric_description.replace(" ", "_").lower()}.png')
         figure.savefig(save_filepath)
-        plt.close(figure)
         print(f'Saved mean {metric_description} history plot to {save_filepath}')
 
     mean_cost_history_per_model_type = get_mean_training_metric_history('cost_history')
