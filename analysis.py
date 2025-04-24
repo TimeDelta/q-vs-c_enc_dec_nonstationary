@@ -466,24 +466,27 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     colors = {model: color for (model, color) in zip(MODEL_TYPES, colormap_colors)}
 
     def plot_data_and_save(data_dict, x_label, y_label, title, filename):
+        figure, axis = plt.subplots()
+        plots = []
+
         def plot_model_data(data, label_prefix, color):
             x_vals = [d[0] for d in data]
             y_vals = [d[1] for d in data]
-            plt.scatter(x_vals, y_vals, color=color, s=5)
+            scatter = axis.scatter(x_vals, y_vals, color=color, s=5)
 
             try:
                 coeffs = np.polyfit(x_vals, y_vals, 1)
                 slope = float(coeffs[0])
                 poly_eqn = np.poly1d(coeffs)
                 x_fit = np.linspace(min(x_vals), max(x_vals), 100)
-                plt.plot(x_fit, poly_eqn(x_fit), color=color, linestyle='--', label=f'{label_prefix} (slope={slope:.5f})')
+                line, = axis.plot(x_fit, poly_eqn(x_fit), color=color, linestyle='--', label=f'{label_prefix} (slope={slope:.5f})')
+                plots.append((scatter, line))
             except np.linalg.LinAlgError as e:
                 for point in zip(x_vals, y_vals):
                     print(point)
                 print('Line of best fit failure for above series')
                 raise e
 
-        plt.figure()
         if isinstance(next(iter(data_dict.values())), dict):
             for loss_type, model_data in data_dict.items():
                 for model_type, data in model_data.items():
@@ -497,10 +500,25 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                     continue
                 label_prefix = model_type.upper()
                 plot_model_data(data, label_prefix, colors[model_type])
-        plt.xlabel(x_label)
-        plt.ylabel(y_label)
-        plt.title(title)
-        plt.legend()
+        axis.set_xlabel(x_label)
+        axis.set_ylabel(y_label)
+        axis.set_title(title)
+        legend = axis.legend(loc='best')
+
+        legend_lines = legend.get_lines()
+        legend_map = {line: plots[i] for i, line in enumerate(legend_lines)}
+        for line in legend_lines:
+            line.set_picker(5)
+        def on_pick(event):
+            legend_line = event.artist
+            scatter, plot_line = legend_map[legend_line]
+            visible = not plot_line.get_visible()
+            plot_line.set_visible(visible)
+            scatter.set_visible(visible)
+            legend_line.set_alpha(1.0 if visible else 0.2)
+            figure.canvas.draw_idle()
+        figure.canvas.mpl_connect('pick_event', on_pick)
+
         save_path = os.path.join(data_dir, run_prefix + filename)
         plt.savefig(save_path)
 
