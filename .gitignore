@@ -1,3 +1,2 @@
-**/*.npy
 **/__pycache__
 **/generated_datasets*
