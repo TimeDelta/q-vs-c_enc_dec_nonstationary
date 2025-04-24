@@ -100,6 +100,8 @@ Importantly, the SO group is preserved under matrix multiplication (Golub, Van L
 This allows the use of individual n/2×n/2 SO matrices (one per feature) embedded along the diagonal of the full-dimensional identity matrix in a banded fashion, which most closely resembles ring entanglement in the final linear layer weight matrix (see [definition of planes in a ring](./models.py#L192) and Figure figure_num_a below) to be multiplied together while still restricting to the SO group at the global level.
 Unfortunately, this necessarily breaks the enforcement of unitarity on each individual rotation due the the afore-mentioned dimensionality constraints.
 ![Figure figure_num_b: Construction of a Single Givens Rotation Matrix Embedded in a Larger Matrix](./images/givens-rotation-matrix-construction.png)
+*Figure figure_num_b: Construction of a Single Givens Rotation Matrix Embedded in a Larger Matrix.*
+*Source: Stanford Exploration Project, “Givens Rotations,” Stanford University, December 18, 1997. [https://sepwww.stanford.edu/data/media/public/docs/sep70/steve2/paper_html/node2.html](https://sepwww.stanford.edu/data/media/public/docs/sep70/steve2/paper_html/node2.html)*
 ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-param-influence.png)
 
 While this "coupling" is not a perfect analogue to the quantum architecture even beyond the forced break in parity — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations.
