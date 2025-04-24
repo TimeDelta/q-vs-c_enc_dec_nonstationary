@@ -823,7 +823,7 @@ if __name__ == '__main__':
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use when loading saved files")
     parser.add_argument("--overfit_threshold", type=float, default=.15, help="Detection threshold for overfit ratio (max % for increase in validation cost vs training cost)")
     parser.add_argument("--quantizer", type=str, default='bayesian_block', choices=['bayesian_block', 'hdbscan', 'equal_width'])
-    parser.add_argument("--quantum_bottleneck_feature", type=str, default='z', choices=['z', 'marginal'])
+    parser.add_argument("--quantum_bottleneck_feature", type=str, default='marginal', choices=['z', 'marginal'])
     args = parser.parse_args()
 
     run_prefix = args.prefix if args.prefix else ''
