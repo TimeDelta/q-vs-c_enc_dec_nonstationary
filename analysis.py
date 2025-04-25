@@ -449,6 +449,154 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                     individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
                     aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
 
+    # precompute and cache 1st/2nd derivatives, FFTs per model type per metric history
+    costs_cache = {
+        'history': {},
+        'first_derivatives': {},
+        'second_derivatives': {},
+        'fft_first': {},
+        'fft_second': {},
+    }
+    gradient_norms_cache = {
+        'history': {},
+        'first_derivatives': {},
+        'second_derivatives': {},
+        'fft_first': {},
+        'fft_second': {},
+    }
+    for model_type in MODEL_TYPES:
+        cost_history = mean_cost_history_per_model_type[model_type] # shape: (num_epochs, num_loss_types)
+        gradient_norm_history = mean_gradient_norm_history_per_model_type[model_type] # shape: (num_epochs)
+
+        cost_first_derivatives = np.gradient(cost_history, axis=0)
+        model_fft_cost_first = {}
+        for cost_part_index in range(num_loss_types):
+            model_fft_cost_first[cost_part_index] = fft.fft(cost_first_derivatives[:, cost_part_index])
+        gradient_first_derivatives = np.gradient(gradient_norm_history)
+        model_fft_gradient_first = fft.fft(gradient_first_derivatives)
+
+        cost_second_derivatives = np.gradient(cost_first_derivatives, axis=0)
+        model_fft_cost_second = {}
+        for cost_part_index in range(num_loss_types):
+            model_fft_cost_second[cost_part_index] = fft.fft(cost_second_derivatives[:, cost_part_index])
+        gradient_second_derivatives = np.gradient(gradient_first_derivatives) # gradients of gradients of gradient norms lol
+        model_fft_gradient_second = fft.fft(gradient_second_derivatives)
+
+        frequencies = fft.fftfreq(cost_history.shape[0]) # freqs available based on nyquist sampling (from epoch indices)
+        costs_cache['history'][model_type] = cost_history
+        costs_cache['first_derivatives'][model_type] = cost_first_derivatives
+        costs_cache['second_derivatives'][model_type] = cost_second_derivatives
+        costs_cache['fft_first'][model_type] = model_fft_cost_first
+        costs_cache['fft_second'][model_type] = model_fft_cost_second
+        gradient_norms_cache['history'][model_type] = gradient_norm_history
+        gradient_norms_cache['first_derivatives'][model_type] = gradient_first_derivatives
+        gradient_norms_cache['second_derivatives'][model_type] = gradient_second_derivatives
+        gradient_norms_cache['fft_first'][model_type] = model_fft_gradient_first
+        gradient_norms_cache['fft_second'][model_type] = model_fft_gradient_second
+
+    model_types_header = '\t'.join([m.upper().replace('_', ' ') for m in MODEL_TYPES])
+    def analyze_history(cache, label):
+        histories = cache['history']
+        first_derivatives = cache['first_derivatives']
+        second_derivatives = cache['second_derivatives']
+        print(f'\n\n\n{bar}\n{label}:\n{bar}')
+        print('  Pairwise Pearson Correlations:')
+        print('\t\t' + model_types_header)
+        for i, model_i in enumerate(MODEL_TYPES):
+            row_values = [model_i.upper()]
+            series_i = histories[model_i]
+            for j, model_j in enumerate(MODEL_TYPES):
+                series_j = histories[model_j]
+                corr_coeff = np.corrcoef(series_i, series_j)[0, 1]
+                row_values.append(f'{corr_coeff:.3f}')
+            print('\t' + '\t'.join(row_values))
+
+        # mean absolute 1st & 2nd derivatives
+        first_derivatives_means = {}
+        second_derivatives_means = {}
+        for model in MODEL_TYPES:
+            first_derivatives_means[model] = np.mean(np.abs(first_derivatives[model]))
+            second_derivatives_means[model] = np.mean(np.abs(second_derivatives[model]))
+        print('  Mean Absolute 1st Derivative per Model Type:')
+        for model_type in MODEL_TYPES:
+            print(f'    {model_type.upper()}: {first_derivatives_means[model_type]:.10f}')
+        print('  Mean Absolute 2nd Derivative per Model Type:')
+        for model_type in MODEL_TYPES:
+            print(f'    {model_type.upper()}: {second_derivatives_means[model_type]:.10f}')
+
+        def compute_and_print_cross_corr_similarity(metric_history_per_type):
+            mean_centered_values = {}
+            for model_type in MODEL_TYPES:
+                values = metric_history_per_type[model_type]
+                mean_centered_values[model_type] = values - np.mean(values)
+            print('\t\t' + model_types_header)
+            for i, model_i in enumerate(MODEL_TYPES):
+                row_values = [model_i.upper()]
+                for j, model_j in enumerate(MODEL_TYPES):
+                    x = mean_centered_values[model_i]
+                    y = mean_centered_values[model_j]
+                    cross_corr = np.correlate(x, y, mode='full')
+                    # normalize by product of norms to get similarity metric
+                    norm_product = np.linalg.norm(x) * np.linalg.norm(y)
+                    similarity = np.max(np.abs(cross_corr)) / norm_product if norm_product > 0 else np.nan
+                    row_values.append(f'{similarity:.3f}')
+                print('\t' + '\t'.join(row_values))
+        print('  Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:')
+        compute_and_print_cross_corr_similarity(histories)
+        print('  ... 1st Derivatives:')
+        compute_and_print_cross_corr_similarity(first_derivatives)
+        print('  ... 2nd Derivatives:')
+        compute_and_print_cross_corr_similarity(second_derivatives)
+
+        # compute PSD over high frequency 1st / 2nd derivatives to determine
+        # "high" frequency cutoff threshold for each derivative order
+        energy_cutoff_ratio = 0.95
+        for derivative_type in ['first', 'second']:
+            # compute aggregated cumulative energy distribution
+            aggregated_thresholds = {}
+            aggregated_power = None
+            for model_type in MODEL_TYPES: # threshold is the same across model types
+                fft_result = cache[f'fft_{derivative_type}'][model_type]
+                power_spectrum = np.abs(fft_result) ** 2
+                if aggregated_power is None:
+                    aggregated_power = power_spectrum.copy()
+                else:
+                    aggregated_power += power_spectrum
+            sorted_indices = np.argsort(np.abs(frequencies))
+            sorted_freqs = np.abs(frequencies)[sorted_indices]
+            sorted_power = aggregated_power[sorted_indices]
+            cumulative_energy = np.cumsum(sorted_power)
+            total_energy = cumulative_energy[-1]
+
+            # find frequency such that energy_cutoff_ratio of energy is below it
+            dynamic_threshold_index = np.searchsorted(cumulative_energy, energy_cutoff_ratio * total_energy)
+            threshold = sorted_freqs[dynamic_threshold_index]
+            print(f'  High Frequency {derivative_type.title()} Derivative Threshold (based on {int(100*energy_cutoff_ratio)}% energy cutoff ratio): {threshold:.4f}')
+
+            # compute the high-frequency energy ratio
+            hf_energy_uniform = {}
+            for model_type in MODEL_TYPES:
+                hf_energy_uniform[model_type] = {}
+                fft_result = cache[f'fft_{derivative_type}'][model_type]
+                power_spectrum = np.abs(fft_result) ** 2
+                high_freq_mask = np.abs(frequencies) > threshold
+                high_freq_energy = np.sum(power_spectrum[high_freq_mask])
+                total_energy = np.sum(power_spectrum)
+                hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
+                hf_energy_uniform[model_type] = hf_ratio
+                print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
+    for cost_part_index in range(num_loss_types):
+        label = f'{LOSS_TYPES[cost_part_index]} Loss Analysis'
+        array_keys = ('history', 'first_derivatives', 'second_derivatives')
+        cache = {}
+        for k in costs_cache:
+            if k in ('history', 'first_derivatives', 'second_derivatives'): # need sliced
+                cache[k] = {m: costs_cache[k][m][:, cost_part_index] for m in MODEL_TYPES}
+            else:
+                cache[k] = {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES}
+        analyze_history(cache, label)
+    analyze_history(gradient_norms_cache, 'Gradient Norm Analysis')
+
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
     Each color is evenly spaced in hue, with a random brightness between .4 and .8
@@ -675,154 +823,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norm_history')
     plot_training_metric_histories(lambda data: data['gradient_norm_history'], 'Gradient Norms', mean_gradient_norm_history_per_model_type)
     plt.show()
-
-    # precompute and cache 1st/2nd derivatives, FFTs per model type per metric history
-    costs_cache = {
-        'history': {},
-        'first_derivatives': {},
-        'second_derivatives': {},
-        'fft_first': {},
-        'fft_second': {},
-    }
-    gradient_norms_cache = {
-        'history': {},
-        'first_derivatives': {},
-        'second_derivatives': {},
-        'fft_first': {},
-        'fft_second': {},
-    }
-    for model_type in MODEL_TYPES:
-        cost_history = mean_cost_history_per_model_type[model_type] # shape: (num_epochs, num_loss_types)
-        gradient_norm_history = mean_gradient_norm_history_per_model_type[model_type] # shape: (num_epochs)
-
-        cost_first_derivatives = np.gradient(cost_history, axis=0)
-        model_fft_cost_first = {}
-        for cost_part_index in range(num_loss_types):
-            model_fft_cost_first[cost_part_index] = fft.fft(cost_first_derivatives[:, cost_part_index])
-        gradient_first_derivatives = np.gradient(gradient_norm_history)
-        model_fft_gradient_first = fft.fft(gradient_first_derivatives)
-
-        cost_second_derivatives = np.gradient(cost_first_derivatives, axis=0)
-        model_fft_cost_second = {}
-        for cost_part_index in range(num_loss_types):
-            model_fft_cost_second[cost_part_index] = fft.fft(cost_second_derivatives[:, cost_part_index])
-        gradient_second_derivatives = np.gradient(gradient_first_derivatives) # gradients of gradients of gradient norms lol
-        model_fft_gradient_second = fft.fft(gradient_second_derivatives)
-
-        frequencies = fft.fftfreq(cost_history.shape[0]) # freqs available based on nyquist sampling (from epoch indices)
-        costs_cache['history'][model_type] = cost_history
-        costs_cache['first_derivatives'][model_type] = cost_first_derivatives
-        costs_cache['second_derivatives'][model_type] = cost_second_derivatives
-        costs_cache['fft_first'][model_type] = model_fft_cost_first
-        costs_cache['fft_second'][model_type] = model_fft_cost_second
-        gradient_norms_cache['history'][model_type] = gradient_norm_history
-        gradient_norms_cache['first_derivatives'][model_type] = gradient_first_derivatives
-        gradient_norms_cache['second_derivatives'][model_type] = gradient_second_derivatives
-        gradient_norms_cache['fft_first'][model_type] = model_fft_gradient_first
-        gradient_norms_cache['fft_second'][model_type] = model_fft_gradient_second
-
-    model_types_header = '\t'.join([m.upper().replace('_', ' ') for m in MODEL_TYPES])
-    def analyze_history(cache, label):
-        histories = cache['history']
-        first_derivatives = cache['first_derivatives']
-        second_derivatives = cache['second_derivatives']
-        print(f'\n\n\n{bar}\n{label}:\n{bar}')
-        print('  Pairwise Pearson Correlations:')
-        print('\t\t' + model_types_header)
-        for i, model_i in enumerate(MODEL_TYPES):
-            row_values = [model_i.upper()]
-            series_i = histories[model_i]
-            for j, model_j in enumerate(MODEL_TYPES):
-                series_j = histories[model_j]
-                corr_coeff = np.corrcoef(series_i, series_j)[0, 1]
-                row_values.append(f'{corr_coeff:.3f}')
-            print('\t' + '\t'.join(row_values))
-
-        # mean absolute 1st & 2nd derivatives
-        first_derivatives_means = {}
-        second_derivatives_means = {}
-        for model in MODEL_TYPES:
-            first_derivatives_means[model] = np.mean(np.abs(first_derivatives[model]))
-            second_derivatives_means[model] = np.mean(np.abs(second_derivatives[model]))
-        print('  Mean Absolute 1st Derivative per Model Type:')
-        for model_type in MODEL_TYPES:
-            print(f'    {model_type.upper()}: {first_derivatives_means[model_type]:.10f}')
-        print('  Mean Absolute 2nd Derivative per Model Type:')
-        for model_type in MODEL_TYPES:
-            print(f'    {model_type.upper()}: {second_derivatives_means[model_type]:.10f}')
-
-        def compute_and_print_cross_corr_similarity(metric_history_per_type):
-            mean_centered_values = {}
-            for model_type in MODEL_TYPES:
-                values = metric_history_per_type[model_type]
-                mean_centered_values[model_type] = values - np.mean(values)
-            print('\t\t' + model_types_header)
-            for i, model_i in enumerate(MODEL_TYPES):
-                row_values = [model_i.upper()]
-                for j, model_j in enumerate(MODEL_TYPES):
-                    x = mean_centered_values[model_i]
-                    y = mean_centered_values[model_j]
-                    cross_corr = np.correlate(x, y, mode='full')
-                    # normalize by product of norms to get similarity metric
-                    norm_product = np.linalg.norm(x) * np.linalg.norm(y)
-                    similarity = np.max(np.abs(cross_corr)) / norm_product if norm_product > 0 else np.nan
-                    row_values.append(f'{similarity:.3f}')
-                print('\t' + '\t'.join(row_values))
-        print('  Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:')
-        compute_and_print_cross_corr_similarity(histories)
-        print('  ... 1st Derivatives:')
-        compute_and_print_cross_corr_similarity(first_derivatives)
-        print('  ... 2nd Derivatives:')
-        compute_and_print_cross_corr_similarity(second_derivatives)
-
-        # compute PSD over high frequency 1st / 2nd derivatives to determine
-        # "high" frequency cutoff threshold for each derivative order
-        energy_cutoff_ratio = 0.95
-        for derivative_type in ['first', 'second']:
-            # compute aggregated cumulative energy distribution
-            aggregated_thresholds = {}
-            aggregated_power = None
-            for model_type in MODEL_TYPES: # threshold is the same across model types
-                fft_result = cache[f'fft_{derivative_type}'][model_type]
-                power_spectrum = np.abs(fft_result) ** 2
-                if aggregated_power is None:
-                    aggregated_power = power_spectrum.copy()
-                else:
-                    aggregated_power += power_spectrum
-            sorted_indices = np.argsort(np.abs(frequencies))
-            sorted_freqs = np.abs(frequencies)[sorted_indices]
-            sorted_power = aggregated_power[sorted_indices]
-            cumulative_energy = np.cumsum(sorted_power)
-            total_energy = cumulative_energy[-1]
-
-            # find frequency such that energy_cutoff_ratio of energy is below it
-            dynamic_threshold_index = np.searchsorted(cumulative_energy, energy_cutoff_ratio * total_energy)
-            threshold = sorted_freqs[dynamic_threshold_index]
-            print(f'  High Frequency {derivative_type.title()} Derivative Threshold (based on {int(100*energy_cutoff_ratio)}% energy cutoff ratio): {threshold:.4f}')
-
-            # compute the high-frequency energy ratio
-            hf_energy_uniform = {}
-            for model_type in MODEL_TYPES:
-                hf_energy_uniform[model_type] = {}
-                fft_result = cache[f'fft_{derivative_type}'][model_type]
-                power_spectrum = np.abs(fft_result) ** 2
-                high_freq_mask = np.abs(frequencies) > threshold
-                high_freq_energy = np.sum(power_spectrum[high_freq_mask])
-                total_energy = np.sum(power_spectrum)
-                hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
-                hf_energy_uniform[model_type] = hf_ratio
-                print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
-    for cost_part_index in range(num_loss_types):
-        label = f'{LOSS_TYPES[cost_part_index]} Loss Analysis'
-        array_keys = ('history', 'first_derivatives', 'second_derivatives')
-        cache = {}
-        for k in costs_cache:
-            if k in ('history', 'first_derivatives', 'second_derivatives'): # need sliced
-                cache[k] = {m: costs_cache[k][m][:, cost_part_index] for m in MODEL_TYPES}
-            else:
-                cache[k] = {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES}
-        analyze_history(cache, label)
-    analyze_history(gradient_norms_cache, 'Gradient Norm Analysis')
 
 if __name__ == '__main__':
     import argparse
