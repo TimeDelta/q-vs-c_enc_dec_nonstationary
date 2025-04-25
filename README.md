@@ -158,7 +158,7 @@ All quantum circuits are simulated on classical hardware to isolate algorithmic 
 Experiment ran on a 2017 MacBook Pro (3.1GHz quad‑core i7, 16GB RAM) without GPU acceleration.
 
 ### Analysis
-- Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time.
+- Scaling factor is removed from BTFP cost history for analysis in order to get a clear understanding of the BTFP itself over time in the plots.
 #### Metric Parameter Choices
 - **MPE**
   - For the order parameter, values of 2 and 3 are used and the mean value is taken.
@@ -207,16 +207,16 @@ The fact that the recurrent models have nonzero values is due to a literal pertu
 - Prediction Loss
   - Pairwise Pearson Correlation Coefficients for Raw Histories:
 
-  |    | QAE|QRAE| QTE|QRTE| CAE  | CRAE | CTE  | CRTE |
-  |----|----|----|----|----|------|------|------|------|
-  |QAE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
-  |QRAE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
-  |QTE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
-  |QRTE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
-  |CAE | nan| nan| nan| nan| 1.000| -.552| 1.000| -.919|
-  |CRAE| nan| nan| nan| nan| -.552| 1.000| -.548| 0.830|
-  |CTE | nan| nan| nan| nan| 1.000| -.548| 1.000| -.917|
-  |CRTE| nan| nan| nan| nan| -.919| 0.830| -.917| 1.000|
+  |    | QAE|QRAE| QTE|QRTE|  CAE  | CRAE  |  CTE  | CRTE  |
+  |----|----|----|----|----|-------|-------|-------|-------|
+  |QAE | nan| nan| nan| nan|  nan  |  nan  |  nan  |  nan  |
+  |QRAE| nan| nan| nan| nan|  nan  |  nan  |  nan  |  nan  |
+  |QTE | nan| nan| nan| nan|  nan  |  nan  |  nan  |  nan  |
+  |QRTE| nan| nan| nan| nan|  nan  |  nan  |  nan  |  nan  |
+  |CAE | nan| nan| nan| nan|  1.000| -0.552|  1.000| -0.919|
+  |CRAE| nan| nan| nan| nan| -0.552|  1.000| -0.548|  0.830|
+  |CTE | nan| nan| nan| nan|  1.000| -0.548|  1.000| -0.917|
+  |CRTE| nan| nan| nan| nan| -0.919|  0.830| -0.917|  1.000|
   - Mean Absolute 1st Derivative per Model Type:
     - QAE:  0.0000000000
     - QRAE: 0.0295603101
@@ -235,20 +235,42 @@ The fact that the recurrent models have nonzero values is due to a literal pertu
     - CRAE: 0.1104035420
     - CTE:  0.0034203822
     - CRTE: 0.1363251462
-  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories are all 1.0
+  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:
+
+  |    | QAE|QRAE| QTE|QRTE| CAE  | CRAE | CTE  | CRTE |
+  |----|----|----|----|----|------|------|------|------|
+  |QAE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRAE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QTE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRTE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |CAE | nan| nan| nan| nan| 1.000| 0.570| 1.000| 0.919|
+  |CRAE| nan| nan| nan| nan| 0.570| 1.000| 0.569| 0.830|
+  |CTE | nan| nan| nan| nan| 1.000| 0.569| 1.000| 0.917|
+  |CRTE| nan| nan| nan| nan| 0.919| 0.830| 0.917| 1.000|
   - ... 1st Derivatives:
 
-  |    | QAE| QRAE | QTE| QRTE | CAE  | CRAE | CTE  | CRTE |
-  |----|----|------|----|------|------|------|------|------|
-  |QAE | nan| nan  | nan| nan  | nan  | nan  | nan  | nan  |
-  |QRAE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  |QTE | nan| nan  | nan| nan  | nan  | nan  | nan  | nan  |
-  |QRTE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  |CAE | nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  |CRAE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  |CTE | nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  |CRTE| nan| 1.000| nan| 1.000| 1.000| 1.000| 1.000| 1.000|
-  - ... 2nd Derivatives: all 1.0
+  |    | QAE|QRAE| QTE|QRTE| CAE  | CRAE | CTE  | CRTE |
+  |----|----|----|----|----|------|------|------|------|
+  |QAE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRAE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QTE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRTE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |CAE | nan| nan| nan| nan| 1.000| 0.564| 0.999| 0.477|
+  |CRAE| nan| nan| nan| nan| 0.564| 1.000| 0.554| 0.991|
+  |CTE | nan| nan| nan| nan| 0.999| 0.554| 1.000| 0.469|
+  |CRTE| nan| nan| nan| nan| 0.477| 0.991| 0.469| 1.000|
+  - ... 2nd Derivatives:
+
+  |    | QAE|QRAE| QTE|QRTE| CAE  | CRAE | CTE  | CRTE |
+  |----|----|----|----|----|------|------|------|------|
+  |QAE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRAE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QTE | nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |QRTE| nan| nan| nan| nan| nan  | nan  | nan  | nan  |
+  |CAE | nan| nan| nan| nan| 1.000| 0.581| 0.972| 0.582|
+  |CRAE| nan| nan| nan| nan| 0.581| 1.000| 0.595| 1.000|
+  |CTE | nan| nan| nan| nan| 0.972| 0.595| 1.000| 0.596|
+  |CRTE| nan| nan| nan| nan| 0.582| 1.000| 0.596| 1.000|
   - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.0625
     - High Frequency Energy Ratio
       - QAE:  nan
@@ -270,7 +292,18 @@ The fact that the recurrent models have nonzero values is due to a literal pertu
       - CTE:  0.0006
       - CRTE: 0.0428
 - BTFP
-  - All pairwise Pearson correlation coefficients for raw histories are 1.0
+  - Pairwise Pearson Correlation Coefficients for Raw Histories:
+
+  |    |  QAE  |  QRAE |  QTE  |  QRTE |  CAE  | CRAE  |  CTE  |  CRTE |
+  |----|-------|-------|-------|-------|-------|-------|-------|-------|
+  |QAE |  1.000| -0.220|  0.912| -0.220| -0.252|  0.038| -0.256|  0.267|
+  |QRAE| -0.220|  1.000| -0.210|  1.000|  0.318| -0.433|  0.319| -0.730|
+  |QTE |  0.912| -0.210|  1.000| -0.210| -0.140|  0.183| -0.141|  0.347|
+  |QRTE| -0.220|  1.000| -0.210|  1.000|  0.318| -0.433|  0.319| -0.730|
+  |CAE | -0.252|  0.318| -0.140|  0.318|  1.000|  0.502|  1.000| -0.178|
+  |CRAE|  0.038| -0.433|  0.183| -0.433|  0.502|  1.000|  0.510|  0.759|
+  |CTE | -0.256|  0.319| -0.141|  0.319|  1.000|  0.510|  1.000| -0.170|
+  |CRTE|  0.267| -0.730|  0.347| -0.730| -0.178|  0.759| -0.170|  1.000|
   - Mean Absolute 1st Derivative per Model Type:
     - QAE:  0.0000000000
     - QRAE: 0.0147310770
@@ -289,7 +322,42 @@ The fact that the recurrent models have nonzero values is due to a literal pertu
     - CRAE: 0.1076974426
     - CTE:  0.0023848520
     - CRTE: 0.1334352733
-  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories, 1st and 2nd derivatives are all 1.0
+  - Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:
+
+  |    |   QAE|  QRAE|  QTE | QRTE |  CAE | CRAE | CTE  | CRTE |
+  |----|------|------|------|------|------|------|------|------|
+  |QAE | 1.000| 0.429| 0.912| 0.429| 0.252| 0.258| 0.256| 0.361|
+  |QRAE| 0.429| 1.000| 0.456| 1.000| 0.318| 0.433| 0.319| 0.730|
+  |QTE | 0.912| 0.456| 1.000| 0.456| 0.272| 0.282| 0.269| 0.410|
+  |QRTE| 0.429| 1.000| 0.456| 1.000| 0.318| 0.433| 0.319| 0.730|
+  |CAE | 0.252| 0.318| 0.272| 0.318| 1.000| 0.698| 1.000| 0.427|
+  |CRAE| 0.258| 0.433| 0.282| 0.433| 0.698| 1.000| 0.696| 0.759|
+  |CTE | 0.256| 0.319| 0.269| 0.319| 1.000| 0.696| 1.000| 0.423|
+  |CRTE| 0.361| 0.730| 0.410| 0.730| 0.427| 0.759| 0.423| 1.000|
+  - ... 1st Derivatives:
+
+  |    |   QAE|  QRAE|  QTE | QRTE |  CAE | CRAE | CTE  | CRTE |
+  |----|------|------|------|------|------|------|------|------|
+  |QAE | 1.000| 0.415| 0.929| 0.415| 0.193| 0.363| 0.182| 0.352|
+  |QRAE| 0.415| 1.000| 0.385| 1.000| 0.427| 0.967| 0.456| 0.956|
+  |QTE | 0.929| 0.385| 1.000| 0.385| 0.202| 0.351| 0.202| 0.342|
+  |QRTE| 0.415| 1.000| 0.385| 1.000| 0.427| 0.967| 0.456| 0.956|
+  |CAE | 0.193| 0.427| 0.202| 0.427| 1.000| 0.615| 0.990| 0.640|
+  |CRAE| 0.363| 0.967| 0.351| 0.967| 0.615| 1.000| 0.655| 0.998|
+  |CTE | 0.182| 0.456| 0.202| 0.456| 0.990| 0.655| 1.000| 0.683|
+  |CRTE| 0.352| 0.956| 0.342| 0.956| 0.640| 0.998| 0.683| 1.000|
+  - ... 2nd Derivatives:
+
+  |    |   QAE|  QRAE|  QTE | QRTE |  CAE | CRAE | CTE  | CRTE |
+  |----|------|------|------|------|------|------|------|------|
+  |QAE | 1.000| 0.341| 0.950| 0.341| 0.128| 0.345| 0.146| 0.341|
+  |QRAE| 0.341| 1.000| 0.335| 1.000| 0.530| 1.000| 0.498| 0.999|
+  |QTE | 0.950| 0.335| 1.000| 0.335| 0.168| 0.339| 0.178| 0.336|
+  |QRTE| 0.341| 1.000| 0.335| 1.000| 0.530| 1.000| 0.498| 0.999|
+  |CAE | 0.128| 0.530| 0.168| 0.530| 1.000| 0.518| 0.949| 0.512|
+  |CRAE| 0.345| 1.000| 0.339| 1.000| 0.518| 1.000| 0.497| 1.000|
+  |CTE | 0.146| 0.498| 0.178| 0.498| 0.949| 0.497| 1.000| 0.494|
+  |CRTE| 0.341| 0.999| 0.336| 0.999| 0.512| 1.000| 0.494| 1.000|
   - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.1250
     - High Frequency Energy Ratios
       - QAE:  0.9072
