@@ -203,7 +203,7 @@ The non-recurrent models all have VNE and MWGE of 0 because the architecture is 
 The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 ### Loss Landscape Similarities
 - Gradient Norms
-  - Due to an bug with saving the gradient norm history during training, these results are not available
+  - Due to a bug with saving the gradient norm history during training, these results are not available
 - Prediction Loss
   - Pairwise Pearson Correlation Coefficients for Raw Histories:
 

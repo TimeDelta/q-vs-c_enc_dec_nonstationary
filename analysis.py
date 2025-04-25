@@ -449,6 +449,31 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                     individual_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_individual[d_key][s_i], d_i, s_i))
                     aggregated_plot_data[i_key][d_key][model_type].append((s_stats.data[i_key], dependent_aggregated[d_key], d_i, s_i))
 
+    def get_mean_training_metric_history(metric_key):
+        # aggregate history for each model type across datasets
+        history_by_model_type = {m: [] for m in MODEL_TYPES}
+        for (dataset_index, model_type), model_stats in stats_per_model.items():
+            history_by_model_type[model_type].append(model_stats.data[metric_key])
+        mean_history_by_model_type = {}
+        for (model_type, history_list) in history_by_model_type.items():
+            history_arrays = np.array(history_list) # shape: (num_runs, num_epochs)
+            if history_arrays.ndim >= 2 and history_arrays.shape[0] > 1:
+                mean_history = history_arrays.mean(axis=0)
+            elif history_arrays.shape[0] == 1:
+                mean_history = history_arrays[0]
+            elif args.test:
+                print(f'WARNING: Missing {model_type} {metric_key}')
+                continue
+            else:
+                raise Exception(f'Unable to find any {model_type} model {metric_key}')
+            mean_history_by_model_type[model_type] = mean_history
+        return mean_history_by_model_type
+
+    mean_cost_history_per_model_type = get_mean_training_metric_history('cost_history')
+    sample = next(iter(mean_cost_history_per_model_type.values()))
+    num_epochs, num_loss_types = sample.shape
+    mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norm_history')
+
     # precompute and cache 1st/2nd derivatives, FFTs per model type per metric history
     costs_cache = {
         'history': {},
@@ -508,7 +533,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             for j, model_j in enumerate(MODEL_TYPES):
                 series_j = histories[model_j]
                 corr_coeff = np.corrcoef(series_i, series_j)[0, 1]
-                row_values.append(f'{corr_coeff:.3f}')
+                row_values.append(f'{corr_coeff:.5f}')
             print('\t' + '\t'.join(row_values))
 
         # mean absolute 1st & 2nd derivatives
@@ -539,7 +564,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                     # normalize by product of norms to get similarity metric
                     norm_product = np.linalg.norm(x) * np.linalg.norm(y)
                     similarity = np.max(np.abs(cross_corr)) / norm_product if norm_product > 0 else np.nan
-                    row_values.append(f'{similarity:.3f}')
+                    row_values.append(f'{similarity:.5f}')
                 print('\t' + '\t'.join(row_values))
         print('  Pairwise Max Normalized Cross-Correlation of Mean-Centered Raw Histories:')
         compute_and_print_cross_corr_similarity(histories)
@@ -596,6 +621,97 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 cache[k] = {m: costs_cache[k][m][cost_part_index] for m in MODEL_TYPES}
         analyze_history(cache, label)
     analyze_history(gradient_norms_cache, 'Gradient Norm Analysis')
+
+
+    # Latent Complexity Matching
+    # Correlation and squared difference between input series and latent complexities per model.
+    model_complexity_data = {}
+    same_metric_key_pairs = [(series_key, model_keys[0]) for series_key, model_keys in MAPPINGS_TO_PLOT.items()]
+    for (dataset_index, model_type), model_stats in stats_per_model.items():
+        # Map series -> input series complexity for this dataset
+        series_list = dataset_series_stats.get(dataset_index, [])
+        for series_key, model_key in same_metric_key_pairs:
+            series_values = {s_i: s_stats.data.get(series_key) for (s_i, s_stats) in series_list}
+            model_metrics = model_stats.data[model_key]
+            latent_values = {int(round(float(row[0]))): float(row[1]) for row in model_metrics}
+        for s_id, s_value in series_values.items():
+            model_complexity_data.setdefault(model_type, []).append((s_value, latent_values[s_id]))
+    # Pearson correlation and mean squared difference for each model type
+    complexity_match = {}
+    for m_type, pairs in model_complexity_data.items():
+        xs = np.array([p[0] for p in pairs]); ys = np.array([p[1] for p in pairs])
+        corr = np.corrcoef(xs, ys)[0, 1]
+        mse = np.mean((ys - xs)**2)
+        complexity_match[m_type] = (corr, mse)
+    # Mean validation loss per model type
+    final_val_loss = {}
+    for (dataset_index, model_type), model_stats in stats_per_model.items():
+        val_costs = model_stats.data['validation_costs']
+        total_costs = np.sum(val_costs[:, 1:], axis=1)
+        avg_val_cost = float(np.mean(total_costs))
+        final_val_loss.setdefault(model_type, []).append(avg_val_cost)
+    for m_type, vals in final_val_loss.items():
+        final_val_loss[m_type] = float(np.mean(vals))
+    print(f'\n\n\n{bar}\nSeries/Latent Complexity Fidelity vs Validation Loss:\n{bar}')
+    print('Model\tPearson\tMSE\tVal Loss')
+    for m_type in MODEL_TYPES:
+        corr, mse = complexity_match[m_type]
+        val_loss = final_val_loss[m_type]
+        print(f'{m_type.upper()}\t{corr:.5f}\t{mse:.5f}\t{val_loss:.5f}')
+    corr_vals = [complexity_match[m][0] for m in MODEL_TYPES]
+    mse_vals  = [complexity_match[m][1] for m in MODEL_TYPES]
+    loss_vals = [final_val_loss[m]      for m in MODEL_TYPES]
+    corr_vs_loss = np.corrcoef(corr_vals, loss_vals)[0, 1]
+    mse_vs_loss  = np.corrcoef(mse_vals,  loss_vals)[0, 1]
+    print(f'Correlation(corr_vs_loss) across models: {corr_vs_loss:.5f}')
+    print(f'Correlation(mse_vs_loss) across models: {mse_vs_loss:.5f}')
+
+
+    print(f'\n\n\n{bar}\nPrediction vs Reconstruction\n{bar}')
+    pred_models = [m for m in MODEL_TYPES if m.endswith('te')]
+    recon_models = [m for m in MODEL_TYPES if m.endswith('ae')]
+    model_learning_stats = {}
+    for (dataset_index, model_type), model_stats in stats_per_model.items():
+        total_cost = np.sum(model_stats.data['cost_history'], axis=1) / num_training_series
+        final_cost = total_cost[-1]
+        initial_cost = total_cost[0]
+        num_epochs = len(total_cost)
+        span = min(num_epochs//5, 10)
+        initial_slope = (initial_cost - total_cost[span]) / span
+        auc = float(np.trapz(total_cost, dx=1))
+        model_learning_stats.setdefault(model_type, {'slope': [], 'final': [], 'auc': []})
+        model_learning_stats[model_type]['slope'].append(initial_slope)
+        model_learning_stats[model_type]['final'].append(float(final_cost))
+        model_learning_stats[model_type]['auc'].append(auc)
+    for m_type, stats in model_learning_stats.items():
+        stats['slope'] = float(np.mean(stats['slope']))
+        stats['final'] = float(np.mean(stats['final']))
+        stats['auc']   = float(np.mean(stats['auc']))
+    print('\nModel Type\tInitial Slope\tFinal Cost\tAUC')
+    for m_type in MODEL_TYPES:
+        s = model_learning_stats[m_type]['slope']
+        f = model_learning_stats[m_type]['final']
+        a = model_learning_stats[m_type]['auc']
+        print(f'{m_type.upper()}\t{s:.5f}\t{f:.5f}\t{a:.5f}')
+    # Means for predictive vs reconstructive groups
+    pred_slopes  = [model_learning_stats[m]['slope'] for m in pred_models if m in model_learning_stats]
+    recon_slopes = [model_learning_stats[m]['slope'] for m in recon_models if m in model_learning_stats]
+    pred_final   = [model_learning_stats[m]['final'] for m in pred_models if m in model_learning_stats]
+    recon_final  = [model_learning_stats[m]['final'] for m in recon_models if m in model_learning_stats]
+    pred_auc     = [model_learning_stats[m]['auc'] for m in pred_models if m in model_learning_stats]
+    recon_auc    = [model_learning_stats[m]['auc'] for m in recon_models if m in model_learning_stats]
+    print(f'\nAvg Initial Slope: Predictive={np.mean(pred_slopes):.5f}, Reconstructive={np.mean(recon_slopes):.5f}')
+    print(f'Avg Final Cost: Predictive={np.mean(pred_final):.5f}, Reconstructive={np.mean(recon_final):.5f}')
+    print(f'Avg AUC: Predictive={np.mean(pred_auc):.5f}, Reconstructive={np.mean(recon_auc):.5f}')
+
+
+    print(f'\n\n\n{bar}\nGeneralization (Val/Train loss ratios normalized by initial loss):')
+    for (dataset_index, model_type), model_stats in stats_per_model.items():
+        total_train = np.sum(model_stats.data['cost_history'], axis=1)
+        train_initial = float(total_train[0]); train_final = float(total_train[-1])
+        val_final = float(np.mean(np.sum(model_stats.data['validation_costs'][:, 1:], axis=1)))
+        ratio = (val_final/num_validation_series) / (train_final/num_training_series)
+        print(f'{model_type.upper()}: Final Normalized Validation/Training = {ratio:.5f}')
 
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
@@ -721,26 +837,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     random.shuffle(individual_datasets_to_plot)
     individual_datasets_to_plot = individual_datasets_to_plot[:max(len(individual_datasets_to_plot)//10, 1)]
 
-    def get_mean_training_metric_history(metric_key):
-        # aggregate history for each model type across datasets
-        history_by_model_type = {m: [] for m in MODEL_TYPES}
-        for (dataset_index, model_type), model_stats in stats_per_model.items():
-            history_by_model_type[model_type].append(model_stats.data[metric_key])
-        mean_history_by_model_type = {}
-        for (model_type, history_list) in history_by_model_type.items():
-            history_arrays = np.array(history_list) # shape: (num_runs, num_epochs)
-            if history_arrays.ndim >= 2 and history_arrays.shape[0] > 1:
-                mean_history = history_arrays.mean(axis=0)
-            elif history_arrays.shape[0] == 1:
-                mean_history = history_arrays[0]
-            elif args.test:
-                print(f'WARNING: Missing {model_type} {metric_key}')
-                continue
-            else:
-                raise Exception(f'Unable to find any {model_type} model {metric_key}')
-            mean_history_by_model_type[model_type] = mean_history
-        return mean_history_by_model_type
-
     def plot_training_metric_histories(metric_history_lambda, metric_description, mean_history_by_model_type):
         figure, axis = plt.subplots()
         lines_by_type = {}
@@ -809,18 +905,12 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         figure.savefig(save_filepath)
         print(f'Saved mean {metric_description} history plot to {save_filepath}')
 
-    mean_cost_history_per_model_type = get_mean_training_metric_history('cost_history')
-    sample = next(iter(mean_cost_history_per_model_type.values()))
-    num_epochs, num_loss_types = sample.shape
-
     # plot cost history for each cost part separately
     for cost_part_index in range(num_loss_types):
         loss_label = LOSS_TYPES[cost_part_index]
         metric_description = f'{loss_label} Loss'
         mean_history_per_model_type = {k: v[:, cost_part_index] for k,v in mean_cost_history_per_model_type.items()}
         plot_training_metric_histories(lambda data: data['cost_history'][:, cost_part_index], metric_description, mean_history_per_model_type)
-
-    mean_gradient_norm_history_per_model_type = get_mean_training_metric_history('gradient_norm_history')
     plot_training_metric_histories(lambda data: data['gradient_norm_history'], 'Gradient Norms', mean_gradient_norm_history_per_model_type)
     plt.show()
 
