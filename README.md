@@ -373,24 +373,17 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CTE  |  0.453| 0.004| 2.735|
   |CRTE |  0.519| 0.004| 5.351|
 
-  - For models with and without "q" respectively:
-    - Correlation(Pearson vs loss) across models: -0.55826
-    - Correlation(MSE vs loss) across models: 0.82893
-    - Correlation(Pearson vs loss) across models: 0.94764
-    - Correlation(MSE vs loss) across models: 0.35073
-  - For models with and without "r" respectively:
-    - Correlation(Pearson vs loss) across models: 0.98694
-    - Correlation(MSE vs loss) across models: -0.99701
-    - Correlation(Pearson vs loss) across models: 0.97939
-    - Correlation(MSE vs loss) across models: -0.96231
-  - For models with and without "ae" respectively:
-    - Correlation(Pearson vs loss) across models: 0.92486
-    - Correlation(MSE vs loss) across models: -0.84731
-    - Correlation(Pearson vs loss) across models: 0.89549
-    - Correlation(MSE vs loss) across models: -0.72923
-  - For all models:
-    - Correlation(Pearson vs loss) across models: 0.90680
-    - Correlation(MSE vs loss) across models: -0.78514
+- Pearson correlation coefficients of values from above:
+
+  Group | Pearson vs Loss | MSE vs Loss
+  -----|-----|-----
+  Quantum        | −0.55826 |  0.82893
+  Classical      |  0.94764 |  0.35073
+  Recurrent      |  0.98694 | −0.99701
+  Non-recurrent  |  0.97939 | −0.96231
+  Reconstructive |  0.92486 | −0.84731
+  Predictive     |  0.89549 | −0.72923
+  All models     |  0.90680 | −0.78514
 ### Generalization
 - Validation / Training loss ratios normalized by number of series per partition:
 
