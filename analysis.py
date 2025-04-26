@@ -795,7 +795,6 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
     print('\n\n\n' + bar)
 
-    # TODO: need to plot classical and quantum losses sepoarately due to scale differences
     for (i_key, dependent_keys) in MAPPINGS_TO_PLOT.items():
         for d_key in dependent_keys:
             x_label = i_key.replace('_', ' ').title()
