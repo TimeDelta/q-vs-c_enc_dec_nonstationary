@@ -658,13 +658,16 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         corr, mse = complexity_match[m_type]
         val_loss = final_val_loss[m_type]
         print(f'{m_type.upper()}\t{corr:.5f}\t{mse:.5f}\t{val_loss:.5f}')
-    corr_vals = [complexity_match[m][0] for m in MODEL_TYPES]
-    mse_vals  = [complexity_match[m][1] for m in MODEL_TYPES]
-    loss_vals = [final_val_loss[m]      for m in MODEL_TYPES]
-    corr_vs_loss = np.corrcoef(corr_vals, loss_vals)[0, 1]
-    mse_vs_loss  = np.corrcoef(mse_vals,  loss_vals)[0, 1]
-    print(f'Correlation(corr_vs_loss) across models: {corr_vs_loss:.5f}')
-    print(f'Correlation(mse_vs_loss) across models: {mse_vs_loss:.5f}')
+    for filter_str in ['q', 'r', 'ae']:
+        print(f'For models with and without "{filter_str}"')
+        for condition in [lambda m: filter_str in m, lambda m: filter_str not in m]:
+            corr_vals = [complexity_match[m][0] for m in MODEL_TYPES if condition(m)]
+            mse_vals  = [complexity_match[m][1] for m in MODEL_TYPES if condition(m)]
+            loss_vals = [final_val_loss[m]      for m in MODEL_TYPES if condition(m)]
+            corr_vs_loss = np.corrcoef(corr_vals, loss_vals)[0, 1]
+            mse_vs_loss  = np.corrcoef(mse_vals,  loss_vals)[0, 1]
+            print(f'  Correlation(corr_vs_loss) across models: {corr_vs_loss:.5f}')
+            print(f'  Correlation(mse_vs_loss) across models: {mse_vs_loss:.5f}')
 
 
     print(f'\n\n\n{bar}\nPrediction vs Reconstruction\n{bar}')
