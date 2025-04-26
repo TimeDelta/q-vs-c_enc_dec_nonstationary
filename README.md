@@ -393,6 +393,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - Generalization (Val/Train loss ratios normalized by number of series per partition):
 
   Model | Min | Mean | Max
+  ---|---|---|---
   QAE | 0.4350641694234518 | 0.5547538384854458 | 0.769459149698868
   QRAE | 0.4354516628452704 | 0.5546730284144534 | 0.7665008551171881
   QTE | 0.4339883504241621 | 0.5548788644563672 | 0.7696376134222728
