@@ -344,6 +344,53 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     |---|----|---|----|---|----|---|----|
     |0.1366|0.0391|0.1157|0.0391|0.0010|0.0393|0.0009|0.0384|
 
+- Series/Latent Complexity Fidelity vs Validation Loss:
+
+  |Model|Pearson| MSE  |Val Loss|
+  |-----|-------|------|------|
+  |QAE  |  0.039| 0.084| 1.070|
+  |QRAE | -0.084| 0.131| 1.074|
+  |QTE  | -0.004| 0.061| 1.067|
+  |QRTE |  0.038| 0.145| 1.071|
+  |CAE  |  0.431| 0.004| 3.147|
+  |CRAE |  0.518| 0.004| 5.509|
+  |CTE  |  0.453| 0.004| 2.735|
+  |CRTE |  0.519| 0.004| 5.351|
+  - For models with and without "q" respectively:
+    - Correlation(corr_vs_loss) across models: -0.55826
+    - Correlation(mse_vs_loss) across models: 0.82893
+    - Correlation(corr_vs_loss) across models: 0.94764
+    - Correlation(mse_vs_loss) across models: 0.35073
+  - For models with and without "r" respectively:
+    - Correlation(corr_vs_loss) across models: 0.98694
+    - Correlation(mse_vs_loss) across models: -0.99701
+    - Correlation(corr_vs_loss) across models: 0.97939
+    - Correlation(mse_vs_loss) across models: -0.96231
+  - For models with and without "ae" respectively:
+    - Correlation(corr_vs_loss) across models: 0.92486
+    - Correlation(mse_vs_loss) across models: -0.84731
+    - Correlation(corr_vs_loss) across models: 0.89549
+    - Correlation(mse_vs_loss) across models: -0.72923
+  - For all models:
+    - Correlation(corr_vs_loss) across models: 0.90680
+    - Correlation(mse_vs_loss) across models: -0.78514
+
+- Prediction vs Reconstruction:
+
+  |Model Type|Initial Slope|Final Cost|AUC|
+  |----|---------|--------|---------|
+  |QAE | -0.00000| 0.19515|  6.04960|
+  |QRAE|  0.00049| 0.19590|  6.07370|
+  |QTE | -0.00000| 0.19463|  6.03356|
+  |QRTE|  0.00048| 0.19537|  6.05742|
+  |CAE |  0.04469| 0.59578| 29.08676|
+  |CRAE| -0.00325| 1.03308| 32.45470|
+  |CTE |  0.04662| 0.52061| 27.38971|
+  |CRTE| -0.00439| 1.00555| 31.16774|=
+  - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
+  - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
+  - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
+
 ## Discussion
 Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
 The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
