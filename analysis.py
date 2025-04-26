@@ -710,11 +710,11 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     print(f'Avg AUC: Predictive={np.mean(pred_auc):.5f}, Reconstructive={np.mean(recon_auc):.5f}')
 
 
-    print(f'\n\n\n{bar}\nGeneralization (Val/Train loss ratios normalized by initial loss):')
+    print(f'\n\n\n{bar}\nGeneralization (Val/Train loss ratios normalized by number of series):')
     ratios = {}
     for (dataset_index, model_type), model_stats in stats_per_model.items():
         total_train = np.sum(model_stats.data['cost_history'], axis=1)
-        train_initial = float(total_train[0]); train_final = float(total_train[-1])
+        train_final = float(total_train[-1])
         val_final = float(np.mean(np.sum(model_stats.data['validation_costs'][:, 1:], axis=1)))
         ratio = (val_final/num_validation_series) / (train_final/num_training_series)
         ratios.setdefault(model_type, []).append(ratio)
