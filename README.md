@@ -357,23 +357,23 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CTE  |  0.453| 0.004| 2.735|
   |CRTE |  0.519| 0.004| 5.351|
   - For models with and without "q" respectively:
-    - Correlation(corr_vs_loss) across models: -0.55826
-    - Correlation(mse_vs_loss) across models: 0.82893
-    - Correlation(corr_vs_loss) across models: 0.94764
-    - Correlation(mse_vs_loss) across models: 0.35073
+    - Correlation(Pearson vs loss) across models: -0.55826
+    - Correlation(MSE vs loss) across models: 0.82893
+    - Correlation(Pearson vs loss) across models: 0.94764
+    - Correlation(MSE vs loss) across models: 0.35073
   - For models with and without "r" respectively:
-    - Correlation(corr_vs_loss) across models: 0.98694
-    - Correlation(mse_vs_loss) across models: -0.99701
-    - Correlation(corr_vs_loss) across models: 0.97939
-    - Correlation(mse_vs_loss) across models: -0.96231
+    - Correlation(Pearson vs loss) across models: 0.98694
+    - Correlation(MSE vs loss) across models: -0.99701
+    - Correlation(Pearson vs loss) across models: 0.97939
+    - Correlation(MSE vs loss) across models: -0.96231
   - For models with and without "ae" respectively:
-    - Correlation(corr_vs_loss) across models: 0.92486
-    - Correlation(mse_vs_loss) across models: -0.84731
-    - Correlation(corr_vs_loss) across models: 0.89549
-    - Correlation(mse_vs_loss) across models: -0.72923
+    - Correlation(Pearson vs loss) across models: 0.92486
+    - Correlation(MSE vs loss) across models: -0.84731
+    - Correlation(Pearson vs loss) across models: 0.89549
+    - Correlation(MSE vs loss) across models: -0.72923
   - For all models:
-    - Correlation(corr_vs_loss) across models: 0.90680
-    - Correlation(mse_vs_loss) across models: -0.78514
+    - Correlation(Pearson vs loss) across models: 0.90680
+    - Correlation(MSE vs loss) across models: -0.78514
 
 - Prediction vs Reconstruction:
 
@@ -390,6 +390,17 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
   - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
   - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
+- Generalization (Val/Train loss ratios normalized by number of series per partition):
+
+  Model | Min | Mean | Max
+  QAE | 0.4350641694234518 | 0.5547538384854458 | 0.769459149698868
+  QRAE | 0.4354516628452704 | 0.5546730284144534 | 0.7665008551171881
+  QTE | 0.4339883504241621 | 0.5548788644563672 | 0.7696376134222728
+  QRTE | 0.4343748317754101 | 0.5547969550324031 | 0.7666825483370352
+  CAE | 0.3989963583607772 | 0.5346331264489401 | 0.6819611138231956
+  CRAE | 0.4049732191049928 | 0.5389040513871973 | 0.6753386332085912
+  CTE | 0.3931151137661798 | 0.5336285601469368 | 0.6988113307483387
+  CRTE | 0.4053806543771417 | 0.5393152840260769 | 0.6882955050088161
 
 ## Discussion
 Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
