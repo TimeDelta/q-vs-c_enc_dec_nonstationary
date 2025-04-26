@@ -386,7 +386,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CAE |  0.04469| 0.59578| 29.08676|
   |CRAE| -0.00325| 1.03308| 32.45470|
   |CTE |  0.04662| 0.52061| 27.38971|
-  |CRTE| -0.00439| 1.00555| 31.16774|=
+  |CRTE| -0.00439| 1.00555| 31.16774|
   - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
   - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
   - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
