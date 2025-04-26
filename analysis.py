@@ -711,12 +711,18 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
 
     print(f'\n\n\n{bar}\nGeneralization (Val/Train loss ratios normalized by initial loss):')
+    ratios = {}
     for (dataset_index, model_type), model_stats in stats_per_model.items():
         total_train = np.sum(model_stats.data['cost_history'], axis=1)
         train_initial = float(total_train[0]); train_final = float(total_train[-1])
         val_final = float(np.mean(np.sum(model_stats.data['validation_costs'][:, 1:], axis=1)))
         ratio = (val_final/num_validation_series) / (train_final/num_training_series)
-        print(f'{model_type.upper()}: Final Normalized Validation/Training = {ratio:.5f}')
+        ratios.setdefault(model_type, []).append(ratio)
+    for model_type in MODEL_TYPES:
+        print(f'  {model_type.upper()}: Final Normalized Validation/Training ratios = {ratios[model_type]}')
+        print(f'    Min:', np.min(ratios[model_type]))
+        print(f'    Mean:', np.mean(ratios[model_type]))
+        print(f'    Max:', np.max(ratios[model_type]))
 
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
