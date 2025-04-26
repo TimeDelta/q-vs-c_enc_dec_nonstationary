@@ -875,7 +875,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             figure.canvas.draw_idle()
         figure.canvas.mpl_connect("pick_event", _on_pick_sample)
 
-        save_filepath = os.path.join(data_dir, f'{run_prefix}_sample_{metric_description.replace(" ", "_").lower()}.png')
+        save_filepath = os.path.join(data_dir, f'{run_prefix}sample_{metric_description.replace(" ", "_").lower()}.png')
         figure.savefig(save_filepath)
         print(f'Saved sample {metric_description} histories plot to {save_filepath}')
 
@@ -903,7 +903,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             figure.canvas.draw_idle()
         figure.canvas.mpl_connect("pick_event", on_pick_mean)
 
-        save_filepath = os.path.join(data_dir, f'{run_prefix}_mean_{metric_description.replace(" ", "_").lower()}.png')
+        save_filepath = os.path.join(data_dir, f'{run_prefix}mean_{metric_description.replace(" ", "_").lower()}.png')
         figure.savefig(save_filepath)
         print(f'Saved mean {metric_description} history plot to {save_filepath}')
 
