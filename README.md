@@ -197,6 +197,20 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - All quantum models consistently chose the first two qubits as the trash feature indices at every state in each validation series as seen in the [BTFP index histograms](./images/results/btfp_histograms/).
 - The classical models in contrast showed much more flexibility in their chosen trash indices.
 ### Prediction vs Reconstruction
+  |Model Type|Initial Slope|Final Cost|AUC|
+  |----|---------|--------|---------|
+  |QAE | -0.00000| 0.19515|  6.04960|
+  |QRAE|  0.00049| 0.19590|  6.07370|
+  |QTE | -0.00000| 0.19463|  6.03356|
+  |QRTE|  0.00048| 0.19537|  6.05742|
+  |CAE |  0.04469| 0.59578| 29.08676|
+  |CRAE| -0.00325| 1.03308| 32.45470|
+  |CTE |  0.04662| 0.52061| 27.38971|
+  |CRTE| -0.00439| 1.00555| 31.16774|
+
+  - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
+  - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
+  - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
 ### Reccurence
 ### Loss Landscape Similarities
 - Gradient Norms
@@ -344,7 +358,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     |---|----|---|----|---|----|---|----|
     |0.1366|0.0391|0.1157|0.0391|0.0010|0.0393|0.0009|0.0384|
 
-- Series/Latent Complexity Fidelity vs Validation Loss:
+### Series/Latent Complexity Fidelity vs Validation Loss:
 
   |Model|Pearson| MSE  |Val Loss|
   |-----|-------|------|------|
@@ -356,6 +370,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CRAE |  0.518| 0.004| 5.509|
   |CTE  |  0.453| 0.004| 2.735|
   |CRTE |  0.519| 0.004| 5.351|
+
   - For models with and without "q" respectively:
     - Correlation(Pearson vs loss) across models: -0.55826
     - Correlation(MSE vs loss) across models: 0.82893
@@ -374,23 +389,8 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - For all models:
     - Correlation(Pearson vs loss) across models: 0.90680
     - Correlation(MSE vs loss) across models: -0.78514
-
-- Prediction vs Reconstruction:
-
-  |Model Type|Initial Slope|Final Cost|AUC|
-  |----|---------|--------|---------|
-  |QAE | -0.00000| 0.19515|  6.04960|
-  |QRAE|  0.00049| 0.19590|  6.07370|
-  |QTE | -0.00000| 0.19463|  6.03356|
-  |QRTE|  0.00048| 0.19537|  6.05742|
-  |CAE |  0.04469| 0.59578| 29.08676|
-  |CRAE| -0.00325| 1.03308| 32.45470|
-  |CTE |  0.04662| 0.52061| 27.38971|
-  |CRTE| -0.00439| 1.00555| 31.16774|
-  - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
-  - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
-  - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
-- Generalization (Val/Train loss ratios normalized by number of series per partition):
+### Generalization
+- Validation / Training loss ratios normalized by number of series per partition:
 
   Model | Min | Mean | Max
   ---|---|---|---
