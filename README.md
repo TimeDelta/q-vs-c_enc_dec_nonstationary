@@ -198,9 +198,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 - The classical models in contrast showed much more flexibility in their chosen trash indices.
 ### Prediction vs Reconstruction
 ### Reccurence
-Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
-The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
-The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 ### Loss Landscape Similarities
 - Gradient Norms
   - Due to a bug with saving the gradient norm history during training, these results are not available
@@ -348,6 +345,9 @@ The fact that the recurrent models have nonzero values is due to a literal pertu
     |0.1366|0.0391|0.1157|0.0391|0.0010|0.0393|0.0009|0.0384|
 
 ## Discussion
+Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
+The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
+The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 ### Sources of Error
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
 The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
