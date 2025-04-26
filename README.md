@@ -16,6 +16,8 @@
   - [Prediction vs Reconstruction](#prediction-vs-reconstruction)
   - [Recurrence](#recurrence)
   - [Loss Landscape Similarities](#loss-landscape-similarities)
+  - [Series/Latent Complexity Fidelity](#serieslatent-complexity-fidelity)
+  - [Generalization](#generalization)
 - [Discussion](#discussion)
   - [Sources of Error](#sources-of-error)
 - [Conclusion](#conclusion)
@@ -358,9 +360,9 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     |---|----|---|----|---|----|---|----|
     |0.1366|0.0391|0.1157|0.0391|0.0010|0.0393|0.0009|0.0384|
 
-### Series/Latent Complexity Fidelity vs Validation Loss:
+### Series/Latent Complexity Fidelity
 
-  |Model|Pearson| MSE  |Val Loss|
+  |Model|Pearson| MSE  |Validation Loss|
   |-----|-------|------|------|
   |QAE  |  0.039| 0.084| 1.070|
   |QRAE | -0.084| 0.131| 1.074|
