@@ -106,6 +106,13 @@ Unfortunately, this necessarily breaks the enforcement of unitarity on each indi
 *Source: Stanford Exploration Project, “Givens Rotations,” Stanford University, December 18, 1997. [https://sepwww.stanford.edu/data/media/public/docs/sep70/steve2/paper_html/node2.html](https://sepwww.stanford.edu/data/media/public/docs/sep70/steve2/paper_html/node2.html)*
 ![Figure figure_num_a: Influence of Each Free Angle Parameter in the Final Weight Matrix](./images/givens-rotation-param-influence.png)
 
+```
+{θ0,θ1,θ2,θ3} | {θ0,θ1} | {θ0,θ1,θ2} | {θ0,θ1,θ2,θ3}
+{θ0,θ1,θ2,θ3} | {θ0,θ1} | {θ0,θ1,θ2} | {θ0,θ1,θ2,θ3}
+{θ1,θ2,θ3}    | {θ1}    | {θ1,θ2}    | {θ1,θ2,θ3}
+{θ2,θ3}       | {}      | {θ2}       | {θ2,θ3}
+```
+
 While this "coupling" is not a perfect analogue to the quantum architecture even beyond the forced break in parity — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations.
 This engineered coupling mimics, to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement.
 In the Banded givens rotations parameterization, the coupling is a consequence of the mapping process itself.
