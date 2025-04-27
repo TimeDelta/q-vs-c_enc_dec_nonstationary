@@ -575,41 +575,46 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
         # compute PSD over high frequency 1st / 2nd derivatives to determine
         # "high" frequency cutoff threshold for each derivative order
+        # use comparison groups (recurrent vs not, quantum vs classical,
+        # predictive vs reconstructive) and compute separately for each group
         energy_cutoff_ratio = 0.95
         for derivative_type in ['first', 'second']:
-            # compute aggregated cumulative energy distribution
-            aggregated_thresholds = {}
-            aggregated_power = None
-            for model_type in MODEL_TYPES: # threshold is the same across model types
-                fft_result = cache[f'fft_{derivative_type}'][model_type]
-                power_spectrum = np.abs(fft_result) ** 2
-                if aggregated_power is None:
-                    aggregated_power = power_spectrum.copy()
-                else:
-                    aggregated_power += power_spectrum
-            sorted_indices = np.argsort(np.abs(frequencies))
-            sorted_freqs = np.abs(frequencies)[sorted_indices]
-            sorted_power = aggregated_power[sorted_indices]
-            cumulative_energy = np.cumsum(sorted_power)
-            total_energy = cumulative_energy[-1]
+            print(f"\n--- {derivative_type.title()} Derivative Groups ---")
+            for filter_str in ['q', 'r', 'ae']:
+                for has_filter in (True, False):
+                    group_model_types = [m for m in MODEL_TYPES if (filter_str in m) is has_filter]
+                    label = f'WITH "{filter_str}"' if has_filter else f'WITHOUT "{filter_str}"'
+                    print(f"\nGroup {label}: {group_model_types}")
 
-            # find frequency such that energy_cutoff_ratio of energy is below it
-            dynamic_threshold_index = np.searchsorted(cumulative_energy, energy_cutoff_ratio * total_energy)
-            threshold = sorted_freqs[dynamic_threshold_index]
-            print(f'  High Frequency {derivative_type.title()} Derivative Threshold (based on {int(100*energy_cutoff_ratio)}% energy cutoff ratio): {threshold:.4f}')
+                    # compute aggregated cumulative energy distribution
+                    aggregated_power = None
+                    for model_type in group_model_types:
+                        fft_result = cache[f'fft_{derivative_type}'][model_type]
+                        power_spectrum = np.abs(fft_result) ** 2
+                        if aggregated_power is None:
+                            aggregated_power = power_spectrum.copy()
+                        else:
+                            aggregated_power += power_spectrum
 
-            # compute the high-frequency energy ratio
-            hf_energy_uniform = {}
-            for model_type in MODEL_TYPES:
-                hf_energy_uniform[model_type] = {}
-                fft_result = cache[f'fft_{derivative_type}'][model_type]
-                power_spectrum = np.abs(fft_result) ** 2
-                high_freq_mask = np.abs(frequencies) > threshold
-                high_freq_energy = np.sum(power_spectrum[high_freq_mask])
-                total_energy = np.sum(power_spectrum)
-                hf_ratio = high_freq_energy / total_energy if total_energy != 0 else np.nan
-                hf_energy_uniform[model_type] = hf_ratio
-                print(f'    Model {model_type.upper()}: High Frequency Energy Ratio = {hf_ratio:.4f}')
+                    sorted_indices   = np.argsort(np.abs(frequencies))
+                    sorted_freqs = np.abs(frequencies)[sorted_indices]
+                    sorted_power = aggregated_power[sorted_indices]
+                    cumulative_energy = np.cumsum(sorted_power)
+                    total_energy = cumulative_energy[-1]
+
+                    # find frequency such that energy_cutoff_ratio of energy is below it
+                    dynamic_threshold_index = np.searchsorted(cumulative_energy, energy_cutoff_ratio * total_energy)
+                    threshold = sorted_freqs[dynamic_threshold_index]
+                    print(f'  High Frequency {derivative_type.title()} Derivative Threshold (based on {int(100*energy_cutoff_ratio)}% energy cutoff ratio): {threshold:.4f}')
+
+                    # compute the high-frequency energy ratio
+                    hf_ratios = {}
+                    for model_type in group_model_types:
+                        power_spectrum = np.abs(cache[f'fft_{derivative_type}'][model_type]) ** 2
+                        high_freq_mask = np.abs(frequencies) > threshold
+                        hf_energy = np.sum(power_spectrum[high_freq_mask])
+                        print(f"    {model_type}: HF_ratio = {hf_energy / np.sum(power_spectrum):.4f}")
+
     for cost_part_index in range(num_loss_types):
         label = f'{LOSS_TYPES[cost_part_index]} Loss Analysis'
         array_keys = ('history', 'first_derivatives', 'second_derivatives')
