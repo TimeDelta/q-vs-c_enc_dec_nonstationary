@@ -874,9 +874,12 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         }
 
         def _on_pick_sample(event):
+            print('abc')
             handle = event.artist
             group  = handle_map[handle]
+            print(group)
             new_vis = not group[0].get_visible()
+            print(new_vis)
             for ln in group:
                 ln.set_visible(new_vis)
             handle.set_alpha(1.0 if new_vis else 0.2)
@@ -887,14 +890,14 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         figure.savefig(save_filepath)
         print(f'Saved sample {metric_description} histories plot to {save_filepath}')
 
-        figure, axis = plt.subplots()
+        figure2, axis2 = plt.subplots()
         mean_lines = []
         for model_type, history in mean_history_by_model_type.items():
-            line, = axis.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            line, = axis2.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
             mean_lines.append(line)
-        axis.set_xlabel('Epoch')
-        axis.set_ylabel(f'Mean {metric_description}')
-        axis.set_title(f'Mean {metric_description} History per Model Type')
+        axis2.set_xlabel('Epoch')
+        axis2.set_ylabel(f'Mean {metric_description}')
+        axis2.set_title(f'Mean {metric_description} History per Model Type')
 
         legend = plt.legend(loc='best')
         legend_handles = legend.get_lines()
@@ -908,11 +911,11 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             vis = not line.get_visible()
             line.set_visible(vis)
             handle.set_alpha(1.0 if vis else 0.2)
-            figure.canvas.draw_idle()
-        figure.canvas.mpl_connect("pick_event", on_pick_mean)
+            figure2.canvas.draw_idle()
+        figure2.canvas.mpl_connect("pick_event", on_pick_mean)
 
         save_filepath = os.path.join(data_dir, f'{run_prefix}mean_{metric_description.replace(" ", "_").lower()}.png')
-        figure.savefig(save_filepath)
+        figure2.savefig(save_filepath)
         print(f'Saved mean {metric_description} history plot to {save_filepath}')
 
     # plot cost history for each cost part separately
