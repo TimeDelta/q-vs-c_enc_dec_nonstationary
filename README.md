@@ -152,6 +152,7 @@ All models are trained using an ADAM optimizer together with finite‑difference
 A truncated version of finite differences (only single, shared, calculation for first point in all gradient calculations for that epoch) was used to increase training speed.
 For reproducability, permanent teacher forcing is used inside the cost functions (instead of using a linearly increasing probability of dealing with their own noise).
 Early‑stage flexibility is attained via a linearly increasing BTFP weight based on percentage of total epochs elapsed.
+This allows the model to learn how to either reconstruct or predict before it learns to compress.
 Trainable parameters are initialized from a uniform distribution in \([-π, π]\), and the first- and second-moment vectors (moment1, moment2) are set to zero.
 Finally, `np.random.seed(RANDOM_SEED)` is set before each model training to ensure consistent initialization across runs.
 
@@ -403,6 +404,8 @@ Recurrence shows up as the main indicator of mode (based on line of best fit slo
 The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
 The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 - Pearson correlation coefficients between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE
+- All quantum models showed higher validation to training loss ratio than their classical counterparts, suggersting poorer generalisation as predicted.
+- With the exceptions of LZC for QRAE, MPE for QTE and DE for QRAE and QTE, all model types show positive correlation between dataset and model latent complexity metric values.
 ### Sources of Error
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
 The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
