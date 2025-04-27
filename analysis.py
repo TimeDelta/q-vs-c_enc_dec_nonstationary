@@ -874,12 +874,9 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         }
 
         def _on_pick_sample(event):
-            print('abc')
             handle = event.artist
             group  = handle_map[handle]
-            print(group)
             new_vis = not group[0].get_visible()
-            print(new_vis)
             for ln in group:
                 ln.set_visible(new_vis)
             handle.set_alpha(1.0 if new_vis else 0.2)
