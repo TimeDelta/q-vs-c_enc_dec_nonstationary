@@ -96,7 +96,7 @@ In the classical architecture, each block is a [RingGivensRotationLayer](./model
 Unfortunately, due to dimensionality constraints, it is not possible to maintain perfect transformational parity with the quantum ansatz.
 This experiment breaks that parity by not enforcing the special orthogonal (SO) Lie group for the per-feature rotations but still maintains global SO adherance for the final weight matrix.
 SO is a subgroup of the unitary (U) Lie group (lies inside it's manifold since the complex part is 0).
-It is well documented that Givens matrices have the U Lie group (Givens; 1958).
+It is well documented that Givens matrices (see Figure figure_num_b) have the U Lie group (Givens; 1958).
 This layer construction uses each free parameter as an angle in a n/2 × n/2 Givens matrix and constructs unique rotations for each feature (as in the quantum ansatz).
 Importantly, the SO group is preserved under matrix multiplication (Golub, Van Loan; 2013).
 This allows the use of individual n/2×n/2 SO matrices (one per feature) embedded along the diagonal of the full-dimensional identity matrix in a banded fashion, which most closely resembles ring entanglement in the final linear layer weight matrix (see [definition of planes in a ring](./models.py#L192) and Figure figure_num_a below) to be multiplied together while still restricting to the SO group at the global level.
@@ -172,11 +172,11 @@ The maximum time delay is calculated as `max(center_point + 1/20 * sequence_leng
   - The scale parameter is set to 3 in order to ensure that (Wang et al.; 2019).
   - See [implementation](./analysis.py#L229) for further details.
 #### Metric Normalization
-For comparison across metrics with different scales, the normalization used is specific to each metric:
+For comparison across metrics with different scales, theoretical maximum normalization is used for all metrics.
 - HE: No normalization necessary because it's already limited to [0,1] by definition.
-- MPE: Theoretical maximum normalization is used, which divides by `log2(order!)`.
-- LZC: Theoretical maximum normalization is used, which calculates the maximum as the sequence length divided by the log of (the sequence length) in base (number of unique symbols).
-- DE: Theoretical maximum normalization is used, which simply divides by the log of the number of unique symbols in the discretized signal.
+- MPE: Maximum is `log2(order!)` (Kilpua et al; 2024).
+- LZC: Maximum is the sequence length divided by the log of (the sequence length) in base (number of unique symbols) (Kaspar, Schuster; 1987).
+- DE: Maximum is the log of the number of unique symbols in the discretized signal.
 #### Quantization Methods
 When extending a discrete metric to cover continuous data (LZC and DE), multiple quantization methods are used to improve conclusion robustness.
 Specifically, the included methods are:
@@ -615,8 +615,33 @@ The corrected values are used in analysis, however, so the effect of this is inf
   PubMedID       = {33266886},
   ISSN           = {1099-4300},
   ABSTRACT       = {Multi-scale permutation entropy (MPE) is a statistic indicator to detect nonlinear dynamic changes in time series, which has merits of high calculation efficiency, good robust ability, and independence from prior knowledge, etc. However, the performance of MPE is dependent on the parameter selection of embedding dimension and time delay. To complete the automatic parameter selection of MPE, a novel parameter optimization strategy of MPE is proposed, namely optimized multi-scale permutation entropy (OMPE). In the OMPE method, an improved Cao method is proposed to adaptively select the embedding dimension. Meanwhile, the time delay is determined based on mutual information. To verify the effectiveness of OMPE method, a simulated signal and two experimental signals are used for validation. Results demonstrate that the proposed OMPE method has a better feature extraction ability comparing with existing MPE methods.},
-  DOI = {10.3390/e21020170}
+  DOI            = {10.3390/e21020170}
 }
+1. @article{PhysRevA.36.842,
+  author    = {Kaspar, F. and Schuster, H. G.},
+  title     = {Easily calculable measure for the complexity of spatiotemporal patterns},
+  year      = {1987},
+  journal   = {Phys. Rev. A},
+  volume    = {36},
+  issue     = {2},
+  pages     = {842--848},
+  numpages  = {0},
+  month     = {Jul},
+  publisher = {American Physical Society},
+  doi       = {10.1103/PhysRevA.36.842},
+  url       = { https://link.aps.org/doi/10.1103/PhysRevA.36.842 }
+}
+1. @article{Kilpua2024,
+  author  = {Kilpua, E. K. J. and Good, S. and Ala-Lahti, M. and Osmane, A. and Koikkalainen, V.},
+  title   = {Permutation entropy and complexity analysis of large-scale solar wind structures and streams},
+  year    = {2024},
+  journal = {Ann. Geophys.},
+  volume  = {42},
+  pages   = {163--177},
+  doi     = {10.5194/angeo-42-163-2024},
+  url     = { https://doi.org/10.5194/angeo-42-163-2024 }
+}
+
 
 
 ## Useful Commands
