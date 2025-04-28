@@ -391,16 +391,16 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 ### Series/Latent Complexity Fidelity
 - Bayesian Block Quantizer
 
-    |Model|Pearson| MSE  |Validation Loss|
-    |-----|-------|------|------|
-    |QAE  |  0.039| 0.084| 1.070|
-    |QRAE | -0.084| 0.131| 1.074|
-    |QTE  | -0.004| 0.061| 1.067|
-    |QRTE |  0.038| 0.145| 1.071|
-    |CAE  |  0.431| 0.004| 3.147|
-    |CRAE |  0.518| 0.004| 5.509|
-    |CTE  |  0.453| 0.004| 2.735|
-    |CRTE |  0.519| 0.004| 5.351|
+  |Model|Pearson| MSE  |Validation Loss|
+  |-----|-------|------|------|
+  |QAE  |  0.039| 0.084| 1.070|
+  |QRAE | -0.084| 0.131| 1.074|
+  |QTE  | -0.004| 0.061| 1.067|
+  |QRTE |  0.038| 0.145| 1.071|
+  |CAE  |  0.431| 0.004| 3.147|
+  |CRAE |  0.518| 0.004| 5.509|
+  |CTE  |  0.453| 0.004| 2.735|
+  |CRTE |  0.519| 0.004| 5.351|
 
   - Pearson correlation coefficients of values from above:
 
@@ -426,7 +426,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   | CTE   |  0.65182 |  0.00000   | 2.73496         |
   | CRTE  |  0.57465 |  0.00000   | 5.35108         |
 
-  - **Correlation coefficients of values from above**:
+  - Pearson correlation coefficients of values from above:
 
     | Group          | Pearson vs Loss | MSE vs Loss |
     |----------------|-----------------|-------------|
@@ -437,6 +437,30 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     | Reconstructive |  0.84683        | -0.86559    |
     | Predictive     |  0.75822        | -0.84063    |
     | **All models** |  0.79880        | -0.85282    |
+
+- HDBSCAN Quantizer
+  | Model | Pearson   |     MSE     | Validation Loss |
+  |-------|-----------|-------------|-----------------|
+  | QAE   | -0.00539  | 11.55860    | 1.06962         |
+  | QRAE  | -0.04677  |  8.84267    | 1.07379         |
+  | QTE   | -0.01047  | 10.58587    | 1.06682         |
+  | QRTE  | -0.04733  |  6.79822    | 1.07095         |
+  | CAE   |  0.99999  |  0.00011    | 3.14687         |
+  | CRAE  |  0.73157  |  3.97900    | 5.50897         |
+  | CTE   |  0.99999  |  0.00011    | 2.73496         |
+  | CRTE  |  0.72788  |  4.10027    | 5.35108         |
+
+  - Pearson correlation coefficients of values from above:
+
+    | Group          | Pearson vs Loss | MSE vs Loss |
+    |----------------|-----------------|-------------|
+    | Quantum        | -0.78336        | -0.50735    |
+    | Classical      | -0.99176        |  0.99107    |
+    | Recurrent      |  0.99975        | -0.93391    |
+    | Non-recurrent  |  0.98812        | -0.98615    |
+    | Reconstructive |  0.77486        | -0.67758    |
+    | Predictive     |  0.71851        | -0.53207    |
+    | **All models** |  0.74658        | -0.60454    |
 
 ### Generalization
 - Validation / Training loss ratios normalized by number of series per partition:
