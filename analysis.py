@@ -285,7 +285,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 lambda rows: np.mean([row[i+1] for row in rows])
             ) for i in range(len(LOSS_TYPES))
         },
-        'bottleneck_de': MODEL_MEAN_SUM_STAT_LAMBDAS,
+        'bottleneck_de': MODEL_MEAN_MEAN_STAT_LAMBDAS,
         'bottleneck_mw_global_entanglement': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_full_vn_entropy': MODEL_MEAN_SUM_STAT_LAMBDAS,
         'bottleneck_lzc': MODEL_MEAN_SINGLE_VALUE_STAT_LAMBDAS,
