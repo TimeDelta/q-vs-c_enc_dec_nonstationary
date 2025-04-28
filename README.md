@@ -114,7 +114,7 @@ For angle parameters θ, this is the exact boolean mask:
 {      θ2,θ3} | {     } | {      θ2} | {      θ2,θ3}
 ```
 
-While this "coupling" is not a perfect analogue to the quantum architecture even beyond the forced break in parity — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of correlation between the effects of each feature's rotations.
+While this "coupling" is not a perfect analogue to the quantum architecture even beyond the forced break in parity — since in a quantum system the qubits themselves are inherently correlated — it does allow a type of similarity between the effects of each feature's rotations.
 This engineered coupling mimics, to some extent, the way local gate parameters interact in quantum circuits, though it does not reproduce the full complexity of quantum entanglement.
 In the Banded givens rotations parameterization, the coupling is a consequence of the mapping process itself.
 In quantum entanglement, the coupling arises due to the physical evolution governed by the Hamiltonian of an interacting system and the tensor product structure of the Hilbert space.
@@ -389,29 +389,55 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 
 
 ### Series/Latent Complexity Fidelity
+- Bayesian Block Quantizer
 
-  |Model|Pearson| MSE  |Validation Loss|
-  |-----|-------|------|------|
-  |QAE  |  0.039| 0.084| 1.070|
-  |QRAE | -0.084| 0.131| 1.074|
-  |QTE  | -0.004| 0.061| 1.067|
-  |QRTE |  0.038| 0.145| 1.071|
-  |CAE  |  0.431| 0.004| 3.147|
-  |CRAE |  0.518| 0.004| 5.509|
-  |CTE  |  0.453| 0.004| 2.735|
-  |CRTE |  0.519| 0.004| 5.351|
+    |Model|Pearson| MSE  |Validation Loss|
+    |-----|-------|------|------|
+    |QAE  |  0.039| 0.084| 1.070|
+    |QRAE | -0.084| 0.131| 1.074|
+    |QTE  | -0.004| 0.061| 1.067|
+    |QRTE |  0.038| 0.145| 1.071|
+    |CAE  |  0.431| 0.004| 3.147|
+    |CRAE |  0.518| 0.004| 5.509|
+    |CTE  |  0.453| 0.004| 2.735|
+    |CRTE |  0.519| 0.004| 5.351|
 
-- Pearson correlation coefficients of values from above:
+  - Pearson correlation coefficients of values from above:
 
-  Group | Pearson vs Loss | MSE vs Loss
-  -----|-----|-----
-  Quantum        | −0.55826 |  0.82893
-  Classical      |  0.94764 |  0.35073
-  Recurrent      |  0.98694 | −0.99701
-  Non-recurrent  |  0.97939 | −0.96231
-  Reconstructive |  0.92486 | −0.84731
-  Predictive     |  0.89549 | −0.72923
-  All models     |  0.90680 | −0.78514
+    Group | Pearson vs Loss | MSE vs Loss
+    -----|-----|-----
+    Quantum        | −0.55826 |  0.82893
+    Classical      |  0.94764 |  0.35073
+    Recurrent      |  0.98694 | −0.99701
+    Non-recurrent  |  0.97939 | −0.96231
+    Reconstructive |  0.92486 | −0.84731
+    Predictive     |  0.89549 | −0.72923
+    **All models** |  0.90680 | −0.78514
+
+- Equal Bin Widths Quantizer
+  | Model | Pearson  |     MSE    | Validation Loss |
+  |-------|----------|------------|-----------------|
+  | QAE   |  0.15140 |  0.00001   | 1.06962         |
+  | QRAE  |  0.09074 |  0.00001   | 1.07379         |
+  | QTE   |  0.19481 |  0.00001   | 1.06682         |
+  | QRTE  | -0.02580 |  0.00001   | 1.07095         |
+  | CAE   |  0.64047 |  0.00000   | 3.14687         |
+  | CRAE  |  0.58430 |  0.00000   | 5.50897         |
+  | CTE   |  0.65182 |  0.00000   | 2.73496         |
+  | CRTE  |  0.57465 |  0.00000   | 5.35108         |
+
+  - **Correlation coefficients of values from above**:
+
+    | Group          | Pearson vs Loss | MSE vs Loss |
+    |----------------|-----------------|-------------|
+    | Quantum        | -0.57528        | -0.84489    |
+    | Classical      | -0.98940        |  0.96898    |
+    | Recurrent      |  0.98883        | -0.99702    |
+    | Non-recurrent  |  0.98323        | -0.98767    |
+    | Reconstructive |  0.84683        | -0.86559    |
+    | Predictive     |  0.75822        | -0.84063    |
+    | **All models** |  0.79880        | -0.85282    |
+
 ### Generalization
 - Validation / Training loss ratios normalized by number of series per partition:
 
