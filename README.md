@@ -285,18 +285,26 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CRAE| nan| nan| nan| nan| 0.581| 1.000| 0.595| 1.000|
   |CTE | nan| nan| nan| nan| 0.972| 0.595| 1.000| 0.596|
   |CRTE| nan| nan| nan| nan| 0.582| 1.000| 0.596| 1.000|
-  - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.0625
-    - High Frequency Energy Ratio
+  - High Frequency First Derivative Energy Ratios (based on 95% aggregated group energy cutoff ratio)
 
-    |QAE|QRAE|QTE|QRTE|CAE|CRAE|CTE|CRTE|
-    |---|----|---|----|---|----|---|----|
-    |nan|nan|nan|nan|0.0300|0.6422|0.0303|0.6843|
-  - High Frequency Second Derivative Threshold (based on 95% energy cutoff ratio): 0.2812
-    - High Frequency Energy Ratio
+    Group | QAE | QRAE | QTE | QRTE | CAE | CRAE | CTE | CRTE
+    -|-|-|-|-|-|-|-|-
+    Quantum | nan | nan | nan | nan | – | – | – | –
+    Classical | – | – | – | – | 0.0300 | 0.6422 | 0.0303 | 0.6843
+    Recurrent | – | nan | – | nan | – | 0.0351 | – | 0.0413
+    Feedforward | nan | – | nan | – | 0.0505 | – | 0.0493 | –
+    Reconstructive | nan | nan | – | – | 0.0300 | 0.6422 | – | –
+    Predictive | – | – | nan | nan | – | – | 0.0303 | 0.6843
+  - High Frequency Second Derivative Energy Ratios (based on 95% aggregated group energy cutoff ratio)
 
-    |QAE|QRAE|QTE|QRTE|CAE|CRAE|CTE|CRTE|
-    |---|----|---|----|---|----|---|----|
-    |nan|nan|nan|nan|0.0003|0.0431|0.0006|0.0428|
+    Group | QAE | QRAE | QTE | QRTE | CAE | CRAE | CTE | CRTE
+    -|-|-|-|-|-|-|-|-
+    Quantum | nan | nan | nan | nan | – | – | – | –
+    Classical | – | – | – | – | 0.0003 | 0.0431 | 0.0006 | 0.0428
+    Recurrent | – | nan | – | nan | – | 0.0431 | – | 0.0428
+    Feedforward | nan | – | nan | – | 0.0289 | – | 0.0456 | –
+    Reconstructive | nan | nan | – | – | 0.0003 | 0.0431 | – | –
+    Predictive | – | – | nan | nan | – | – | 0.0006 | 0.0428
 - BTFP
   - Pairwise Pearson Correlation Coefficients for Raw Histories:
 
@@ -356,18 +364,29 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   |CRAE| 0.345| 1.000| 0.339| 1.000| 0.518| 1.000| 0.497| 1.000|
   |CTE | 0.146| 0.498| 0.178| 0.498| 0.949| 0.497| 1.000| 0.494|
   |CRTE| 0.341| 0.999| 0.336| 0.999| 0.512| 1.000| 0.494| 1.000|
-  - High Frequency First Derivative Threshold (based on 95% energy cutoff ratio): 0.1250
+  - High Frequency First Derivative Energy Ratios (based on 95% aggregated group energy cutoff ratio)
     - High Frequency Energy Ratios
 
-    |QAE|QRAE|QTE|QRTE|CAE|CRAE|CTE|CRTE|
-    |---|----|---|----|---|----|---|----|
-    |0.9072|0.5235|0.9061|0.5235|0.0110|0.5168|0.0109|0.4585|
-  - High Frequency Second Derivative Threshold (based on 95% energy cutoff ratio): 0.2812
-    - High Frequency Energy Ratios
+    Group | QAE | QRAE | QTE | QRTE | CAE | CRAE | CTE | CRTE
+    -|-|-|-|-|-|-|-|-
+    Quantum | 0.0122 | 0.0361 | 0.0051 | 0.0361 | – | – | – | –
+    Classical | – | – | – | – | 0.0127 | 0.6121 | 0.0124 | 0.5450
+    Recurrent | – | 0.0361 | – | 0.0361 | – | 0.0401 | – | 0.0361
+    Feedforward | 0.9432 | – | 0.9290 | – | 0.0452 | – | 0.0434 | –
+    Reconstructive | 0.9133 | 0.6217 | – | – | 0.0127 | 0.6121 | – | –
+    Predictive | – | – | 0.9061 | 0.5235 | – | – | 0.0109 | 0.4585
+  - High Frequency Second Derivative Energy Ratios (based on 95% aggregated group energy cutoff ratio)
 
-    |QAE|QRAE|QTE|QRTE|CAE|CRAE|CTE|CRTE|
-    |---|----|---|----|---|----|---|----|
-    |0.1366|0.0391|0.1157|0.0391|0.0010|0.0393|0.0009|0.0384|
+    Group | QAE | QRAE | QTE | QRTE | CAE | CRAE | CTE | CRTE
+    -|-|-|-|-|-|-|-|-
+    Quantum | 0.1366 | 0.0391 | 0.1157 | 0.0391 | – | – | – | –
+    Classical | – | – | – | – | 0.0010 | 0.0393 | 0.0009 | 0.0384
+    Recurrent | – | 0.0391 | – | 0.0391 | – | 0.0393 | – | 0.0384
+    Feedforward | 0.9538 | – | 0.9432 | – | 0.0246 | – | 0.0411 | –
+    Reconstructive | 0.1366 | 0.0391 | – | – | 0.0010 | 0.0393 | – | –
+    Predictive | – | – | 0.1157 | 0.0391 | – | – | 0.0009 | 0.0384
+
+
 
 ### Series/Latent Complexity Fidelity
 
