@@ -54,7 +54,7 @@ The experimental setup and initial expectations are outlined below, and provide 
 ### Hypotheses
 The key hypotheses examined include:
 > - ***Latent Complexity Matching:*** An effective encoder of a time-series is hypothesized to reflect the complexity characteristics of the time series on which it was trained in its bottleneck.
-Specifically, the squared difference between each metric over each model's validation data and over the model's latent representations from the validation data will positively correlate to the loss achieved by the model.
+Specifically, the mean squared difference between each metric over each model's validation data and over the model's latent representations from the validation data will positively correlate to the loss achieved by the model.
 The intuition behind this prediction is an expectation that a high complexity signal should require the encoder to use a similarly high-complexity latent representation to faithfully capture the signal's variability, especially in a highly non-stationary regime where the variability is volatile.
 > - ***Prediction vs Reconstruction Objective:*** AR tasks (predicting the next state) are expected to converge faster and attain lower final cost than reconstruction on the same highly non-stationary data.
 In such a highly non-stationary regime, predicting the next state is expected to be an easier and more informative task for capturing the dynamics relevant to the task than reconstructing the input is.
@@ -480,9 +480,23 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
 The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
 The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
-- Pearson correlation coefficients between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE
-- All quantum models showed higher validation to training loss ratio than their classical counterparts, suggersting poorer generalisation as predicted.
-- With the exceptions of LZC for QRAE, MPE for QTE and DE for QRAE and QTE, all model types show positive correlation between dataset and model latent complexity metric values.
+- Pearson correlation coefficients (PCCs) between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE
+- All quantum models showed higher validation to training loss ratio than their classical counterparts, suggersting poorer generalization as predicted.
+- The prediction task beat the reconstruction task both on AUC for loss history and on mean final cost but lost slightly on mean initial slope
+- The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting a synergistic effect.
+However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
+- Recurrence increased final training loss and AUC of loss history.
+
+
+### Latent Complexity Matching
+The majority of model types show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
+Additionally, with the exception of quantization via HDBSCAN, the PCCs between the latent and original are almost all positive
+However, the models whose latent complexity metrics closely matched the data’s complexity by mean squared error (MSE) did **not** consistently achieve lower errors as predicted.
+In fact the exact opposite trend was observed, with most groups showing negative PCC between latent/series complexity MSE and validation loss as well as positive PCC between latent/series complexity PCCs and validation loss under every quantization method.
+This suggests that it is actually disadvantageous for the model's generalization ability if it matches the complexity of its latent features with that of the time series from the dataset.
+One possible reason is that the chosen complexity metrics do not capture the specific temporal structures that affect prediction error.
+A model can thus succeed by encoding the time-series dynamics in ways that do not preserve these complexity attributes.
+
 ### Sources of Error
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
 The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
@@ -516,7 +530,9 @@ The corrected values are used in analysis, however, so the effect of this is inf
 - HE = Hurst Exponent
 - LZC = Lempel-Ziv Complexity
 - MPE = Optimized Multiscale Permutation Entropy
+- MSE = Mean Squared Error
 - MWGE = Meyer-Wallach Global Entanglement
+- PCC = Pearson Correlation Coefficient
 - SO = Special Orthogonal
 - U = Unitary
 - VNE = VonNeumann Entropy
