@@ -451,7 +451,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     MSE vs Loss | -0.7851408416390093
 
   Metric  | Pearson  |   MSE
-  --------------------------
+  --------|----------|------
   Hurst Exponent | 0.44252 | 0.02984
   Lempel Ziv Complexity | 0.38546 | 0.01955
   Optimized MPE | 0.46096 | 0.00540
@@ -542,7 +542,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     MSE vs Loss | -0.8528198792705846
 
   Metric  | Pearson  |   MSE
-  --------------------------
+  --------|----------|------
   Hurst Exponent | 0.44252 | 0.02984
   Lempel Ziv Complexity | 0.81356 | 0.00820
   Optimized Mpe | 0.46096 | 0.00540
@@ -633,7 +633,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     MSE vs Loss | -0.6045431964273741
 
   Metric  | Pearson  |   MSE
-  --------------------------
+  --------|----------|------
   Hurst Exponent | 0.44252 | 0.02984
   Lempel Ziv Complexity | 0.75334 | 0.01603
   Optimized Mpe | 0.46096 | 0.00540
