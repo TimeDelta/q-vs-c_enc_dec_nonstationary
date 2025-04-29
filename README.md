@@ -726,6 +726,7 @@ In summary, despite positive lines of best fit slopes for most model types' comp
 - The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting a synergistic effect.
 However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
 - Recurrence increased final training loss and AUC of loss history.
+- Mean validation/training loss ratio of reconstruction models is 0.5457410112 vs 0.5456549159 for predictive models (a ~.00009 difference), which is negligible.
 ### Recurrent vs Feedforward
 ### Quantum vs Classical
 
