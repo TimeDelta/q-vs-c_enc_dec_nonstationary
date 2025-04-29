@@ -393,7 +393,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Hurst Exponent:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.01442 | 0.05646
     QRAE | 0.10263 | 0.05567
     QTE | 0.07609 | 0.04141
@@ -408,7 +408,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.29598 | 0.03984
     QRAE | -0.07022 | 0.02480
     QTE | 0.25475 | 0.03597
@@ -423,7 +423,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Optimized Multiscale Permutation Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.04907 | 0.00688
     QRAE | 0.09330 | 0.01566
     QTE | -0.04163 | 0.00560
@@ -438,7 +438,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Differential Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.03857 | 0.08383
     QRAE | -0.08424 | 0.13063
     QTE | -0.00418 | 0.06146
@@ -484,7 +484,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Hurst Exponent:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.01442 | 0.05646
     QRAE | 0.10263 | 0.05567
     QTE | 0.07609 | 0.04141
@@ -499,7 +499,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.76124 | 0.00877
     QRAE | 0.56667 | 0.02073
     QTE | 0.73076 | 0.00918
@@ -514,7 +514,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Optimized Multiscale Permutation Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.04907 | 0.00688
     QRAE | 0.09330 | 0.01566
     QTE | -0.04163 | 0.00560
@@ -529,7 +529,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Differential Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.15140 | 0.00001
     QRAE | 0.09074 | 0.00001
     QTE | 0.19481 | 0.00001
@@ -575,7 +575,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Hurst Exponent:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.01442 | 0.05646
     QRAE | 0.10263 | 0.05567
     QTE | 0.07609 | 0.04141
@@ -590,7 +590,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.64767 | 0.03905
     QRAE | 0.56677 | 0.02154
     QTE | 0.57625 | 0.03803
@@ -605,7 +605,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Optimized Multiscale Permutation Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | 0.04907 | 0.00688
     QRAE | 0.09330 | 0.01566
     QTE | -0.04163 | 0.00560
@@ -620,7 +620,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Differential Entropy:
 
     Model Type | Pearson  |  MSE
-    ----------------------------
+    -----------|----------|-----
     QAE | -0.00539 | 11.55860
     QRAE | -0.04677 | 8.84267
     QTE | -0.01047 | 10.58587
