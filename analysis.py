@@ -670,12 +670,12 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         for model_type in MODEL_TYPES:
             pearson_r, mse = complexity_match[series_key][model_type]
             val_loss = final_val_loss[model_type]
-            print(f'{series_key} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f} | {pearson_r/val_loss:.5f} | {mse/val_loss:.5f}')
+            print(f'{series_key.replace("_", " ").title()} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f} | {pearson_r/val_loss:.5f} | {mse/val_loss:.5f}')
 
     print(f'\nMetric  | Pearson  |   MSE\n{"-"*26}')
     for series_key in complexity_match:
         pearson_r, mse = np.mean([complexity_match[series_key][model_type] for model_type in MODEL_TYPES], axis=0)
-        print(f'{series_key} | {pearson_r:.5f} | {mse:.5f}')
+        print(f'{series_key.replace("_", " ").title()} | {pearson_r:.5f} | {mse:.5f}')
 
     print()
     for filter_str in ['q', 'r', 'ae', ' ']:
