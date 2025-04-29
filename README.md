@@ -680,6 +680,27 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   CTE | 0.3931151137661798 | 0.5336285601469368 | 0.6988113307483387
   CRTE | 0.4053806543771417 | 0.5393152840260769 | 0.6882955050088161
 
+- Complexity vs Generalization Correlations:
+  - PCC of HE Pearson: -0.92941
+  - PCC of HE MSE:      0.92448
+  - PCC of Optimized MPE Pearson: -0.96372
+  - PCC of Optimized MPE MSE:      0.83839
+  - Bayesian Blocks Quantizer
+    - PCC of LZC Pearson vs Generalization Ratio: -0.91653
+    - PCC of LZC MSE vs Generalization Ratio:      0.94292
+    - PCC of DE Pearson vs Generalization Ratio: -0.94406
+    - PCC of DE MSE vs Generalization Ratio:      0.88587
+  - Equal Bin Width Quantizer
+    - PCC of DE Pearson vs Generalization Ratio: -0.96947
+    - PCC of DE MSE vs Generalization Ratio:      0.96455
+    - PCC of LZC Pearson vs Generalization Ratio: -0.90805
+    - PCC of LZC MSE vs Generalization Ratio:      0.82729
+  - HDBSCAN Quantizer
+    - PCC of DE Pearson vs Generalization Ratio: -0.97083
+    - PCC of DE MSE vs Generalization Ratio:      0.93219
+    - PCC of LZC Pearson vs Generalization Ratio: -0.99884
+    - PCC of LZC MSE vs Generalization Ratio:      0.93708
+
 ## Discussion
 Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
 The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
@@ -700,8 +721,9 @@ This suggests that it is actually disadvantageous for the model's generalization
 One possible reason is that the chosen complexity metrics do not capture the specific temporal structures that affect prediction error.
 A model can thus succeed by encoding the time-series dynamics in ways that do not preserve these complexity attributes.
 The only grouping that consistently had a positive PCC between the validation series/latent MSE and loss was the classical models.
-This outcome runs counter to the complexity matching principle, which suggests optimal information transfer in complex systems occurs when complexities are aligned.
-In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligning latent and input complexities was neither necessary nor sufficient for good performance according to this experiment.
+Additionally, the trend persists when checking for correlation between (metric, model type generalization ratio) combinations
+These results run counter to the complexity matching principle, which suggests optimal information transfer in complex systems occurs when complexities are aligned.
+In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligned latent and input complexities was neither necessary nor sufficient for good performance and in fact was anticorrelated with generalization according to this experiment.
 
 ### Prediction vs Reconstruction
 ### Recurrent vs Feedforward
@@ -717,6 +739,7 @@ The corrected values are used in analysis, however, so the effect of this is inf
 ## Conclusion
 
 ## Future Work
+- What happens to prediction loss if you add a loss term for complexity matching?
 - Give the reconstruction objective two consecutive points and ask it to reconstruct them both to see if it learns temporal dynamics better than single state reconstruction
 - When time allows, each block (including embedding) should have at least rotation gates for each quantum axis per block (w/ 3 layers per block for classical as well), eliminating the gate choices other than entanglement from hyperparam search
 - Many blocks per model half
