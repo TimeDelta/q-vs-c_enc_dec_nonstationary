@@ -661,14 +661,15 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     final_val_loss = {mt: float(np.mean(losses)) for mt, losses in final_val_loss.items()}
 
     print(f'\n\n\n{bar}\nSeries/Latent Complexity Fidelity vs Validation Loss:\n{bar}')
-    print(f'\nMetric  | Model Type | Pearson  |  MSE\n{"-"*38}')
     for series_key in complexity_match:
+        print(f'\n{series_key.replace("_", " ").title()}:')
+        print(f'\nModel Type | Pearson  |  MSE\n{"-"*28}')
         pearsons, mses = [], []
         for model_type in MODEL_TYPES:
             pearson_r, mse = complexity_match[series_key][model_type]
             pearsons.append(pearson_r)
             mses.append(mse)
-            print(f'{series_key.replace("_", " ").title()} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f}')
+            print(f'{model_type.upper()} | {pearson_r:.5f} | {mse:.5f}')
         val_losses = [final_val_loss[m] for m in MODEL_TYPES]
         print('PCC vs Loss |', np.corrcoef(pearsons, val_losses)[0, 1])
         print('MSE vs Loss |', np.corrcoef(mses, val_losses)[0, 1])
