@@ -5,6 +5,7 @@ from qiskit.quantum_info import partial_trace, entropy
 import antropy
 from astropy.stats import bayesian_blocks
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
 from pyentrp import entropy
@@ -888,11 +889,12 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 continue
             history = metric_history_lambda(model_stats.data)
             if model_type in lines_by_type:
-                line, = axis.plot(range(len(history)), history, color=colors[model_type])
+                line, = axis.plot(range(1, len(history)), history[1:], color=colors[model_type])
             else:
-                line, = axis.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+                line, = axis.plot(range(1, len(history)), history[1:], label=model_type.upper(), color=colors[model_type])
             lines_by_type.setdefault(model_type, []).append(line)
         axis.set_xlabel('Epoch')
+        axis.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
         axis.set_ylabel(f'{metric_description}')
         axis.set_title(f'Sample {metric_description} Histories')
 
@@ -923,9 +925,10 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         figure2, axis2 = plt.subplots()
         mean_lines = []
         for model_type, history in mean_history_by_model_type.items():
-            line, = axis2.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
+            line, = axis2.plot(range(1, len(history)), history[1:], label=model_type.upper(), color=colors[model_type])
             mean_lines.append(line)
         axis2.set_xlabel('Epoch')
+        axis2.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
         axis2.set_ylabel(f'Mean {metric_description}')
         axis2.set_title(f'Mean {metric_description} History per Model Type')
 
