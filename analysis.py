@@ -661,12 +661,16 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
     final_val_loss = {mt: float(np.mean(losses)) for mt, losses in final_val_loss.items()}
 
     print(f'\n\n\n{bar}\nSeries/Latent Complexity Fidelity vs Validation Loss:\n{bar}')
-    print(f'\nMetric  | Model Type | Pearson  |   MSE    | Validation Loss\n{"-"*60}')
+    print(f'Model Type | Mean Validation Loss\n{"-"*33}')
+    for model_type in MODEL_TYPES:
+        val_loss = final_val_loss[model_type]
+        print(f'{model_type.upper()} | {val_loss:.5f}')
+    print(f'\nMetric  | Model Type | Pearson  |  MSE  | PCC/Loss | MSE/Loss\n{"-"*61}')
     for series_key in complexity_match:
         for model_type in MODEL_TYPES:
             pearson_r, mse = complexity_match[series_key][model_type]
             val_loss = final_val_loss[model_type]
-            print(f'{series_key} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f} | {val_loss:.5f}')
+            print(f'{series_key} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f} | {pearson_r/val_loss:.5f} | {mse/val_loss:.5f}')
 
     print(f'\nMetric  | Pearson  |   MSE\n{"-"*26}')
     for series_key in complexity_match:
@@ -684,8 +688,8 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 continue
             corr_vs_loss = np.corrcoef(corr_vals, loss_vals)[0, 1]
             mse_vs_loss  = np.corrcoef(mse_vals,  loss_vals)[0, 1]
-            print(f'  Correlation(corr_vs_loss) across models: {corr_vs_loss:.5f}')
-            print(f'  Correlation(mse_vs_loss) across models: {mse_vs_loss:.5f}')
+            print(f'  Correlation(Pearson vs validation loss) across models: {corr_vs_loss:.5f}')
+            print(f'  Correlation(MSE vs validation loss) across models: {mse_vs_loss:.5f}')
 
 
     print(f'\n\n\n{bar}\nPrediction vs Reconstruction\n{bar}')
