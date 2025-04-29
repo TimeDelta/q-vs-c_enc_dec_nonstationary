@@ -285,6 +285,7 @@ if __name__ == '__main__':
 
     num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
     if args.config:
+        import json
         with open(args.config, 'r') as file:
             config = json.load(file)
     else:
