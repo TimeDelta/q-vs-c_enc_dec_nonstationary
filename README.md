@@ -689,7 +689,7 @@ However, this difference for the quantum models was negligible (`(.1959-.19537)-
 
 
 ### Latent Complexity Matching
-The majority of model types show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
+The majority of model types (`1 - 15/(16*8) = 88.28125%` across all quantization and aggregation methods) show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
 Additionally, with the exception of quantization via HDBSCAN, the PCCs between the latent and original are almost all positive.
 However, the models whose latent complexity metrics closely matched the data’s complexity by mean squared error (MSE) did **not** consistently achieve lower errors as predicted.
 In fact the exact opposite trend was observed, with most groups showing negative PCC between latent/series complexity MSE and validation loss as well as positive PCC between latent/series complexity PCCs and validation loss under every quantization method.
