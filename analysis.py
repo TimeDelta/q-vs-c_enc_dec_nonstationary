@@ -630,8 +630,9 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
 
     # Latent Complexity Matching
     # Correlation and squared difference between input series and latent complexities per model.
-    model_complexity_data = {}
+    # For each metric (series_key), collect per-model lists of (series_value, latent_value) pairs
     same_metric_key_pairs = [(series_key, model_keys[0]) for series_key, model_keys in MAPPINGS_TO_PLOT.items()]
+    model_complexity_data = {series_key: {} for series_key, _ in same_metric_key_pairs}
     for (dataset_index, model_type), model_stats in stats_per_model.items():
         # Map series -> input series complexity for this dataset
         series_list = dataset_series_stats.get(dataset_index, [])
@@ -639,36 +640,46 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             series_values = {s_i: s_stats.data.get(series_key) for (s_i, s_stats) in series_list}
             model_metrics = model_stats.data[model_key]
             latent_values = {int(round(float(row[0]))): float(row[1]) for row in model_metrics}
-        for s_id, s_value in series_values.items():
-            model_complexity_data.setdefault(model_type, []).append((s_value, latent_values[s_id]))
-    # Pearson correlation and mean squared difference for each model type
-    complexity_match = {}
-    for m_type, pairs in model_complexity_data.items():
-        xs = np.array([p[0] for p in pairs]); ys = np.array([p[1] for p in pairs])
-        corr = np.corrcoef(xs, ys)[0, 1]
-        mse = np.mean((ys - xs)**2)
-        complexity_match[m_type] = (corr, mse)
+            for s_id, s_value in series_values.items():
+                model_complexity_data[series_key].setdefault(model_type, []).append((s_value, latent_values[s_id]))
+    # Pearson correlation and mean squared difference for each model type, metric
+    complexity_match = {series_key: {} for series_key, _ in same_metric_key_pairs}
+    for series_key, models_dict in model_complexity_data.items():
+        for m_type, pairs in models_dict.items():
+            xs = np.array([p[0] for p in pairs])
+            ys = np.array([p[1] for p in pairs])
+            corr = np.corrcoef(xs, ys)[0, 1]
+            mse = np.mean((ys - xs)**2)
+            complexity_match[series_key][m_type] = (corr, mse)
     # Mean validation loss per model type
     final_val_loss = {}
-    for (dataset_index, model_type), model_stats in stats_per_model.items():
+    for (_, model_type), model_stats in stats_per_model.items():
         val_costs = model_stats.data['validation_costs']
         total_costs = np.sum(val_costs[:, 1:], axis=1)
         avg_val_cost = float(np.mean(total_costs))
         final_val_loss.setdefault(model_type, []).append(avg_val_cost)
-    for m_type, vals in final_val_loss.items():
-        final_val_loss[m_type] = float(np.mean(vals))
+    final_val_loss = {mt: float(np.mean(losses)) for mt, losses in final_val_loss.items()}
+
     print(f'\n\n\n{bar}\nSeries/Latent Complexity Fidelity vs Validation Loss:\n{bar}')
-    print('Model\tPearson\tMSE\tVal Loss')
-    for m_type in MODEL_TYPES:
-        corr, mse = complexity_match[m_type]
-        val_loss = final_val_loss[m_type]
-        print(f'{m_type.upper()}\t{corr:.5f}\t{mse:.5f}\t{val_loss:.5f}')
+    print(f'\nMetric  | Model Type | Pearson  |   MSE    | Validation Loss\n{"-"*60}')
+    for series_key in complexity_match:
+        for model_type in MODEL_TYPES:
+            pearson_r, mse = complexity_match[series_key][model_type]
+            val_loss = final_val_loss[model_type]
+            print(f'{series_key} | {model_type.upper()} | {pearson_r:.5f} | {mse:.5f} | {val_loss:.5f}')
+
+    print(f'\nMetric  | Pearson  |   MSE\n{"-"*26}')
+    for series_key in complexity_match:
+        pearson_r, mse = np.mean([complexity_match[series_key][model_type] for model_type in MODEL_TYPES], axis=0)
+        print(f'{series_key} | {pearson_r:.5f} | {mse:.5f}')
+
+    print()
     for filter_str in ['q', 'r', 'ae', ' ']:
         print(f'For models with and without "{filter_str}"')
         for condition in [lambda m: filter_str in m, lambda m: filter_str not in m]:
-            corr_vals = [complexity_match[m][0] for m in MODEL_TYPES if condition(m)]
-            mse_vals  = [complexity_match[m][1] for m in MODEL_TYPES if condition(m)]
-            loss_vals = [final_val_loss[m]      for m in MODEL_TYPES if condition(m)]
+            corr_vals = [np.mean([complexity_match[k][m][0] for k in complexity_match.keys()]) for m in MODEL_TYPES if condition(m)]
+            mse_vals  = [np.mean([complexity_match[k][m][1] for k in complexity_match.keys()]) for m in MODEL_TYPES if condition(m)]
+            loss_vals = [final_val_loss[m] for m in MODEL_TYPES if condition(m)]
             if len(corr_vals) == 0:
                 continue
             corr_vs_loss = np.corrcoef(corr_vals, loss_vals)[0, 1]
