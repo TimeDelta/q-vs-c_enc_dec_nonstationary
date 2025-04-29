@@ -689,7 +689,7 @@ However, this difference for the quantum models was negligible (`(.1959-.19537)-
 
 
 ### Latent Complexity Matching
-The majority of model types (`1 - 15/(16*8) = 88.28125%` across all quantization and aggregation methods) show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
+The majority of model types (`1 - 15/(16*8) = 88.28125%` across all metrics, quantization and aggregation methods) show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
 Additionally, with the exception of quantization via HDBSCAN, the PCCs between the latent and original are almost all positive.
 However, the models whose latent complexity metrics closely matched the data’s complexity by mean squared error (MSE) did **not** consistently achieve lower errors as predicted.
 In fact the exact opposite trend was observed, with most groups showing negative PCC between latent/series complexity MSE and validation loss as well as positive PCC between latent/series complexity PCCs and validation loss under every quantization method.
@@ -697,6 +697,8 @@ This suggests that it is actually disadvantageous for the model's generalization
 One possible reason is that the chosen complexity metrics do not capture the specific temporal structures that affect prediction error.
 A model can thus succeed by encoding the time-series dynamics in ways that do not preserve these complexity attributes.
 The only grouping that consistently had a positive PCC between the validation series/latent MSE and loss was the classical models.
+This outcome runs counter to the complexity matching principle, which suggests optimal information transfer in complex systems occurs when complexities are aligned.
+In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligning latent and input complexities was neither necessary nor sufficient for good performance according to this experiment.
 
 ### Sources of Error
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
