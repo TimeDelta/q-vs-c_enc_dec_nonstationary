@@ -214,16 +214,16 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 ### Prediction vs Reconstruction
   |Model Type|Initial Slope|Final Cost|AUC|
   |----|---------|--------|---------|
-  |QAE | -0.00000| 0.19515|  6.04960|
-  |QRAE|  0.00049| 0.19590|  6.07370|
-  |QTE | -0.00000| 0.19463|  6.03356|
-  |QRTE|  0.00048| 0.19537|  6.05742|
-  |CAE |  0.04469| 0.59578| 29.08676|
-  |CRAE| -0.00325| 1.03308| 32.45470|
-  |CTE |  0.04662| 0.52061| 27.38971|
-  |CRTE| -0.00439| 1.00555| 31.16774|
+  |QAE |  0.00000| 0.19515|  6.04960|
+  |QRAE| -0.00049| 0.19590|  6.07370|
+  |QTE |  0.00000| 0.19463|  6.03356|
+  |QRTE| -0.00048| 0.19537|  6.05742|
+  |CAE | -0.04469| 0.59578| 29.08676|
+  |CRAE|  0.00325| 1.03308| 32.45470|
+  |CTE | -0.04662| 0.52061| 27.38971|
+  |CRTE|  0.00439| 1.00555| 31.16774|
 
-  - Mean Initial Slope: Predictive=0.01068, Reconstructive=0.01048
+  - Mean Initial Slope: Predictive=-0.01068, Reconstructive=-0.01048
   - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
   - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
 ### Reccurence
@@ -707,10 +707,6 @@ The non-recurrent models all have VNE and MWGE of 0 because the architecture is 
 The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
 - Pearson correlation coefficients (PCCs) between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE
 - All quantum models showed higher validation to training loss ratio than their classical counterparts, suggersting poorer generalization as predicted.
-- The prediction task beat the reconstruction task both on AUC for loss history and on mean final cost but lost slightly on mean initial slope
-- The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting a synergistic effect.
-However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
-- Recurrence increased final training loss and AUC of loss history.
 
 ### Latent Complexity Matching
 The majority of model types (`1 - 15/(16*8) = 88.28125%` across all metrics, quantization and aggregation methods) show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
@@ -723,9 +719,13 @@ A model can thus succeed by encoding the time-series dynamics in ways that do no
 The only grouping that consistently had a positive PCC between the validation series/latent MSE and loss was the classical models.
 Additionally, the trend persists when checking for correlation between (metric, model type generalization ratio) combinations
 These results run counter to the complexity matching principle, which suggests optimal information transfer in complex systems occurs when complexities are aligned.
-In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligned latent and input complexities was neither necessary nor sufficient for good performance and in fact was anticorrelated with generalization according to this experiment.
+In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligned latent and input complexities was neither necessary nor sufficient for good performance and in fact was anticorrelated with both final validation loss and generalization according to this experiment.
 
 ### Prediction vs Reconstruction
+- The prediction task beat the reconstruction task both on AUC for loss history, on mean final cost and on mean initial slope (of loss history over first ten epochs).
+- The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting a synergistic effect.
+However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
+- Recurrence increased final training loss and AUC of loss history.
 ### Recurrent vs Feedforward
 ### Quantum vs Classical
 

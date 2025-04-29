@@ -704,7 +704,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         initial_cost = total_cost[0]
         num_epochs = len(total_cost)
         span = min(num_epochs//5, 10)
-        initial_slope = (initial_cost - total_cost[span]) / span
+        initial_slope = (total_cost[span] - initial_cost) / span
         auc = float(np.trapz(total_cost, dx=1))
         model_learning_stats.setdefault(model_type, {'slope': [], 'final': [], 'auc': []})
         model_learning_stats[model_type]['slope'].append(initial_slope)
