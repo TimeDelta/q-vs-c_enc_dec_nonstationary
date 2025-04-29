@@ -746,6 +746,17 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         print(f'    Mean:', np.mean(ratios[model_type]))
         print(f'    Max:', np.max(ratios[model_type]))
 
+    print(f'\nComplexity vs Generalization Correlations:\n{bar}')
+    mean_ratios = [np.mean(ratios[m]) for m in MODEL_TYPES]
+    for series_key in complexity_match:
+        pccs = [complexity_match[series_key][m][0] for m in MODEL_TYPES]
+        mses = [complexity_match[series_key][m][1] for m in MODEL_TYPES]
+        corr_pcc = np.corrcoef(pccs, mean_ratios)[0, 1]
+        corr_mse = np.corrcoef(mses, mean_ratios)[0, 1]
+        name = series_key.replace('_', ' ').title()
+        print(f'PCC of {name} Pearson vs Generalization Ratio: {corr_pcc:.5f}')
+        print(f'PCC of {name} MSE vs Generalization Ratio:     {corr_mse:.5f}')
+
     """
     Generate 'number_of_colors' distinct colors using the HSV (HSB) color space.
     Each color is evenly spaced in hue, with a random brightness between .4 and .8
