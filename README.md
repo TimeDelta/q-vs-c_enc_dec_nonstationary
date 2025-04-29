@@ -390,6 +390,72 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 
 ### Series/Latent Complexity Fidelity
 - Bayesian Block Quantizer
+  - Hurst Exponent:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.01442 | 0.05646
+    QRAE | 0.10263 | 0.05567
+    QTE | 0.07609 | 0.04141
+    QRTE | 0.01583 | 0.05897
+    CAE | 0.73218 | 0.01149
+    CRAE | 0.93175 | 0.00190
+    CTE | 0.73296 | 0.01097
+    CRTE | 0.93430 | 0.00182
+    PCC vs Loss | 0.9404971338803003
+    MSE vs Loss | -0.9097356424152886
+
+  - Lempel Ziv Complexity:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.29598 | 0.03984
+    QRAE | -0.07022 | 0.02480
+    QTE | 0.25475 | 0.03597
+    QRTE | 0.14785 | 0.03240
+    CAE | 0.68438 | 0.00600
+    CRAE | 0.55602 | 0.00565
+    CTE | 0.68215 | 0.00599
+    CRTE | 0.53279 | 0.00571
+    PCC vs Loss | 0.6858864023129103
+    MSE vs Loss | -0.8395006041574629
+
+  - Optimized Multiscale Permutation Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.04907 | 0.00688
+    QRAE | 0.09330 | 0.01566
+    QTE | -0.04163 | 0.00560
+    QRTE | 0.03699 | 0.01456
+    CAE | 0.84505 | 0.00018
+    CRAE | 0.92913 | 0.00007
+    CTE | 0.84892 | 0.00018
+    CRTE | 0.92687 | 0.00008
+    PCC vs Loss | 0.8970087592256916
+    MSE vs Loss | -0.7477178051356503
+
+  - Differential Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.03857 | 0.08383
+    QRAE | -0.08424 | 0.13063
+    QTE | -0.00418 | 0.06146
+    QRTE | 0.03848 | 0.14455
+    CAE | 0.43122 | 0.00411
+    CRAE | 0.51761 | 0.00401
+    CTE | 0.45339 | 0.00389
+    CRTE | 0.51942 | 0.00408
+    PCC vs Loss | 0.9068042797965998
+    MSE vs Loss | -0.7851408416390093
+
+  Metric  | Pearson  |   MSE
+  --------------------------
+  Hurst Exponent | 0.44252 | 0.02984
+  Lempel Ziv Complexity | 0.38546 | 0.01955
+  Optimized MPE | 0.46096 | 0.00540
+  Differential Entropy | 0.23878 | 0.05457
 
   |Model|Pearson| MSE  |Validation Loss|
   |-----|-------|------|------|
@@ -415,6 +481,73 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     **All models** |  0.90680 | −0.78514
 
 - Equal Bin Widths Quantizer
+  - Hurst Exponent:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.01442 | 0.05646
+    QRAE | 0.10263 | 0.05567
+    QTE | 0.07609 | 0.04141
+    QRTE | 0.01583 | 0.05897
+    CAE | 0.73218 | 0.01149
+    CRAE | 0.93175 | 0.00190
+    CTE | 0.73296 | 0.01097
+    CRTE | 0.93430 | 0.00182
+    PCC vs Loss | 0.9404971338803003
+    MSE vs Loss | -0.9097356424152886
+
+  - Lempel Ziv Complexity:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.76124 | 0.00877
+    QRAE | 0.56667 | 0.02073
+    QTE | 0.73076 | 0.00918
+    QRTE | 0.55655 | 0.02127
+    CAE | 0.97475 | 0.00159
+    CRAE | 0.97240 | 0.00125
+    CTE | 0.97557 | 0.00154
+    CRTE | 0.97055 | 0.00129
+    PCC vs Loss | 0.7996880260125934
+    MSE vs Loss | -0.7421782183649015
+
+  - Optimized Multiscale Permutation Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.04907 | 0.00688
+    QRAE | 0.09330 | 0.01566
+    QTE | -0.04163 | 0.00560
+    QRTE | 0.03699 | 0.01456
+    CAE | 0.84505 | 0.00018
+    CRAE | 0.92913 | 0.00007
+    CTE | 0.84892 | 0.00018
+    CRTE | 0.92687 | 0.00008
+    PCC vs Loss | 0.8970087592256916
+    MSE vs Loss | -0.7477178051356503
+
+  - Differential Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.15140 | 0.00001
+    QRAE | 0.09074 | 0.00001
+    QTE | 0.19481 | 0.00001
+    QRTE | -0.02580 | 0.00001
+    CAE | 0.64047 | 0.00000
+    CRAE | 0.58430 | 0.00000
+    CTE | 0.65182 | 0.00000
+    CRTE | 0.57465 | 0.00000
+    PCC vs Loss | 0.7987992375257185
+    MSE vs Loss | -0.8528198792705846
+
+  Metric  | Pearson  |   MSE
+  --------------------------
+  Hurst Exponent | 0.44252 | 0.02984
+  Lempel Ziv Complexity | 0.81356 | 0.00820
+  Optimized Mpe | 0.46096 | 0.00540
+  Differential Entropy | 0.35780 | 0.00000
+
   | Model | Pearson  |     MSE    | Validation Loss |
   |-------|----------|------------|-----------------|
   | QAE   |  0.15140 |  0.00001   | 1.06962         |
@@ -439,6 +572,73 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     | **All models** |  0.79880        | -0.85282    |
 
 - HDBSCAN Quantizer
+  - Hurst Exponent:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.01442 | 0.05646
+    QRAE | 0.10263 | 0.05567
+    QTE | 0.07609 | 0.04141
+    QRTE | 0.01583 | 0.05897
+    CAE | 0.73218 | 0.01149
+    CRAE | 0.93175 | 0.00190
+    CTE | 0.73296 | 0.01097
+    CRTE | 0.93430 | 0.00182
+    PCC vs Loss | 0.9404971338803003
+    MSE vs Loss | -0.9097356424152886
+
+  - Lempel Ziv Complexity:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.64767 | 0.03905
+    QRAE | 0.56677 | 0.02154
+    QTE | 0.57625 | 0.03803
+    QRTE | 0.60134 | 0.02556
+    CAE | 0.99995 | 0.00000
+    CRAE | 0.81897 | 0.00202
+    CTE | 0.99995 | 0.00000
+    CRTE | 0.81581 | 0.00205
+    PCC vs Loss | 0.6088854526048683
+    MSE vs Loss | -0.795056928525413
+
+  - Optimized Multiscale Permutation Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | 0.04907 | 0.00688
+    QRAE | 0.09330 | 0.01566
+    QTE | -0.04163 | 0.00560
+    QRTE | 0.03699 | 0.01456
+    CAE | 0.84505 | 0.00018
+    CRAE | 0.92913 | 0.00007
+    CTE | 0.84892 | 0.00018
+    CRTE | 0.92687 | 0.00008
+    PCC vs Loss | 0.8970087592256916
+    MSE vs Loss | -0.7477178051356503
+
+  - Differential Entropy:
+
+    Model Type | Pearson  |  MSE
+    ----------------------------
+    QAE | -0.00539 | 11.55860
+    QRAE | -0.04677 | 8.84267
+    QTE | -0.01047 | 10.58587
+    QRTE | -0.04733 | 6.79822
+    CAE | 0.99999 | 0.00011
+    CRAE | 0.73157 | 3.97900
+    CTE | 0.99999 | 0.00011
+    CRTE | 0.72788 | 4.10027
+    PCC vs Loss | 0.7465840942913858
+    MSE vs Loss | -0.6045431964273741
+
+  Metric  | Pearson  |   MSE
+  --------------------------
+  Hurst Exponent | 0.44252 | 0.02984
+  Lempel Ziv Complexity | 0.75334 | 0.01603
+  Optimized Mpe | 0.46096 | 0.00540
+  Differential Entropy | 0.41868 | 5.73311
+
   | Model | Pearson   |     MSE     | Validation Loss |
   |-------|-----------|-------------|-----------------|
   | QAE   | -0.00539  | 11.55860    | 1.06962         |
