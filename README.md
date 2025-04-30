@@ -52,8 +52,14 @@ Four main metrics are used to quantify time-series complexity:
 - **Optimized Multiscale Permutation Entropy (MPE):** Extends classic permutation entropy by computing the Shannon entropy of ordinal-pattern distributions over multiple coarse-grained versions of the signal—thereby capturing scale-dependent structural complexity without any amplitude binning (Want et al.; 2019).
 - **Differential Entropy (DE):** Extension of Shannon entropy to continuous-valued data.
 
-In summary, this paper drafts a systematic study of how learning objective (reconstruction vs. prediction), sequence modeling capability (recurrent vs. not), and computational paradigm (quantum vs. classical) affect performance when trained on complex, highly nonstationary time-series data.
-The experimental setup and initial expectations are outlined below, and provide a structured framework for results and analysis.
+In summary, this paper drafts a systematic study of how learning objective (reconstruction vs. prediction), sequence modeling capability (recurrent vs. not), and computational paradigm (quantum vs. classical) affect performance, loss landscape and complexity matching when trained on complex, highly nonstationary time-series data.
+
+### Related Work
+Early theoretical work characterized the critical points and minima of linear autoencoders as well as examining how regularization alters the loss landscape geometry of these models (Kunin, Goeva, Zare; 2019).
+It showed that linear autoencoders with L₂ normalization remain symmetric at every stationary point and recover the principal axes of the data, which correspond to the decoder’s left singular vectors.
+However, this focused on classical model architectures and does not attempt to understand how loss landscape structure varies across different learning tasks (reconstructive vs predictive objectives).
+While complexity matching effects have been observed in physiological and neural systems (Almurad et al.; 2018), their implications for autoencoders under nonstationarity remain largely unexplored.
+In 2023, Hu et al. looked into enforcing complexity matching between the latent and data distributions, showing that the addition of a complexity matching term to the loss function improves loss and generalization for _stationary_ data but this also uses a two-stage training method that trains encoder and decoder separately, imposing abnormal training dynamics on the model.
 
 ### Hypotheses
 The key hypotheses examined include:
@@ -971,6 +977,35 @@ The corrected values are used in analysis, however, so the effect of this is inf
   doi     = {10.5194/angeo-42-163-2024},
   url     = { https://doi.org/10.5194/angeo-42-163-2024 }
 }
+1. @inproceedings{kunin19a,
+  author    = {Kunin, Daniel and Goeva, Aleksandrina and Zare, Mohammad},
+  title     = {Loss Landscapes of Regularized Linear Autoencoders},
+  year      = {2019},
+  booktitle = {Proceedings of Machine Learning Research},
+  volume    = {97},
+  pages     = {47--55},
+  eprint    = {1812.01996},
+  url       = { https://proceedings.mlr.press/v97/kunin19a.html }
+}
+1. @ARTICLE{10.3389/fphys.2018.01766,
+  AUTHOR   = {Almurad, Zainy M. H.  and Roume, Clément  and Blain, Hubert  and Delignières, Didier },
+  TITLE    = {Complexity Matching: Restoring the Complexity of Locomotion in Older People Through Arm-in-Arm Walking},
+  YEAR     = {2018},
+  JOURNAL  = {Frontiers in Physiology},
+  VOLUME   = {Volume 9 - 2018},
+  URL      = { https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2018.01766 },
+  DOI      = {10.3389/fphys.2018.01766},
+  ISSN     = {1664-042X},
+  ABSTRACT = {The complexity matching effect refers to a maximization of information exchange, when interacting systems share similar complexities. Additionally, interacting systems tend to attune their complexities in order to enhance their coordination. This effect has been observed in a number of synchronization experiments, and interpreted as a transfer of multifractality between systems. Finally, it has been shown that when two systems of different complexity levels interact, this transfer of multifractality operates from the most complex system to the less complex, yielding an increase of complexity in the latter. This theoretical framework inspired the present experiment that tested the possible restoration of complexity in older people. In young and healthy participants, walking is known to present 1/f fluctuations, reflecting the complexity of the locomotion system, providing walkers with both stability and adaptability. In contrast walking tends to present a more disordered dynamics in older people, and this whitening was shown to correlate with fall propensity. We hypothesized that if an aged participant walked in close synchrony with a young companion, the complexity matching effect should result in the restoration of complexity in the former. Older participants were involved in a prolonged training program of synchronized walking, with a young experimenter. Synchronization within the dyads was dominated by complexity matching. We observed a restoration of complexity in participants after 3 weeks, and this effect was persistent 2 weeks after the end of the training session. This work presents the first demonstration of a restoration of complexity in deficient systems.}
+}
+1. @inproceedings{hu2023complexity,
+  author    = {Tianyang Hu and Fei Chen and Haonan Wang and Jiawei Li and Wenjia Wang and Jiacheng Sun and Zhenguo Li},
+  title     = {Complexity Matters: Rethinking the Latent Space for Generative Modeling},
+  year      = {2023},
+  booktitle = {Thirty-seventh Conference on Neural Information Processing Systems},
+  url       = { https://openreview.net/forum?id=00EKYYu3fD }
+}
+
 
 
 
