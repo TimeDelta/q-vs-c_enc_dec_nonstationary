@@ -17,7 +17,7 @@ class QuantumEncoderDecoder:
     def __init__(self, num_qubits, config, is_recurrent=False):
         self.num_qubits = num_qubits
         self.num_blocks = config.get('num_blocks', 1)
-        self.entanglement_topology = config.get('entanglement_topology', 'full')
+        self.entanglement_topology = config.get('entanglement_topology', 'circular')
         self.entanglement_gate = config.get('entanglement_gate', 'cx')
         self.bottleneck_size = config.get('bottleneck_size', num_qubits//2)
         self.is_recurrent = is_recurrent
@@ -257,7 +257,7 @@ class RingGivensRotationLayer(nn.Module):
             givens_rotation[i, i] = c;  givens_rotation[j, i] = s
             givens_rotation[i, j] = -s; givens_rotation[j, j] = c
             rotations = rotations @ givens_rotation
-        return x @ rotations.T
+        return x @ rotations.T @ rotations.T
 
 
 class ClassicalEncoderDecoder(nn.Module):
