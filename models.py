@@ -7,7 +7,7 @@ from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix
 
 from utility import dm_to_statevector, without_t_gate, fix_dm_array, normalize_classical_vector
 
-ENTANGLEMENT_OPTIONS = ['full', 'linear', 'circular']
+ENTANGLEMENT_OPTIONS = ['skip', 'full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 ROTATION_GATES = ['rx', 'ry', 'rz']
 
@@ -78,7 +78,19 @@ class QuantumEncoderDecoder:
             self.input_params.append(self.add_rotation_gate(self.embedder, self.embedding_gate, 'Embedding Rθ ' + str(i), i))
 
     def add_entanglement_topology(self, qc: QuantumCircuit):
-        if self.entanglement_topology == 'full':
+        if self.entanglement_topology == 'skip':
+            i = 0
+            while i < self.num_qubits:
+                if self.entanglement_gate.lower() == 'cx':
+                    qc.cx(i, i+1)
+                elif self.entanglement_gate.lower() == 'cz':
+                    qc.cz(i, i+1)
+                elif self.entanglement_gate.lower() == 'rzx':
+                    qc.rzx(np.pi/4, i, i+1)
+                else:
+                    raise Exception("Unknown entanglement gate: " + self.entanglement_gate)
+                i += 2
+        elif self.entanglement_topology == 'full':
             for i in range(self.num_qubits):
                 for j in range(i+1, self.num_qubits):
                     if self.entanglement_gate.lower() == 'cx':
