@@ -3,7 +3,7 @@ import math
 
 from training import *
 from loss import *
-from models import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES, ROTATION_GATES
+from models import ENTANGLEMENT_OPTIONS, ENTANGLEMENT_GATES
 from analysis import check_for_overfitting, MODEL_TYPES
 
 MAX_NUM_BLOCKS = 1 # per encoder AND per decoder
@@ -16,8 +16,6 @@ def sample_hyperparameters(num_features):
         'max_penalty_weight': 2.0,
         'entanglement_topology': 'circular', # np.random.choice(ENTANGLEMENT_OPTIONS),
         'entanglement_gate': np.random.choice(ENTANGLEMENT_GATES),
-        'embedding_gate': np.random.choice(ROTATION_GATES),
-        'block_gate': np.random.choice(ROTATION_GATES),
     }
 
 def get_loss(data, model_type, config, allocated_epochs):

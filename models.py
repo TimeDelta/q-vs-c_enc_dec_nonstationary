@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit, qpy
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix
 
-from utility import dm_to_statevector, without_t_gate, fix_dm_array, normalize_classical_vector
+from utility import dm_to_statevector, fix_dm_array, normalize_classical_vector
 
 ENTANGLEMENT_OPTIONS = ['skip', 'full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
@@ -19,8 +19,6 @@ class QuantumEncoderDecoder:
         self.num_blocks = config.get('num_blocks', 1)
         self.entanglement_topology = config.get('entanglement_topology', 'full')
         self.entanglement_gate = config.get('entanglement_gate', 'cx')
-        self.block_gate = config.get('block_gate', 'rz')
-        self.embedding_gate = config.get('embedding_gate', 'rz')
         self.bottleneck_size = config.get('bottleneck_size', num_qubits//2)
         self.is_recurrent = is_recurrent
 
@@ -75,7 +73,7 @@ class QuantumEncoderDecoder:
         self.input_params = []
         self.embedder = QuantumCircuit(self.num_qubits)
         for i in range(self.num_qubits):
-            self.input_params.append(self.add_rotation_gate(self.embedder, self.embedding_gate, 'Embedding Rθ ' + str(i), i))
+            self.input_params.append(self.add_rotation_gates(self.embedder, 'Embedding Rθ ' + str(i), i))
 
     def add_entanglement_topology(self, qc: QuantumCircuit):
         if self.entanglement_topology == 'skip':
@@ -143,9 +141,12 @@ class QuantumEncoderDecoder:
         if self.is_recurrent:
             self.trainable_params.append(self.hidden_state_weight_param)
         for layer in range(self.num_blocks):
+            params = []
+            for i in range(self.num_qubits):
+                params.append(self.add_rotation_gates(self.encoder, 'Encoder Pre-Layer ' + str(layer) + ' Rθ ' + str(i), i))
             self.add_entanglement_topology(self.encoder)
             for i in range(self.num_qubits):
-                self.add_rotation_gate(self.encoder, self.block_gate, 'Encoder Layer ' + str(layer) + ' Ry θ ' + str(i), i)
+                self.add_rotation_gates(self.encoder, 'Encoder Post-Layer ' + str(layer) + ' Rθ ' + str(i), i, params[i])
         self.trainable_params.extend(self.encoder.parameters)
 
         # For a proper autoencoder, you want to compress information into a bottleneck but
@@ -155,23 +156,22 @@ class QuantumEncoderDecoder:
         # focus its information into 'bottleneck_size' qubits. This helps mitigate mode collapse.
         self.decoder = QuantumCircuit(self.num_qubits)
         for layer in range(self.num_blocks):
+            params = []
+            for i in range(self.num_qubits):
+                params.append(self.add_rotation_gates(self.decoder, 'Decoder Pre-Layer ' + str(layer) + ' Rθ ' + str(i), i))
             self.add_entanglement_topology(self.decoder)
             for i in range(self.num_qubits):
-                self.add_rotation_gate(self.decoder, self.block_gate, 'Decoder Layer ' + str(layer) + ' Ry θ ' + str(i), i)
+                self.add_rotation_gates(self.decoder, 'Decoder Post-Layer ' + str(layer) + ' Rθ ' + str(i), i, params[i])
         self.trainable_params.extend(self.decoder.parameters)
         return self.encoder.compose(self.decoder)
 
-    def add_rotation_gate(self, circuit, gate, description, qubit_index):
-        p = Parameter(f'{description}')
-        if gate.lower() == 'rx':
-            circuit.rx(p, qubit_index)
-        elif gate.lower() == 'ry':
-            circuit.ry(p, qubit_index)
-        elif gate.lower() == 'rz':
-            circuit.rz(p, qubit_index)
-        else:
-            raise Exception("Invalid rotation gate: " + gate)
-        return p
+    def add_rotation_gates(self, circuit, description, qubit_index, param=None):
+        parameter = Parameter(f'{description}')
+        if param:
+            parameter = param
+        circuit.rx(parameter, qubit_index)
+        circuit.rz(parameter, qubit_index)
+        return parameter
 
     def set_params(self, params_dict):
         encoder_params = {k: v for k,v in params_dict.items() if k in self.encoder.parameters}

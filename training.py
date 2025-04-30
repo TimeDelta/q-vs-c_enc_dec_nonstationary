@@ -295,8 +295,6 @@ if __name__ == '__main__':
             'learning_rate': 0.021450664374153845,
             'max_penalty_weight': 2.0,
             'entanglement_topology': 'circular',
-            'entanglement_gate': 'cz',
-            'embedding_gate': 'rz',
-            'block_gate': 'rz',
+            'entanglement_gate': 'cx',
         }
     train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, config, run_prefix, model_types)
