@@ -230,7 +230,7 @@ class QuantumEncoderDecoder:
             qpy.dump(self.full_circuit_bound, file)
 
 
-class RingGivensRotationLayer(nn.Module):
+class DoubleRingGivensRotationLayer(nn.Module):
     """
     An SO(n)-group layer built from n Givens rotation angles reused in a ring, so
     that each of the n features participates in exactly two rotations: one with
@@ -269,9 +269,9 @@ class ClassicalEncoderDecoder(nn.Module):
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
-            self.encoder.append(RingGivensRotationLayer(num_features))
+            self.encoder.append(DoubleRingGivensRotationLayer(num_features))
             # bottleneck enforced via cost function similar to Quantum version
-            self.decoder.append(RingGivensRotationLayer(num_features))
+            self.decoder.append(DoubleRingGivensRotationLayer(num_features))
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
         if self.is_recurrent:
             # always start at zero to give better starting gradient
