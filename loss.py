@@ -89,6 +89,9 @@ def main_cost_function(data, model, trash_penalty_fn, trash_penalty_weight=1, au
 
             series_trash_cost += trash_penalty_fn(bottleneck_state, model.bottleneck_size)
 
+            if has_method(model, 'collapse_state'):
+                predicted_state = model.collapse_state(predicted_state)
+                ideal_state = model.collapse_state(ideal_state)
             prediction_cost = np.linalg.norm(ideal_state - predicted_state)
             if prev_prediction_cost is not None:
                 dist = (prev_prediction_cost - prediction_cost)**2

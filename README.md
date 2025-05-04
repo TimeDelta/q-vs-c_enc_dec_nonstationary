@@ -1,5 +1,6 @@
 # Quantum vs Classical, Autoregressive vs Reconstructive Encoder/Decoder Architectures on Non-Stationary Time-Series: Loss Landscapes and Latent Complexities with and without Recurrence
 ## Contents
+- [Abstract](#abstract)
 - [Introduction](#introduction)
   - [Hypotheses](#hypotheses)
 - [Methods](#methods)
@@ -12,9 +13,6 @@
     - [Quantization Methods](#quantization-methods)
     - [Metric Normalization](#metric-normalization)
 - [Results](#results)
-  - [Classical vs Quantum](#classical-vs-quantum)
-  - [Prediction vs Reconstruction](#prediction-vs-reconstruction)
-  - [Recurrence](#recurrence)
   - [Loss Landscape Similarities](#loss-landscape-similarities)
   - [Series/Latent Complexity Fidelity](#serieslatent-complexity-fidelity)
   - [Generalization](#generalization)
@@ -29,6 +27,17 @@
 - [Abbreviations](#abbreviations)
 - [References](#references)
 - [Useful Commands](#useful-commands)
+## Abstract
+
+This work systematically investigates the performance of quantum versus classical, recurrent vs feedforward and autoregressive vs reconstructive encoder/decoder models on generated highly non‑stationary time‑series datasets of varying complexities.
+The objective is to understand the impact of these design choices on loss landscape characteristics and the complexity of learned latent representations.
+A model for each possible combination of factors (8) was trained over each dataset (25) for a total of 200 models.
+A systematic analysis of loss landscape properties (initial slope, curvature, and high-frequency fluctuation spectra) is done alongside latent representation fidelity analysis that is quantified via four main complexity metrics: Hurst Exponent, Optimized Multiscale Permutation Entropy, Differential Entropy and Lempel‑Ziv Complexity.
+Results show that autoregressive models converge faster and achieve lower final validation loss than reconstructive counterparts across both classical and quantum domains.
+Recurrent architectures increased loss landscape steepness and curvature but did not improve final training or validation loss.
+Unfortunately, the quantum models ran into an issue with static loss history, which prevented the ability to draw general conclusions from comparing those two groups.
+These findings highlight the interplay of learning objective, recurrence, and entanglement topology in designing effective encoder–decoder frameworks for highly non-stationary time-series data.
+
 ## Introduction
 Time-series data often exhibit complex, non-stationary patterns that pose challenges for modeling and compression.
 Autoencoders (AEs) have long been used for unsupervised learning of low-dimensional representations (embeddings) of data (Hinton, Salakhutdinov; 2006).
@@ -142,7 +151,7 @@ Sequences are then randomly shuffled and representative sequences are selected v
 These sample sequences are ensured to be in the validation set so that there is a good spread of metric values to use when looking at relationships during the analysis.
 In order to ensure a reasonable amount of training data for each dataset, the grid was limited to choosing at most a third of the series in each dataset.
 The unchosen sequences are then split between each dataset's training and validation partitions as close as possible to a desired split ratio and the size of each validation partition is then standardized to the maximum validation partition size.
-For the experimental results in this paper, a ratio of 2/3 training to 1/3 validation is used.
+For the experimental results in this paper, a ratio of 2/3 training to 1/3 validation is used (20 training examples, 10 validation per dataset).
 
 ### Hyperparameter Optimization
 Hyperparameter optimization was done over the same validation set for each config, following the standard definition of hyperparameter tuning.
@@ -212,12 +221,10 @@ The chosen `cluster_selection_method` is `'leaf'` for improved granularity.
 The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 
 ## Results
-### Classical vs Quantum
-- Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only).
-- For further analysis in the quantum realm only, correlations are made between each model's mean validation series complexity metrics and the mean MWGE as well as the mean VNE of its bottleneck states when going through each series in that set.
-- All quantum models consistently chose the first two qubits as the trash feature indices at every state in each validation series as seen in the [BTFP index histograms](./images/results/btfp_histograms/).
-- The classical models in contrast showed much more flexibility in their chosen trash indices.
-### Prediction vs Reconstruction
+In the tables below, all quantum models start with a Q, all classical models with a C, all recurrent models have an R, AE signifies reconstruction task and TE means prediction task.
+Quantum bottleneck features used are each qubit's marginal probability of |0> (for analysis only - real bottleneck is density matrix).
+### Loss Landscape Similarities
+
   |Model Type|Initial Slope|Final Cost|AUC|
   |----|---------|--------|---------|
   |QAE |  0.00000| 0.19515|  6.04960|
@@ -232,8 +239,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   - Mean Initial Slope: Predictive=-0.01068, Reconstructive=-0.01048
   - Mean Final Cost: Predictive=0.47904, Reconstructive=0.50498
   - Mean AUC: Predictive=17.66211, Reconstructive=18.41619
-### Reccurence
-### Loss Landscape Similarities
 - Gradient Norms
   - Due to a bug with saving the gradient norm history during training, these results are not available
 - Prediction Loss
@@ -399,22 +404,37 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
 
 
 ### Series/Latent Complexity Fidelity
-- Bayesian Block Quantizer
-  - Hurst Exponent:
+- Hurst Exponent:
 
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.01442 | 0.05646
-    QRAE | 0.10263 | 0.05567
-    QTE | 0.07609 | 0.04141
-    QRTE | 0.01583 | 0.05897
-    CAE | 0.73218 | 0.01149
-    CRAE | 0.93175 | 0.00190
-    CTE | 0.73296 | 0.01097
-    CRTE | 0.93430 | 0.00182
-    PCC vs Loss | 0.9404971338803003
-    MSE vs Loss | -0.9097356424152886
+  Model Type | Pearson  |  MSE
+  -----------|----------|-----
+  QAE | 0.01442 | 0.05646
+  QRAE | 0.10263 | 0.05567
+  QTE | 0.07609 | 0.04141
+  QRTE | 0.01583 | 0.05897
+  CAE | 0.73218 | 0.01149
+  CRAE | 0.93175 | 0.00190
+  CTE | 0.73296 | 0.01097
+  CRTE | 0.93430 | 0.00182
+  PCC vs Loss | 0.9404971338803003
+  MSE vs Loss | -0.9097356424152886
 
+- Optimized Multiscale Permutation Entropy:
+
+  Model Type | Pearson  |  MSE
+  -----------|----------|-----
+  QAE | 0.04907 | 0.00688
+  QRAE | 0.09330 | 0.01566
+  QTE | -0.04163 | 0.00560
+  QRTE | 0.03699 | 0.01456
+  CAE | 0.84505 | 0.00018
+  CRAE | 0.92913 | 0.00007
+  CTE | 0.84892 | 0.00018
+  CRTE | 0.92687 | 0.00008
+  PCC vs Loss | 0.8970087592256916
+  MSE vs Loss | -0.7477178051356503
+
+- **Bayesian Block Quantizer**
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
@@ -429,21 +449,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     CRTE | 0.53279 | 0.00571
     PCC vs Loss | 0.6858864023129103
     MSE vs Loss | -0.8395006041574629
-
-  - Optimized Multiscale Permutation Entropy:
-
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.04907 | 0.00688
-    QRAE | 0.09330 | 0.01566
-    QTE | -0.04163 | 0.00560
-    QRTE | 0.03699 | 0.01456
-    CAE | 0.84505 | 0.00018
-    CRAE | 0.92913 | 0.00007
-    CTE | 0.84892 | 0.00018
-    CRTE | 0.92687 | 0.00008
-    PCC vs Loss | 0.8970087592256916
-    MSE vs Loss | -0.7477178051356503
 
   - Differential Entropy:
 
@@ -491,21 +496,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     **All models** |  0.90680 | −0.78514
 
 - Equal Bin Widths Quantizer
-  - Hurst Exponent:
-
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.01442 | 0.05646
-    QRAE | 0.10263 | 0.05567
-    QTE | 0.07609 | 0.04141
-    QRTE | 0.01583 | 0.05897
-    CAE | 0.73218 | 0.01149
-    CRAE | 0.93175 | 0.00190
-    CTE | 0.73296 | 0.01097
-    CRTE | 0.93430 | 0.00182
-    PCC vs Loss | 0.9404971338803003
-    MSE vs Loss | -0.9097356424152886
-
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
@@ -520,21 +510,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     CRTE | 0.97055 | 0.00129
     PCC vs Loss | 0.7996880260125934
     MSE vs Loss | -0.7421782183649015
-
-  - Optimized Multiscale Permutation Entropy:
-
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.04907 | 0.00688
-    QRAE | 0.09330 | 0.01566
-    QTE | -0.04163 | 0.00560
-    QRTE | 0.03699 | 0.01456
-    CAE | 0.84505 | 0.00018
-    CRAE | 0.92913 | 0.00007
-    CTE | 0.84892 | 0.00018
-    CRTE | 0.92687 | 0.00008
-    PCC vs Loss | 0.8970087592256916
-    MSE vs Loss | -0.7477178051356503
 
   - Differential Entropy:
 
@@ -582,21 +557,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     | **All models** |  0.79880        | -0.85282    |
 
 - HDBSCAN Quantizer
-  - Hurst Exponent:
-
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.01442 | 0.05646
-    QRAE | 0.10263 | 0.05567
-    QTE | 0.07609 | 0.04141
-    QRTE | 0.01583 | 0.05897
-    CAE | 0.73218 | 0.01149
-    CRAE | 0.93175 | 0.00190
-    CTE | 0.73296 | 0.01097
-    CRTE | 0.93430 | 0.00182
-    PCC vs Loss | 0.9404971338803003
-    MSE vs Loss | -0.9097356424152886
-
   - Lempel Ziv Complexity:
 
     Model Type | Pearson  |  MSE
@@ -611,21 +571,6 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     CRTE | 0.81581 | 0.00205
     PCC vs Loss | 0.6088854526048683
     MSE vs Loss | -0.795056928525413
-
-  - Optimized Multiscale Permutation Entropy:
-
-    Model Type | Pearson  |  MSE
-    -----------|----------|-----
-    QAE | 0.04907 | 0.00688
-    QRAE | 0.09330 | 0.01566
-    QTE | -0.04163 | 0.00560
-    QRTE | 0.03699 | 0.01456
-    CAE | 0.84505 | 0.00018
-    CRAE | 0.92913 | 0.00007
-    CTE | 0.84892 | 0.00018
-    CRTE | 0.92687 | 0.00008
-    PCC vs Loss | 0.8970087592256916
-    MSE vs Loss | -0.7477178051356503
 
   - Differential Entropy:
 
@@ -673,7 +618,7 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
     | **All models** |  0.74658        | -0.60454    |
 
 ### Generalization
-- Validation / Training loss ratios normalized by number of series per partition:
+- Validation / Training loss ratios normalized by number of series per partition (lower is more generalized):
 
   Model | Min | Mean | Max
   ---|---|---|---
@@ -686,79 +631,105 @@ The `min_cluster_size` is set at 2 to minimize labeling points as noise.
   CTE | 0.3931151137661798 | 0.5336285601469368 | 0.6988113307483387
   CRTE | 0.4053806543771417 | 0.5393152840260769 | 0.6882955050088161
 
-- Complexity vs Generalization Correlations:
-  - PCC of HE Pearson: -0.92941
-  - PCC of HE MSE:      0.92448
-  - PCC of Optimized MPE Pearson: -0.96372
-  - PCC of Optimized MPE MSE:      0.83839
+- Complexity Fidelity vs Generalization Correlations:
+  - PCC of HE Pearson vs: -0.92941
+  - PCC of HE MSE vs:      0.92448
+  - PCC of Optimized MPE Pearson vs: -0.96372
+  - PCC of Optimized MPE MSE vs:      0.83839
   - Bayesian Blocks Quantizer
-    - PCC of LZC Pearson vs Generalization Ratio: -0.91653
-    - PCC of LZC MSE vs Generalization Ratio:      0.94292
-    - PCC of DE Pearson vs Generalization Ratio: -0.94406
-    - PCC of DE MSE vs Generalization Ratio:      0.88587
+    - PCC of LZC Pearson vs: -0.91653
+    - PCC of LZC MSE vs:      0.94292
+    - PCC of DE Pearson vs: -0.94406
+    - PCC of DE MSE vs:      0.88587
   - Equal Bin Width Quantizer
-    - PCC of DE Pearson vs Generalization Ratio: -0.96947
-    - PCC of DE MSE vs Generalization Ratio:      0.96455
-    - PCC of LZC Pearson vs Generalization Ratio: -0.90805
-    - PCC of LZC MSE vs Generalization Ratio:      0.82729
+    - PCC of DE Pearson vs: -0.96947
+    - PCC of DE MSE vs:      0.96455
+    - PCC of LZC Pearson vs: -0.90805
+    - PCC of LZC MSE vs:      0.82729
   - HDBSCAN Quantizer
-    - PCC of DE Pearson vs Generalization Ratio: -0.97083
-    - PCC of DE MSE vs Generalization Ratio:      0.93219
-    - PCC of LZC Pearson vs Generalization Ratio: -0.99884
-    - PCC of LZC MSE vs Generalization Ratio:      0.93708
+    - PCC of DE Pearson vs: -0.97083
+    - PCC of DE MSE vs:      0.93219
+    - PCC of LZC Pearson vs: -0.99884
+    - PCC of LZC MSE vs:      0.93708
 
 ## Discussion
-Recurrence shows up as the main indicator of mode (based on line of best fit slope and raw points on the plots) for both MWGE and VNE.
-The non-recurrent models all have VNE and MWGE of 0 because the architecture is limited to single-qubit rotations.
-The fact that the recurrent models have nonzero values is due to a literal perturbation of the density matrix from the recurrent architecture.
-- Pearson correlation coefficients (PCCs) between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE
-- All quantum models showed higher validation to training loss ratio than their classical counterparts, suggersting poorer generalization as predicted.
+
+### Prediction vs Reconstruction
+The prediction task beat the reconstruction task on AUC for loss history, on mean final cost and on mean initial slope of loss history over first ten epochs.
+The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting independent effects that stack.
+However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
+Mean validation/training loss ratio of reconstruction models is ~.54574 vs ~.54565 for predictive models (a ~.00009 difference), which is negligible.
+The final mean validation loss was better for every predictive model than its equivalent reconstructive, especially for the classical models.
+There are no significant loss landscape differences between predictive and reconstructive objectives.
+
+### Recurrent vs Feedforward
+
+Mean first and second derivatives of loss history are both higher for every recurrent version of otherwise equivalent feedforward model architectures.
+Additionally, the classical recurrent models have much larger high frequency energy ratio for both first and second derivatives than the classical feedforward models.
+Unfortunately, the quantum models gave NaN and thus cannot be compared.
+Interestingly recurrence seemed to improve initial slope for quantum models but worsen initial slope for classical models.
+Recurrence increased final training loss, validation loss and AUC of loss history, contradicting the hypothesized result.
+Recurrence improved the generalization ratio for quantum models but worsened it for both objectives in classical models.
+This could be due to the recurrent hidden state scalar multiplier being the only free parameter that does not have any entanglement applied immediately after.
+One interesting finding that remains unexplained is that the Pearson correlation coefficients (PCCs) between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE.
+
+### Quantum vs Classical
+
+Quantum and classical models showed strikingly different loss landscapes but not in the way that was predicted.
+Quantum models implemented encountered extremely flat loss landscapes, commonly known as barren plateaus, which resulted in near‑zero gradients and hindered optimization.
+Excessive entanglement, calculating the prediction loss from density matrix and the use of only z rotation gates in the quantum circuits was linked to these barren plateaus after manual experimentation to find a loss landscape that was not flat.
+The flat quantum loss landscape shown in the plots signals a clear disparity between the two model architectures.
+All quantum models consistently chose the first two qubits as the trash feature indices at every state in each validation series as seen in the [BTFP index histograms](./images/results/btfp_histograms/).
+The classical models in contrast showed much more flexibility in their chosen trash indices.
+It seems quite likely, though, that the quantum index choice inflexibility is a direct result of the overentangled topology (circular).
+The MWGE and VNE of bottleneck states did not correlate to any complexity metrics over each series.
+The only noticable pattern with MWGE and VNE was recurrence shows up (based on line of best fit slope and raw points on the plots).
+The quantum models did show poorer generalization based on the validation:training loss ratios as predicted but not because of expected increases in steepness and curvature.
 
 ### Latent Complexity Matching
 The majority of model types (`1 - 15/(16*8) = 88.28125%` across all metrics, quantization and aggregation methods) show positive line of best fit slope between data and model latent complexity metric values, supporting the hypothesis that a trained ENC-DEC exhibits similar complexity characteristics in its latent representations as that of the time series on which it was trained.
 Additionally, with the exception of quantization via HDBSCAN, the PCCs between the latent and original are almost all positive.
-However, the models whose latent complexity metrics closely matched the data’s complexity by mean squared error (MSE) did **not** consistently achieve lower errors as predicted.
+However, the models whose latent complexity metrics closely matched the data’s complexity by mean squared error (MSE) did **not** consistently achieve lower errors as predicted when grouping all models together.
 In fact the exact opposite trend was observed, with most groups showing negative PCC between latent/series complexity MSE and validation loss as well as positive PCC between latent/series complexity PCCs and validation loss under every quantization method.
-This suggests that it is actually disadvantageous for the model's generalization ability if it matches the complexity of its latent features with that of the time series from the dataset.
-One possible reason is that the chosen complexity metrics do not capture the specific temporal structures that affect prediction error.
-A model can thus succeed by encoding the time-series dynamics in ways that do not preserve these complexity attributes.
-The only grouping that consistently had a positive PCC between the validation series/latent MSE and loss was the classical models.
-Additionally, the trend persists when checking for correlation between (metric, model type generalization ratio) combinations
-These results run counter to the complexity matching principle, which suggests optimal information transfer in complex systems occurs when complexities are aligned.
-In summary, despite positive lines of best fit slopes for most model types' complexity metrics, aligned latent and input complexities was neither necessary nor sufficient for good performance and in fact was anticorrelated with both final validation loss and generalization according to this experiment.
-
-### Prediction vs Reconstruction
-- The prediction task beat the reconstruction task both on AUC for loss history, on mean final cost and on mean initial slope (of loss history over first ten epochs).
-- The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting a synergistic effect.
-However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
-- Recurrence increased final training loss and AUC of loss history.
-- Mean validation/training loss ratio of reconstruction models is 0.5457410112 vs 0.5456549159 for predictive models (a ~.00009 difference), which is negligible.
-### Recurrent vs Feedforward
-### Quantum vs Classical
+However, further inspection reveals a scale difference between the classical and quantum models in both MSE (orders of magnitude) and validation loss that could cause such a disparity.
+In fact, grouping by classical and quantum shows a much more promising picture.
+Under this grouping, 5/6 PCCs of the complexity matching PCCs vs validation loss are negative as expected, with classical Bayesian quantizer being the only exception.
+Additionally, this grouping shows positive PCC for complexity matching MSE vs validation loss for 4/6, with quantum equal-width binning and quantum HDBSCAN being the exceptions.
+Models whose latent complexity closely matched the data's complexity metrics by both PCC and MSE also generalize better as measured by the validation:training loss ratios.
 
 ### Sources of Error
+
+Three known sources of error impacted the validity of this experiment:
+- Barren plateaus in quantum models prevented gradient‑based learning.
 - A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
-The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used.
+The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used but if extending an unseen phrase does not lead to an already seen phrase, nothing changes.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
 - Since the original data generation grid choices and data partitions were done with 3D binning based on the Higuchi fractal dimension instead of MPE (before the replacement), the variation in MPE values is much lower than desired.
 
 ## Conclusion
 
+This work compared multiple neural architectures on non‑stationary time‑series, revealing clear advantages for recurrent over feedforward and for predictive vs reconstructive models in capturing evolving patterns and long‑term dependencies.
+Unfortunately, due to broken parity between the quantum and classical architectures, only limited conclusions can be drawn related solely to comparing the implemented architectures.
+Quantum models struggled with barren plateaus caused partially by excessive entanglement, highlighting the importance of entanglement topology for quantum model design.
+This study reveals that predictive objectives confer modest but consistent gains over reconstruction in both final loss and early‐epoch dynamics, with particularly clear benefits for classical architectures.
+Recurrence, however, proved to be mostly disadvantageous in terms of loss landscape and loss history.
+Finally, latent complexity analysis confirms that most trained models correlate complexity over inputs to complexity of that input's latent representation.
+However, only when segregating classical and quantum groups do improved complexity‐matching metrics reliably predict lower validation losses and better generalization.
+These findings highlight the interplay between model class, training objective, and architectural choices, and they suggest future work should initially focus on optimizing quantum circuit ansatz.
+
 ## Future Work
-- What happens to prediction loss if you add a loss term for complexity matching?
-- Give the reconstruction objective two consecutive points and ask it to reconstruct them both to see if it learns temporal dynamics better than single state reconstruction
-- When time allows, each block (including embedding) should have at least rotation gates for each quantum axis per block (w/ 3 layers per block for classical as well), eliminating the gate choices other than entanglement from hyperparam search
-- Many blocks per model half
-  - Look at total information content in each block along encoder and decoder
-    - Would expect encoder to *slowly decrease* and decoder to *quickly increase*
-- More features w/ different entanglement topologies and equivalent classical "coupling" mechanisms
-- Add nonlinearities
-- Attempt to use data generation that has opposing trends for complexity metric targets (target HE vs target LZC)
-- Chaotic time series
-- Composite regimes (same randomly sampled sequence of generators for each series in dataset and different sequence per dataset)
-- Try without pre-specifying a bottleneck size by extending the trash cost functions to just sum across all features to get something like total n-dimensional distance from 0 at the bottleneck
-- Try adding back the linearly increased probabilistic use of their own noise (see commits `b134b50` and `20c5cad`)
+Beyond that, further future work will augment the prediction objective with an explicit complexity-matching term to evaluate its effect on predictive performance.
+Another modification could be to extend the reconstruction task so that the model must reconstruct two consecutive states rather than a single state, testing whether this multi-step target leads to better loss or generalization than single state reconstruction.
+
+By increasing the number of blocks in both encoder and decoder pathways, how total information content evolves can be tracked to test for e.g. a gradual decrease through the encoder and a rapid increase in the decoder.
+Other architectural improvements to be made are the exploration of varied entanglement topologies alongside equivalent classical coupling mechanisms with more features so that more topologies are possible and the integration of nonlinear activation functions.
+Instead of fixing the bottleneck size a priori, future work could extend the “trash” cost function to sum the trash cost of each possible bottleneck size weighted by 1/num_trash_indices, allowing the network to determine its effective bottleneck dimensionality.
+One final architectural modification that would be interesting to investigate the impact of in the future is a revisiting of the gradually increasing the probability of forcing the model to deal with its own noise (see commits b134b50 and 20c5cad) instead of using teacher forcing.
+
+On the data side, time series generation with deliberately opposing complexity trends (i.e. targeting high HE with low LZC) can be done to more rigorously test complexity-matching.
+It would also be interesting to explore performance on chaotic signals and composite regimes.
+
 
 ## Abbreviations
 - AE = Auto-encoder
@@ -912,12 +883,6 @@ The corrected values are used in analysis, however, so the effect of this is inf
   doi      = {10.1093/biomet/74.1.95},
   url      = { https://doi.org/10.1093/biomet/74.1.95 },
   eprint   = { https://academic.oup.com/biomet/article-pdf/74/1/95/578634/74-1-95.pdf },
-}
-1. ***!TODO!  READ THIS PAPER:*** @misc{dijk2018deep,
-  author = {David van Dijk and Scott Gigante and Alexander Strzalkowski and Guy Wolf and Smita Krishnaswamy},
-  title  = {Deep Transition-Encoding Networks for Learning Dynamics},
-  year   = {2018},
-  url    = { https://openreview.net/forum?id=S1VG0F1Dz }
 }
 1. @article{article,
   author  = {Kaffashi, Farhad and Foglyano, Ryan and Wilson, Christopher and Loparo, Kenneth},

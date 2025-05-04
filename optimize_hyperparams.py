@@ -20,7 +20,9 @@ def sample_hyperparameters(num_features):
 
 def get_loss(data, model_type, config, allocated_epochs):
     print(config)
-    np.random.seed(12984)
+    seed = 12984
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
     training = data[0]
     validation = data[1]

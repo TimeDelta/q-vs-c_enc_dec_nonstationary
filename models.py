@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from qiskit import QuantumCircuit, qpy
 from qiskit.circuit import Parameter
-from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix
+from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix, Pauli
 
 from utility import dm_to_statevector, fix_dm_array, normalize_classical_vector
 
@@ -55,6 +55,23 @@ class QuantumEncoderDecoder:
         param_values = {p: state[i] for i, p in enumerate(self.input_params)}
         return Statevector.from_instruction(self.embedder.assign_parameters(param_values))
 
+    def collapse_state(self, state):
+        if isinstance(state, DensityMatrix):
+            dm = state
+        else:
+            dm = DensityMatrix(state)
+
+        x_angles = []
+        for qubit in range(self.num_qubits):
+            pauli_list = ['I'] * self.num_qubits
+            pauli_list[self.num_qubits - 1 - qubit] = 'X'
+
+            ex = np.real(dm.expectation_value(Pauli(''.join(pauli_list))))
+            ex = max(-1.0, min(1.0, ex))
+            x_angles.append(np.arccos(ex))
+
+        return np.array(x_angles)
+
     def get_trash_indices(self, bottleneck_dm):
         num_trash = bottleneck_dm.num_qubits - self.bottleneck_size
         marginals = []
@@ -76,7 +93,9 @@ class QuantumEncoderDecoder:
             self.input_params.append(self.add_rotation_gates(self.embedder, 'Embedding Rθ ' + str(i), i))
 
     def add_entanglement_topology(self, qc: QuantumCircuit):
-        if self.entanglement_topology == 'skip':
+        if self.entanglement_topology == 'none':
+            return
+        elif self.entanglement_topology == 'skip':
             i = 0
             while i < self.num_qubits:
                 if self.entanglement_gate.lower() == 'cx':
@@ -170,6 +189,7 @@ class QuantumEncoderDecoder:
         if param:
             parameter = param
         circuit.rx(parameter, qubit_index)
+        circuit.ry(parameter, qubit_index)
         circuit.rz(parameter, qubit_index)
         return parameter
 

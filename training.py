@@ -135,6 +135,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
     for d_i, (training, validation) in sorted(dataset_partitions.items()):
         for model_type in model_types:
             np.random.seed(RANDOM_SEED)
+            torch.manual_seed(RANDOM_SEED)
             print('Training ' + model_type.upper() + ' for dataset ' + str(d_i))
             is_recurrent = 'r' in model_type
             autoregressive = 'te' in model_type # transition encoder
@@ -270,7 +271,6 @@ if __name__ == '__main__':
     parser.add_argument("data_directory", type=str, nargs='?', default='generated_datasets', help="Path to the directory containing the generated data.")
     parser.add_argument("--prefix", type=str, default=None, help="Prefix to use for every saved file name in this run.")
     parser.add_argument("--type_filter", type=str, default=None, help="Only train model types that contain the provided string")
-    parser.add_argument("--seed", type=int, default=RANDOM_SEED, help="Seed value to set before creation of each model.")
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--config", type=str, default=None, help="Path to custom config JSON file")
     args = parser.parse_args()
@@ -281,7 +281,6 @@ if __name__ == '__main__':
         model_types = [m for m in MODEL_TYPES if args.type_filter in m]
     dataset_partitions = import_generated(args.data_directory)
     num_epochs = args.num_epochs
-    RANDOM_SEED = args.seed
 
     num_features = len(next(iter(dataset_partitions.values()))[0][0][1][0])
     if args.config:
@@ -294,7 +293,7 @@ if __name__ == '__main__':
             'num_blocks': 1,
             'learning_rate': 0.021450664374153845,
             'max_penalty_weight': 2.0,
-            'entanglement_topology': 'circular',
+            'entanglement_topology': 'none',
             'entanglement_gate': 'cx',
         }
     train_and_analyze_bottlenecks(args.data_directory, dataset_partitions, num_features, num_epochs, config, run_prefix, model_types)
