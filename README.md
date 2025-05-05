@@ -658,20 +658,33 @@ Quantum bottleneck features used are each qubit's marginal probability of |0> (f
 The prediction task beat the reconstruction task on AUC for loss history, on mean final cost and on mean initial slope of loss history over first ten epochs.
 The improvement in final loss from using prediction vs reconstruction tasks with recurrent architectures was greater than the loss improvement for feedforward architectures suggesting independent effects that stack.
 However, this difference for the quantum models was negligible (`(.1959-.19537)-(.19515-.19463)=.00001`).
-Mean validation/training loss ratio of reconstruction models is ~.54574 vs ~.54565 for predictive models (a ~.00009 difference), which is negligible.
+Mean validation/training loss ratio of reconstruction models is ≈.54574 vs ≈.54565 for predictive models (a ≈.00009 difference), which is negligible.
 The final mean validation loss was better for every predictive model than its equivalent reconstructive, especially for the classical models.
 There are no significant loss landscape differences between predictive and reconstructive objectives.
 
 ### Recurrent vs Feedforward
 
-Mean first and second derivatives of loss history are both higher for every recurrent version of otherwise equivalent feedforward model architectures.
-Additionally, the classical recurrent models have much larger high frequency energy ratio for both first and second derivatives than the classical feedforward models.
-Unfortunately, the quantum models gave NaN and thus cannot be compared.
-Interestingly recurrence seemed to improve initial slope for quantum models but worsen initial slope for classical models.
-Recurrence increased final training loss, validation loss and AUC of loss history, contradicting the hypothesized result.
+Introducing **recurrence** produced architecture-dependent effects rather than uniformly increasing landscape ruggedness.
+On the **prediction loss** histories, classical feedforward models (CAE, CTE) exhibited substantially higher mean absolute first derivatives (≈.458 – .478) than their recurrent counterparts (CRAE ≈ .180, CRTE ≈ .225), indicating that recurrence made the initial training descent shallower.
+By contrast, the mean absolute second derivatives were orders of magnitude larger for classical recurrent models than for feedforward models, demonstrating increased curvature with recurrence.
+In the quantum case, they even created a non-flat loss history.
+Upon examining the mean history of each loss component per model type, this is clearly due to the BTFP since it is the only differing component.
+Thus the change to the otherwise flat quantum loss landscapes is because the hidden state perturbations directly inject trash information.
+These findings imply that recurrence tends to reduce the magnitude of instantaneous loss changes but increase curvature and higher-order fluctuations in both prediction loss and BTFP.
+However, the hypothesis that recurrence would ultimately yield lower final loss was **not** supported.
+Classical recurrent models reached higher final training and validation losses and larger loss history AUCs than their feedforward counterparts.
 Recurrence improved the generalization ratio for quantum models but worsened it for both objectives in classical models.
-This could be due to the recurrent hidden state scalar multiplier being the only free parameter that does not have any entanglement applied immediately after.
-One interesting finding that remains unexplained is that the Pearson correlation coefficients (PCCs) between BTFP histories of all recurrent models and their non-recurrent counterparts are negative except for CRAE and CAE.
+This could be due to the recurrence itself being a mixing operation since it is applied directly to the density matrix for the quantum architecture.
+
+A potential reason for the underwhelming impact of recurrence is the extremely minimalist implementation: only one additional trainable scalar parameter is introduced as the hidden state multiplier.
+This single-parameter recurrence may be insufficient to capture additional temporal patterns beyond what feedforward models already learn while still adding optimization complexity.
+Another intriguing observation is that the PCCs between the full BTFP cost histories of each recurrent model and its non-recurrent counterpart were negative for almost all model types (except CRAE vs CAE), indicating that recurrence fundamentally altered how information is allocated in the bottleneck over training.
+For quantum architectures this might be explainable by their inflexibility in choosing trash feature indices, which will be explained in the next section.
+It remains unexplained why this would not also happen with the classical prediction objective, though.
+
+In summary, although recurrence theoretically enables the capture of long-term dependencies, this minimal recurrent design made learning more difficult and did not reduce loss.
+The recurrent models’ loss landscapes were generally less steep but more curved and yielded higher errors than feedforward models, particularly in the classical domain.
+These results suggest that a more expressive or higher-capacity recurrent architecture would be required to realize the theoretical benefits of recurrence in these encoder–decoder tasks.
 
 ### Quantum vs Classical
 
@@ -699,13 +712,19 @@ Models whose latent complexity closely matched the data's complexity metrics by 
 
 ### Sources of Error
 
-Three known sources of error impacted the validity of this experiment:
-- Barren plateaus in quantum models prevented gradient‑based learning.
-- A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
+Three known issues affected the validity of this experiment:
+- **Barren Plateaus in Quantum Models:** As discussed, the quantum models suffered from vanishing gradients (barren plateaus) which prevented effective learning.
+This is a critical issue for any quantum neural network and was a primary reason the quantum vs classical comparison was effectively inconclusive.
+Overcoming this problem (through changes in network design) is essential for future studies.
+- **LZC Computation Bug:** A logical error in the LZC calculation that allowed for overlap of phrases was found after data generation (see lzc_corrections.py from commit 1b51cf870c7df4a98eeb8bf26c07eb09cf77c24f) with the following statistics for their differences: mean=1.04; median=1; max=5; std dev=0.9429.
 The correct value was always higher due to this because allowing overlap means a phrase that has already be seen can be used but if extending an unseen phrase does not lead to an already seen phrase, nothing changes.
 The minimum correct value for any series in the generated data was 33 for a maximum effect of 15.15% and both a mean and median effect of around 1/33 (3%).
 The corrected values are used in analysis, however, so the effect of this is infinitesimal being limited only to how much variety there was in the complexity metrics of the series chosen for the comparison grid.
-- Since the original data generation grid choices and data partitions were done with 3D binning based on the Higuchi fractal dimension instead of MPE (before the replacement), the variation in MPE values is much lower than desired.
+- **Data Binning for MPE:** Since the original data generation grid choices and data partitions were done with 3D binning based on the Higuchi fractal dimension instead of MPE (before the replacement), the variation in MPE values is much lower than desired, which might limit the ability to observe differences related to MPE.
+This is a minor limitation and suggests that future tests should ensure the sample selection covers all metrics of interest in the series grid binning.
+
+Despite these errors, their overall impact on the conclusions is limited and the main outcomes remain valid.
+The largest caveat remains the quantum training failure, which is treated as a result in itself (highlighting a challenge) rather than a mere experimental error.
 
 ## Conclusion
 
@@ -713,7 +732,8 @@ This work compared multiple neural architectures on non‑stationary time‑seri
 Unfortunately, due to broken parity between the quantum and classical architectures, only limited conclusions can be drawn related solely to comparing the implemented architectures.
 Quantum models struggled with barren plateaus caused partially by excessive entanglement, highlighting the importance of entanglement topology for quantum model design.
 This study reveals that predictive objectives confer modest but consistent gains over reconstruction in both final loss and early‐epoch dynamics, with particularly clear benefits for classical architectures.
-Recurrence, however, proved to be mostly disadvantageous in terms of loss landscape and loss history.
+Recurrence, however, proved to be mostly disadvantageous in terms of training and validation loss.
+This combined with it's relatively flat loss landscape indicates that a more sophisticated recurrent design is required to achieve improvement.
 Finally, latent complexity analysis confirms that most trained models correlate complexity over inputs to complexity of that input's latent representation.
 However, only when segregating classical and quantum groups do improved complexity‐matching metrics reliably predict lower validation losses and better generalization.
 These findings highlight the interplay between model class, training objective, and architectural choices, and they suggest future work should initially focus on optimizing quantum circuit ansatz.
@@ -729,6 +749,8 @@ One final architectural modification that would be interesting to investigate th
 
 On the data side, time series generation with deliberately opposing complexity trends (i.e. targeting high HE with low LZC) can be done to more rigorously test complexity-matching.
 It would also be interesting to explore performance on chaotic signals and composite regimes.
+
+Pursuing these directions can provide information on how encoder–decoder architectures can be optimized for complex, non-stationary time-series data.
 
 
 ## Abbreviations
