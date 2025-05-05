@@ -889,9 +889,9 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 continue
             history = metric_history_lambda(model_stats.data)
             if model_type in lines_by_type:
-                line, = axis.plot(range(1, len(history)), history[1:], color=colors[model_type])
+                line, = axis.plot(range(len(history)), history, color=colors[model_type])
             else:
-                line, = axis.plot(range(1, len(history)), history[1:], label=model_type.upper(), color=colors[model_type])
+                line, = axis.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
             lines_by_type.setdefault(model_type, []).append(line)
         axis.set_xlabel('Epoch')
         axis.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
@@ -925,7 +925,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         figure2, axis2 = plt.subplots()
         mean_lines = []
         for model_type, history in mean_history_by_model_type.items():
-            line, = axis2.plot(range(1, len(history)), history[1:], label=model_type.upper(), color=colors[model_type])
+            line, = axis2.plot(range(len(history)), history, label=model_type.upper(), color=colors[model_type])
             mean_lines.append(line)
         axis2.set_xlabel('Epoch')
         axis2.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
