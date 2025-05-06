@@ -198,7 +198,7 @@ This maintains the guideline of sequence length (100) ≫ order! suggested by (C
 The center point for the time delay range is is set to the zero crossing of the signal autocorrelation because it is a key indicator of multi-scale patterns (Kafashi et al.; 2008).
 The minimum time delay is calculated as `max(1, min(center_point - 1/20 * sequence_length, 9/10 * center_point))`
 The maximum time delay is calculated as `max(center_point + 1/20 * sequence_length, 11/10 * center_point)`
-  - The scale parameter is set to 3 in order to ensure that (Wang et al.; 2019).
+  - The scale parameter is set to 3 so that, with N = 100 and order = 3, each coarse-grained series still has ≈33 samples (≈31 embedding vectors), just meeting the ≥30-vector rule of thumb for reliable permutation-entropy estimation (Wang et al., 2019).
   - See [implementation](./analysis.py#L229) for further details.
 #### Metric Normalization
 For comparison across metrics with different scales, theoretical maximum normalization is used for all metrics.
