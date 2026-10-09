@@ -18,7 +18,7 @@ The [checked-in smoke evidence](docs/pilot_smoke/README.md) documents three exac
 
 The [optimization diagnostic report](docs/optimization_diagnostic/README.md) extends training to eight epochs across two data seeds and identifies the next optimization checks.
 
-The [fresh-seed forecasting protocol](docs/fresh_seed_forecasting_protocol.md) specifies an eight-realization replication with all model and probe selections locked before test generation.
+The [fresh-seed forecasting report](docs/fresh_seed_forecasting/README.md) evaluates eight independent data realizations under a [fixed protocol](docs/fresh_seed_forecasting_protocol.md). Reduced-rank regression has lower shifted-test native forecast MSE than the quantum transition encoder in all eight realizations at this training budget. All model and probe selections were locked before test generation.
 
 The [initialization sensitivity grid](docs/initialization_sensitivity/README.md) checks the native eight-epoch result across two initialization seeds and two learning rates, with training and validation data only.
 

@@ -1,0 +1,14 @@
+{
+  "model_cases": 112,
+  "test_metric_rows": 5376,
+  "constant_rows": 384,
+  "data_realizations": 8,
+  "all_selection_hashes_unchanged": true,
+  "tests_generated_after_selection_lock": true,
+  "datasets_regenerated_exactly": true,
+  "fixed_budget_and_validation_selection_verified": true,
+  "probe_metadata_matches_lock": true,
+  "finite_test_outcomes": true,
+  "max_rotation_prediction_difference": 3.219646771412954e-15,
+  "archive_sha256": "e9c01d0ceb664c080708e7d78660da4042189dc6f62d25a0ba4a165d4f89a34d"
+}

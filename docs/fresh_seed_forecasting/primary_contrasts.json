@@ -1,0 +1,50 @@
+[
+  {
+    "data_seed": 113,
+    "qte_native_ood_mse": 0.12108752759566921,
+    "reduced_rank_native_ood_mse": 0.08916934963355834,
+    "difference": 0.03191817796211087
+  },
+  {
+    "data_seed": 127,
+    "qte_native_ood_mse": 0.1111392466904042,
+    "reduced_rank_native_ood_mse": 0.08712197427626925,
+    "difference": 0.024017272414134955
+  },
+  {
+    "data_seed": 139,
+    "qte_native_ood_mse": 0.128229063538506,
+    "reduced_rank_native_ood_mse": 0.08655938558281465,
+    "difference": 0.04166967795569135
+  },
+  {
+    "data_seed": 151,
+    "qte_native_ood_mse": 0.1155577084720703,
+    "reduced_rank_native_ood_mse": 0.09237511201496178,
+    "difference": 0.023182596457108517
+  },
+  {
+    "data_seed": 163,
+    "qte_native_ood_mse": 0.1250304159117217,
+    "reduced_rank_native_ood_mse": 0.0919254181448495,
+    "difference": 0.0331049977668722
+  },
+  {
+    "data_seed": 179,
+    "qte_native_ood_mse": 0.11107374145424165,
+    "reduced_rank_native_ood_mse": 0.09698220333448708,
+    "difference": 0.014091538119754568
+  },
+  {
+    "data_seed": 191,
+    "qte_native_ood_mse": 0.1256522849409289,
+    "reduced_rank_native_ood_mse": 0.09149378595952966,
+    "difference": 0.034158498981399235
+  },
+  {
+    "data_seed": 211,
+    "qte_native_ood_mse": 0.13555915982919145,
+    "reduced_rank_native_ood_mse": 0.09330987247090645,
+    "difference": 0.042249287358284995
+  }
+]
