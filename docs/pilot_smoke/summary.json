@@ -1,0 +1,3242 @@
+[
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0011107124324982905,
+    "mean_probe_mse": 0.12511044533342763,
+    "model": "cae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008866541441627838,
+    "mean_probe_mse": 0.05871544479470789,
+    "model": "cae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 7.747527467886106e-05,
+    "mean_probe_mse": 0.07466897253803433,
+    "model": "cae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0006385543913118025,
+    "mean_probe_mse": 0.12717207579701673,
+    "model": "cae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00019091004408671225,
+    "mean_probe_mse": 0.054223692267505785,
+    "model": "cae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.00014440850622068893,
+    "mean_probe_mse": 0.07798309541335376,
+    "model": "cae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0011107124324982905,
+    "mean_probe_mse": 0.06417955742382025,
+    "model": "cae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008866541441627838,
+    "mean_probe_mse": 0.0033695062682956387,
+    "model": "cae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 7.747527467886106e-05,
+    "mean_probe_mse": 0.004575815446597929,
+    "model": "cae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0006385543913118025,
+    "mean_probe_mse": 0.07512052316237626,
+    "model": "cae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.00019091004408671225,
+    "mean_probe_mse": 0.0024313961309351023,
+    "model": "cae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00014440850622068893,
+    "mean_probe_mse": 0.007376500424395948,
+    "model": "cae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.045831184576447616,
+    "mean_probe_mse": 0.10892009963223756,
+    "model": "crae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05402493006720613,
+    "mean_probe_mse": 0.05675737895060689,
+    "model": "crae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.009566814733340616,
+    "mean_probe_mse": 0.07896063214915264,
+    "model": "crae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.03409389454709821,
+    "mean_probe_mse": 0.11850187425619478,
+    "model": "crae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.04488865964638316,
+    "mean_probe_mse": 0.04605982223351819,
+    "model": "crae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.015710132389294428,
+    "mean_probe_mse": 0.08769395396129234,
+    "model": "crae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.045831184576447616,
+    "mean_probe_mse": 0.05613801660564907,
+    "model": "crae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05402493006720613,
+    "mean_probe_mse": 0.016079147860703465,
+    "model": "crae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.009566814733340616,
+    "mean_probe_mse": 0.019954792607831947,
+    "model": "crae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.03409389454709821,
+    "mean_probe_mse": 0.07161362004016715,
+    "model": "crae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.04488865964638316,
+    "mean_probe_mse": 0.01320523593136225,
+    "model": "crae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.015710132389294428,
+    "mean_probe_mse": 0.02929461557061053,
+    "model": "crae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.05605076672489732,
+    "mean_probe_mse": 0.10877172006291533,
+    "model": "crte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05419977333975248,
+    "mean_probe_mse": 0.05699010873944331,
+    "model": "crte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.039658221647390156,
+    "mean_probe_mse": 0.07969227313191903,
+    "model": "crte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-17,
+    "mean_descriptor_distance": 0.04312691518834754,
+    "mean_probe_mse": 0.11885070597221155,
+    "model": "crte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.046530255419164744,
+    "mean_probe_mse": 0.04591548788106006,
+    "model": "crte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.01602521213460042,
+    "mean_probe_mse": 0.08851900907784109,
+    "model": "crte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05605076672489732,
+    "mean_probe_mse": 0.05844425652775438,
+    "model": "crte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05419977333975248,
+    "mean_probe_mse": 0.016852474147912282,
+    "model": "crte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.249000902703301e-16,
+    "mean_descriptor_distance": 0.039658221647390156,
+    "mean_probe_mse": 0.020927514275296325,
+    "model": "crte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.04312691518834754,
+    "mean_probe_mse": 0.07369060640794736,
+    "model": "crte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.046530255419164744,
+    "mean_probe_mse": 0.013773160858737036,
+    "model": "crte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.01602521213460042,
+    "mean_probe_mse": 0.030170920050777296,
+    "model": "crte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.001120584595842032,
+    "mean_probe_mse": 0.12518729625258163,
+    "model": "cte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008878284654292304,
+    "mean_probe_mse": 0.058713498219378685,
+    "model": "cte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 7.579862768227178e-05,
+    "mean_probe_mse": 0.07468294256825116,
+    "model": "cte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0006522011367349409,
+    "mean_probe_mse": 0.12719680544916886,
+    "model": "cte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00019114886292334227,
+    "mean_probe_mse": 0.054222309072181576,
+    "model": "cte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0001392859513348148,
+    "mean_probe_mse": 0.07799052953257703,
+    "model": "cte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.001120584595842032,
+    "mean_probe_mse": 0.06454139359494537,
+    "model": "cte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008878284654292304,
+    "mean_probe_mse": 0.003381135816622978,
+    "model": "cte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 7.579862768227178e-05,
+    "mean_probe_mse": 0.004587760290772728,
+    "model": "cte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0006522011367349409,
+    "mean_probe_mse": 0.07531745640778288,
+    "model": "cte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.00019114886292334227,
+    "mean_probe_mse": 0.00243997215634503,
+    "model": "cte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0001392859513348148,
+    "mean_probe_mse": 0.007382628854503542,
+    "model": "cte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.02954706504113333,
+    "mean_probe_mse": 0.11025599584238512,
+    "model": "gru_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.024380382081549277,
+    "mean_probe_mse": 0.0623136728462721,
+    "model": "gru_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.016180343978234753,
+    "mean_probe_mse": 0.08086494596179461,
+    "model": "gru_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.03068077419021172,
+    "mean_probe_mse": 0.11123576266517281,
+    "model": "gru_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.942890293094024e-16,
+    "mean_descriptor_distance": 0.04235722187417044,
+    "mean_probe_mse": 0.04593254444136217,
+    "model": "gru_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.03212899010934268,
+    "mean_probe_mse": 0.09643295342132498,
+    "model": "gru_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.02954706504113333,
+    "mean_probe_mse": 0.050450651749559046,
+    "model": "gru_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.024380382081549277,
+    "mean_probe_mse": 0.02125782600447041,
+    "model": "gru_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.016180343978234753,
+    "mean_probe_mse": 0.025984281717494766,
+    "model": "gru_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.03068077419021172,
+    "mean_probe_mse": 0.06139967177202984,
+    "model": "gru_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-16,
+    "mean_descriptor_distance": 0.04235722187417044,
+    "mean_probe_mse": 0.016785961299371432,
+    "model": "gru_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.03212899010934268,
+    "mean_probe_mse": 0.03254684611644849,
+    "model": "gru_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-15,
+    "mean_descriptor_distance": 0.00019068982343355955,
+    "mean_probe_mse": 0.1362043954194731,
+    "model": "mlp_ae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.0015866934985651806,
+    "mean_probe_mse": 0.07732739053382232,
+    "model": "mlp_ae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.006932603679841634,
+    "mean_probe_mse": 0.09181140577958655,
+    "model": "mlp_ae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.00028492674154483537,
+    "mean_probe_mse": 0.12150307498040254,
+    "model": "mlp_ae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.005166845764817717,
+    "mean_probe_mse": 0.05364555224842403,
+    "model": "mlp_ae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.012292143390139868,
+    "mean_probe_mse": 0.09113940633799668,
+    "model": "mlp_ae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.4432899320127035e-15,
+    "mean_descriptor_distance": 0.00019068982343355955,
+    "mean_probe_mse": 0.06202931545489409,
+    "model": "mlp_ae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-15,
+    "mean_descriptor_distance": 0.0015866934985651806,
+    "mean_probe_mse": 0.02818855973198991,
+    "model": "mlp_ae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.006932603679841634,
+    "mean_probe_mse": 0.03217583169205716,
+    "model": "mlp_ae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.00028492674154483537,
+    "mean_probe_mse": 0.0717490706859728,
+    "model": "mlp_ae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.005166845764817717,
+    "mean_probe_mse": 0.00673300909420555,
+    "model": "mlp_ae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.012292143390139868,
+    "mean_probe_mse": 0.01954042517409252,
+    "model": "mlp_ae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.000192115304415568,
+    "mean_probe_mse": 0.13541742115028382,
+    "model": "mlp_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.0016422073668178466,
+    "mean_probe_mse": 0.07553524835984403,
+    "model": "mlp_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.012122571412374328,
+    "mean_probe_mse": 0.08763770771655771,
+    "model": "mlp_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.00048138222420281975,
+    "mean_probe_mse": 0.1194751954161155,
+    "model": "mlp_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.5543122344752192e-15,
+    "mean_descriptor_distance": 0.009661828256403082,
+    "mean_probe_mse": 0.05391325628830217,
+    "model": "mlp_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-15,
+    "mean_descriptor_distance": 0.012201142569147207,
+    "mean_probe_mse": 0.0902076629756896,
+    "model": "mlp_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-15,
+    "mean_descriptor_distance": 0.000192115304415568,
+    "mean_probe_mse": 0.05744044333695402,
+    "model": "mlp_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.7763568394002505e-15,
+    "mean_descriptor_distance": 0.0016422073668178466,
+    "mean_probe_mse": 0.023572182880507317,
+    "model": "mlp_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.012122571412374328,
+    "mean_probe_mse": 0.025826340956700767,
+    "model": "mlp_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.00048138222420281975,
+    "mean_probe_mse": 0.06602154505089973,
+    "model": "mlp_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.552713678800501e-15,
+    "mean_descriptor_distance": 0.009661828256403082,
+    "mean_probe_mse": 0.0052577104352339345,
+    "model": "mlp_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.012201142569147207,
+    "mean_probe_mse": 0.016692687111451256,
+    "model": "mlp_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3877787807814457e-16,
+    "mean_descriptor_distance": 0.0006459579485524556,
+    "mean_probe_mse": 0.12233809315327082,
+    "model": "pca",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 1.6537465301366397e-06,
+    "mean_probe_mse": 0.05986491604954845,
+    "model": "pca",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0009580227667284409,
+    "mean_probe_mse": 0.0682548027256259,
+    "model": "pca",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0015211612462438188,
+    "mean_probe_mse": 0.10688481072394859,
+    "model": "pca",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0002396814967329321,
+    "mean_probe_mse": 0.0555340884431216,
+    "model": "pca",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0021306958791829484,
+    "mean_probe_mse": 0.07961366373837697,
+    "model": "pca",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0006459579485524556,
+    "mean_probe_mse": 0.02205081104171702,
+    "model": "pca",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 1.6537465301366397e-06,
+    "mean_probe_mse": 0.0011091403939769446,
+    "model": "pca",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0009580227667284409,
+    "mean_probe_mse": 0.0012995404994291288,
+    "model": "pca",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0015211612462438188,
+    "mean_probe_mse": 0.025373837301358032,
+    "model": "pca",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0002396814967329321,
+    "mean_probe_mse": 0.0007599709028222808,
+    "model": "pca",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0021306958791829484,
+    "mean_probe_mse": 0.0022370552249339577,
+    "model": "pca",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.12237127849574793,
+    "model": "persistence",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.06117097290040378,
+    "model": "persistence",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.07127717966220419,
+    "model": "persistence",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.1048389224197057,
+    "model": "persistence",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-17,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.054153078570914184,
+    "model": "persistence",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.08391690429279353,
+    "model": "persistence",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.00011326963988475002,
+    "model": "persistence",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 5.389971645176723e-06,
+    "model": "persistence",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 6.010227450543238e-06,
+    "model": "persistence",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 0.000116165742379269,
+    "model": "persistence",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 3.6497003427519075e-06,
+    "model": "persistence",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.0,
+    "mean_probe_mse": 9.511904569034254e-06,
+    "model": "persistence",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012532674684786183,
+    "mean_probe_mse": 0.12465175934960368,
+    "model": "qae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.00012209200998863573,
+    "mean_probe_mse": 0.05881105574644609,
+    "model": "qae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030357172063812964,
+    "mean_probe_mse": 0.07367753683974675,
+    "model": "qae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0012080826024289074,
+    "mean_probe_mse": 0.12661281825338586,
+    "model": "qae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.0002129824861599768,
+    "mean_probe_mse": 0.05436892481067037,
+    "model": "qae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.927907403583569e-05,
+    "mean_probe_mse": 0.0777209942119375,
+    "model": "qae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0012532674684786183,
+    "mean_probe_mse": 0.058792950688850314,
+    "model": "qae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00012209200998863573,
+    "mean_probe_mse": 0.003266372994673449,
+    "model": "qae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030357172063812964,
+    "mean_probe_mse": 0.004921640914491693,
+    "model": "qae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012080826024289074,
+    "mean_probe_mse": 0.07232046683925937,
+    "model": "qae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.0002129824861599768,
+    "mean_probe_mse": 0.002225601362082988,
+    "model": "qae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.927907403583569e-05,
+    "mean_probe_mse": 0.005677063002887723,
+    "model": "qae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008606969492919417,
+    "mean_probe_mse": 0.12587188500190033,
+    "model": "qae_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 7.399202362817386e-05,
+    "mean_probe_mse": 0.05910144248430144,
+    "model": "qae_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030550627385087983,
+    "mean_probe_mse": 0.0743956873817942,
+    "model": "qae_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0011982778950051212,
+    "mean_probe_mse": 0.1264055937991486,
+    "model": "qae_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.00022327770800607946,
+    "mean_probe_mse": 0.05433913084648861,
+    "model": "qae_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0001952740490815581,
+    "mean_probe_mse": 0.07382489875138067,
+    "model": "qae_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.0008606969492919417,
+    "mean_probe_mse": 0.05888467093980275,
+    "model": "qae_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 7.399202362817386e-05,
+    "mean_probe_mse": 0.0032948402504536407,
+    "model": "qae_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030550627385087983,
+    "mean_probe_mse": 0.004738340496081215,
+    "model": "qae_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0011982778950051212,
+    "mean_probe_mse": 0.07338292972614915,
+    "model": "qae_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00022327770800607946,
+    "mean_probe_mse": 0.0022638065413534475,
+    "model": "qae_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.0001952740490815581,
+    "mean_probe_mse": 0.007665511470556341,
+    "model": "qae_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.045892748391357284,
+    "mean_probe_mse": 0.10960672206874755,
+    "model": "qrae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.05406613191712196,
+    "mean_probe_mse": 0.056815847297535436,
+    "model": "qrae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.009509588382944297,
+    "mean_probe_mse": 0.07973812171553585,
+    "model": "qrae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.03373349306685442,
+    "mean_probe_mse": 0.11884879674969064,
+    "model": "qrae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.03135201383963401,
+    "mean_probe_mse": 0.04604972684789986,
+    "model": "qrae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.016122056327308776,
+    "mean_probe_mse": 0.08973421907114104,
+    "model": "qrae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.045892748391357284,
+    "mean_probe_mse": 0.05907672678083422,
+    "model": "qrae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05406613191712196,
+    "mean_probe_mse": 0.016621011503225088,
+    "model": "qrae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.009509588382944297,
+    "mean_probe_mse": 0.019604676258273442,
+    "model": "qrae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.03373349306685442,
+    "mean_probe_mse": 0.07272003249701296,
+    "model": "qrae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.03135201383963401,
+    "mean_probe_mse": 0.013413945067157157,
+    "model": "qrae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.016122056327308776,
+    "mean_probe_mse": 0.03072444109475003,
+    "model": "qrae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.045915482639903415,
+    "mean_probe_mse": 0.10958839462880687,
+    "model": "qrte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.05406514079223399,
+    "mean_probe_mse": 0.05681060084438954,
+    "model": "qrte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.009512281192549567,
+    "mean_probe_mse": 0.07972267677690426,
+    "model": "qrte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.03373626823944618,
+    "mean_probe_mse": 0.11888745456692647,
+    "model": "qrte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.031354739526996765,
+    "mean_probe_mse": 0.04604499202827087,
+    "model": "qrte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.01612083441670629,
+    "mean_probe_mse": 0.08971830500754256,
+    "model": "qrte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.045915482639903415,
+    "mean_probe_mse": 0.05910060160595291,
+    "model": "qrte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.05406514079223399,
+    "mean_probe_mse": 0.01662028740510109,
+    "model": "qrte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.009512281192549567,
+    "mean_probe_mse": 0.019638997308906173,
+    "model": "qrte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.03373626823944618,
+    "mean_probe_mse": 0.07281209760887628,
+    "model": "qrte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.031354739526996765,
+    "mean_probe_mse": 0.013410247381185311,
+    "model": "qrte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.01612083441670629,
+    "mean_probe_mse": 0.030658258111030616,
+    "model": "qrte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0012559920315388662,
+    "mean_probe_mse": 0.124660559329404,
+    "model": "qte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.00012522437573688408,
+    "mean_probe_mse": 0.05876775630274609,
+    "model": "qte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.003035707058842456,
+    "mean_probe_mse": 0.07368025982352382,
+    "model": "qte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0012129525574210399,
+    "mean_probe_mse": 0.12663087559260144,
+    "model": "qte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.00021335264688884638,
+    "mean_probe_mse": 0.054357538838804065,
+    "model": "qte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.60003269944643e-05,
+    "mean_probe_mse": 0.07788039073661222,
+    "model": "qte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012559920315388662,
+    "mean_probe_mse": 0.05883996597505843,
+    "model": "qte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00012522437573688408,
+    "mean_probe_mse": 0.003265896703026117,
+    "model": "qte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.003035707058842456,
+    "mean_probe_mse": 0.004907182042812218,
+    "model": "qte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012129525574210399,
+    "mean_probe_mse": 0.0723911785677293,
+    "model": "qte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00021335264688884638,
+    "mean_probe_mse": 0.0022266119773011023,
+    "model": "qte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.60003269944643e-05,
+    "mean_probe_mse": 0.0057295498086613805,
+    "model": "qte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008605950583690062,
+    "mean_probe_mse": 0.12587226868217627,
+    "model": "qte_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 7.396875387113733e-05,
+    "mean_probe_mse": 0.0591018050343813,
+    "model": "qte_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030550699031095135,
+    "mean_probe_mse": 0.0743962255803737,
+    "model": "qte_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0011982748401238397,
+    "mean_probe_mse": 0.12640556873848993,
+    "model": "qte_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.885780586188048e-16,
+    "mean_descriptor_distance": 0.00022327812026726122,
+    "mean_probe_mse": 0.05433914292430019,
+    "model": "qte_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.00019531489782632843,
+    "mean_probe_mse": 0.07382395690701295,
+    "model": "qte_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0008605950583690062,
+    "mean_probe_mse": 0.05888471908097773,
+    "model": "qte_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 7.396875387113733e-05,
+    "mean_probe_mse": 0.0032949048205507497,
+    "model": "qte_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030550699031095135,
+    "mean_probe_mse": 0.004738902101409994,
+    "model": "qte_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0011982748401238397,
+    "mean_probe_mse": 0.07338263374818285,
+    "model": "qte_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00022327812026726122,
+    "mean_probe_mse": 0.002263827680926526,
+    "model": "qte_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00019531489782632843,
+    "mean_probe_mse": 0.007665028463626273,
+    "model": "qte_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0007197497106116281,
+    "mean_probe_mse": 0.12431103370576588,
+    "model": "random_linear",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.003000660970403005,
+    "mean_probe_mse": 0.06036121266205157,
+    "model": "random_linear",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030276603908347063,
+    "mean_probe_mse": 0.07058028739939773,
+    "model": "random_linear",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 9.42951411654501e-05,
+    "mean_probe_mse": 0.11394001737717588,
+    "model": "random_linear",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3877787807814457e-16,
+    "mean_descriptor_distance": 0.004865206510243199,
+    "mean_probe_mse": 0.05507642587352844,
+    "model": "random_linear",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 1.3591005317805652e-05,
+    "mean_probe_mse": 0.07767484069987328,
+    "model": "random_linear",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0007197497106116281,
+    "mean_probe_mse": 0.04166955098522899,
+    "model": "random_linear",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.003000660970403005,
+    "mean_probe_mse": 0.0019280888500058935,
+    "model": "random_linear",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030276603908347063,
+    "mean_probe_mse": 0.0021580899057324077,
+    "model": "random_linear",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 9.42951411654501e-05,
+    "mean_probe_mse": 0.04265692641742909,
+    "model": "random_linear",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.004865206510243199,
+    "mean_probe_mse": 0.0013526229896483777,
+    "model": "random_linear",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 1.3591005317805652e-05,
+    "mean_probe_mse": 0.0032732445457349514,
+    "model": "random_linear",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0020262856650993294,
+    "mean_probe_mse": 0.13325157241110147,
+    "model": "reduced_rank",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0007653313323294147,
+    "mean_probe_mse": 0.05988156530061459,
+    "model": "reduced_rank",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008613237226455747,
+    "mean_probe_mse": 0.06790748659650843,
+    "model": "reduced_rank",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008866194857166282,
+    "mean_probe_mse": 0.11068199564667865,
+    "model": "reduced_rank",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.00019029171990834508,
+    "mean_probe_mse": 0.05590057827129553,
+    "model": "reduced_rank",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.001085652523750624,
+    "mean_probe_mse": 0.08257857009159555,
+    "model": "reduced_rank",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0020262856650993294,
+    "mean_probe_mse": 0.05383316960635009,
+    "model": "reduced_rank",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.0007653313323294147,
+    "mean_probe_mse": 0.002606370241337513,
+    "model": "reduced_rank",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0008613237226455747,
+    "mean_probe_mse": 0.0031095290086134877,
+    "model": "reduced_rank",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008866194857166282,
+    "mean_probe_mse": 0.05692689084608004,
+    "model": "reduced_rank",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00019029171990834508,
+    "mean_probe_mse": 0.0017474714180179198,
+    "model": "reduced_rank",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.001085652523750624,
+    "mean_probe_mse": 0.0048105601910036575,
+    "model": "reduced_rank",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0009377268330401867,
+    "mean_probe_mse": 0.12505934204650912,
+    "model": "untrained_cae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008174895957435646,
+    "mean_probe_mse": 0.058711460554158386,
+    "model": "untrained_cae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008853844776870063,
+    "mean_probe_mse": 0.07419920374934512,
+    "model": "untrained_cae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0005066730750839699,
+    "mean_probe_mse": 0.1264943787992937,
+    "model": "untrained_cae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.0016994787476690663,
+    "mean_probe_mse": 0.05428699365504736,
+    "model": "untrained_cae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.003115118659943404,
+    "mean_probe_mse": 0.0779203787075161,
+    "model": "untrained_cae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.0009377268330401867,
+    "mean_probe_mse": 0.06129690123419191,
+    "model": "untrained_cae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008174895957435646,
+    "mean_probe_mse": 0.003243218720948753,
+    "model": "untrained_cae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008853844776870063,
+    "mean_probe_mse": 0.004385969432118321,
+    "model": "untrained_cae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0005066730750839699,
+    "mean_probe_mse": 0.07284866975976674,
+    "model": "untrained_cae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-16,
+    "mean_descriptor_distance": 0.0016994787476690663,
+    "mean_probe_mse": 0.002341947589950525,
+    "model": "untrained_cae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.003115118659943404,
+    "mean_probe_mse": 0.007144196183322129,
+    "model": "untrained_cae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05550882267162253,
+    "mean_probe_mse": 0.10861978813001694,
+    "model": "untrained_crae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.054273721048765454,
+    "mean_probe_mse": 0.056919184435741066,
+    "model": "untrained_crae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.030981975017601915,
+    "mean_probe_mse": 0.07928510860752902,
+    "model": "untrained_crae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.035001425413707925,
+    "mean_probe_mse": 0.11831270180399253,
+    "model": "untrained_crae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.046220734339808806,
+    "mean_probe_mse": 0.045951536241179244,
+    "model": "untrained_crae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.007567654933450854,
+    "mean_probe_mse": 0.08823238533950349,
+    "model": "untrained_crae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05550882267162253,
+    "mean_probe_mse": 0.056824319114057865,
+    "model": "untrained_crae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.054273721048765454,
+    "mean_probe_mse": 0.016621251008992168,
+    "model": "untrained_crae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.030981975017601915,
+    "mean_probe_mse": 0.020731758856477635,
+    "model": "untrained_crae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.035001425413707925,
+    "mean_probe_mse": 0.07205785921907809,
+    "model": "untrained_crae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.046220734339808806,
+    "mean_probe_mse": 0.013619379006990399,
+    "model": "untrained_crae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.007567654933450854,
+    "mean_probe_mse": 0.029969736745325992,
+    "model": "untrained_crae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05550882267162253,
+    "mean_probe_mse": 0.10861978813001694,
+    "model": "untrained_crte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.054273721048765454,
+    "mean_probe_mse": 0.056919184435741066,
+    "model": "untrained_crte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.030981975017601915,
+    "mean_probe_mse": 0.07928510860752902,
+    "model": "untrained_crte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.035001425413707925,
+    "mean_probe_mse": 0.11831270180399253,
+    "model": "untrained_crte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.046220734339808806,
+    "mean_probe_mse": 0.045951536241179244,
+    "model": "untrained_crte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.007567654933450854,
+    "mean_probe_mse": 0.08823238533950349,
+    "model": "untrained_crte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.05550882267162253,
+    "mean_probe_mse": 0.056824319114057865,
+    "model": "untrained_crte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.054273721048765454,
+    "mean_probe_mse": 0.016621251008992168,
+    "model": "untrained_crte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.030981975017601915,
+    "mean_probe_mse": 0.020731758856477635,
+    "model": "untrained_crte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.035001425413707925,
+    "mean_probe_mse": 0.07205785921907809,
+    "model": "untrained_crte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.046220734339808806,
+    "mean_probe_mse": 0.013619379006990399,
+    "model": "untrained_crte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.007567654933450854,
+    "mean_probe_mse": 0.029969736745325992,
+    "model": "untrained_crte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0009377268330401867,
+    "mean_probe_mse": 0.12505934204650912,
+    "model": "untrained_cte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008174895957435646,
+    "mean_probe_mse": 0.058711460554158386,
+    "model": "untrained_cte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0008853844776870063,
+    "mean_probe_mse": 0.07419920374934512,
+    "model": "untrained_cte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0005066730750839699,
+    "mean_probe_mse": 0.1264943787992937,
+    "model": "untrained_cte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.0016994787476690663,
+    "mean_probe_mse": 0.05428699365504736,
+    "model": "untrained_cte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.003115118659943404,
+    "mean_probe_mse": 0.0779203787075161,
+    "model": "untrained_cte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.0009377268330401867,
+    "mean_probe_mse": 0.06129690123419191,
+    "model": "untrained_cte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008174895957435646,
+    "mean_probe_mse": 0.003243218720948753,
+    "model": "untrained_cte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0008853844776870063,
+    "mean_probe_mse": 0.004385969432118321,
+    "model": "untrained_cte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0005066730750839699,
+    "mean_probe_mse": 0.07284866975976674,
+    "model": "untrained_cte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-16,
+    "mean_descriptor_distance": 0.0016994787476690663,
+    "mean_probe_mse": 0.002341947589950525,
+    "model": "untrained_cte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.003115118659943404,
+    "mean_probe_mse": 0.007144196183322129,
+    "model": "untrained_cte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.025220386999976547,
+    "mean_probe_mse": 0.11140547194744846,
+    "model": "untrained_gru_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.017472800928886607,
+    "mean_probe_mse": 0.062389767900261725,
+    "model": "untrained_gru_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.023851105256479665,
+    "mean_probe_mse": 0.08070558259133773,
+    "model": "untrained_gru_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.029584681773036334,
+    "mean_probe_mse": 0.11315411599617302,
+    "model": "untrained_gru_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.051958618117816054,
+    "mean_probe_mse": 0.04703473979321816,
+    "model": "untrained_gru_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.032165410841568036,
+    "mean_probe_mse": 0.09274539272740999,
+    "model": "untrained_gru_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.025220386999976547,
+    "mean_probe_mse": 0.055442567962804425,
+    "model": "untrained_gru_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.017472800928886607,
+    "mean_probe_mse": 0.02347285281298843,
+    "model": "untrained_gru_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.023851105256479665,
+    "mean_probe_mse": 0.027929518445554004,
+    "model": "untrained_gru_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.029584681773036334,
+    "mean_probe_mse": 0.06651441040849548,
+    "model": "untrained_gru_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.996003610813204e-16,
+    "mean_descriptor_distance": 0.051958618117816054,
+    "mean_probe_mse": 0.018616636689282914,
+    "model": "untrained_gru_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.032165410841568036,
+    "mean_probe_mse": 0.034752043333223064,
+    "model": "untrained_gru_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0004086389811251069,
+    "mean_probe_mse": 0.13818188105927556,
+    "model": "untrained_mlp_ae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.001732811866254301,
+    "mean_probe_mse": 0.07248027185574822,
+    "model": "untrained_mlp_ae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 1.244487832970118e-05,
+    "mean_probe_mse": 0.07841238052167446,
+    "model": "untrained_mlp_ae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.007592099288582976,
+    "mean_probe_mse": 0.12668407954403624,
+    "model": "untrained_mlp_ae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.885780586188048e-16,
+    "mean_descriptor_distance": 0.0017960343970724072,
+    "mean_probe_mse": 0.05333046128316875,
+    "model": "untrained_mlp_ae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0034973363357665176,
+    "mean_probe_mse": 0.10342303590899046,
+    "model": "untrained_mlp_ae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.967448757360216e-16,
+    "mean_descriptor_distance": 0.0004086389811251069,
+    "mean_probe_mse": 0.08699365956953335,
+    "model": "untrained_mlp_ae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.001732811866254301,
+    "mean_probe_mse": 0.01772297132693736,
+    "model": "untrained_mlp_ae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 1.244487832970118e-05,
+    "mean_probe_mse": 0.013897190625041897,
+    "model": "untrained_mlp_ae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.007592099288582976,
+    "mean_probe_mse": 0.1125917171359588,
+    "model": "untrained_mlp_ae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1379786002407855e-15,
+    "mean_descriptor_distance": 0.0017960343970724072,
+    "mean_probe_mse": 0.008152913300156493,
+    "model": "untrained_mlp_ae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-16,
+    "mean_descriptor_distance": 0.0034973363357665176,
+    "mean_probe_mse": 0.027626319782172164,
+    "model": "untrained_mlp_ae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0004086389811251069,
+    "mean_probe_mse": 0.13818188105927556,
+    "model": "untrained_mlp_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 6.661338147750939e-16,
+    "mean_descriptor_distance": 0.001732811866254301,
+    "mean_probe_mse": 0.07248027185574822,
+    "model": "untrained_mlp_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 1.244487832970118e-05,
+    "mean_probe_mse": 0.07841238052167446,
+    "model": "untrained_mlp_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.007592099288582976,
+    "mean_probe_mse": 0.12668407954403624,
+    "model": "untrained_mlp_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.885780586188048e-16,
+    "mean_descriptor_distance": 0.0017960343970724072,
+    "mean_probe_mse": 0.05333046128316875,
+    "model": "untrained_mlp_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0034973363357665176,
+    "mean_probe_mse": 0.10342303590899046,
+    "model": "untrained_mlp_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.967448757360216e-16,
+    "mean_descriptor_distance": 0.0004086389811251069,
+    "mean_probe_mse": 0.08699365956953335,
+    "model": "untrained_mlp_te",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 0.001732811866254301,
+    "mean_probe_mse": 0.01772297132693736,
+    "model": "untrained_mlp_te",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.3322676295501878e-15,
+    "mean_descriptor_distance": 1.244487832970118e-05,
+    "mean_probe_mse": 0.013897190625041897,
+    "model": "untrained_mlp_te",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 8.881784197001252e-16,
+    "mean_descriptor_distance": 0.007592099288582976,
+    "mean_probe_mse": 0.1125917171359588,
+    "model": "untrained_mlp_te",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1379786002407855e-15,
+    "mean_descriptor_distance": 0.0017960343970724072,
+    "mean_probe_mse": 0.008152913300156493,
+    "model": "untrained_mlp_te",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-16,
+    "mean_descriptor_distance": 0.0034973363357665176,
+    "mean_probe_mse": 0.027626319782172164,
+    "model": "untrained_mlp_te",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00131718747069475,
+    "mean_probe_mse": 0.12447333305974778,
+    "model": "untrained_qae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.00010858494774676051,
+    "mean_probe_mse": 0.059008032507991574,
+    "model": "untrained_qae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-17,
+    "mean_descriptor_distance": 0.0030221021635284204,
+    "mean_probe_mse": 0.07368285692717645,
+    "model": "untrained_qae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012014712983912915,
+    "mean_probe_mse": 0.12690338865108464,
+    "model": "untrained_qae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00021375016082599666,
+    "mean_probe_mse": 0.05441579829946546,
+    "model": "untrained_qae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 6.45968203028296e-05,
+    "mean_probe_mse": 0.07725080976019245,
+    "model": "untrained_qae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00131718747069475,
+    "mean_probe_mse": 0.0585010627186095,
+    "model": "untrained_qae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00010858494774676051,
+    "mean_probe_mse": 0.0033713772064106304,
+    "model": "untrained_qae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030221021635284204,
+    "mean_probe_mse": 0.005366762086710392,
+    "model": "untrained_qae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0012014712983912915,
+    "mean_probe_mse": 0.0728720190556983,
+    "model": "untrained_qae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00021375016082599666,
+    "mean_probe_mse": 0.0022186095215073315,
+    "model": "untrained_qae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.45968203028296e-05,
+    "mean_probe_mse": 0.005193610717855712,
+    "model": "untrained_qae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0009339613202048726,
+    "mean_probe_mse": 0.12562416562495612,
+    "model": "untrained_qae_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 9.793861561000713e-05,
+    "mean_probe_mse": 0.05877449929365766,
+    "model": "untrained_qae_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030490740450035306,
+    "mean_probe_mse": 0.07396141296821736,
+    "model": "untrained_qae_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0012103285775265057,
+    "mean_probe_mse": 0.12660228566950887,
+    "model": "untrained_qae_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.00022426272500062326,
+    "mean_probe_mse": 0.05431524497124109,
+    "model": "untrained_qae_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0001664755369668721,
+    "mean_probe_mse": 0.07420585717866603,
+    "model": "untrained_qae_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0009339613202048726,
+    "mean_probe_mse": 0.058980688082916455,
+    "model": "untrained_qae_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 9.793861561000713e-05,
+    "mean_probe_mse": 0.003317679280640082,
+    "model": "untrained_qae_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030490740450035306,
+    "mean_probe_mse": 0.004338059672224275,
+    "model": "untrained_qae_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012103285775265057,
+    "mean_probe_mse": 0.07453251176422683,
+    "model": "untrained_qae_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00022426272500062326,
+    "mean_probe_mse": 0.0022524535668356984,
+    "model": "untrained_qae_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0001664755369668721,
+    "mean_probe_mse": 0.009061143650353412,
+    "model": "untrained_qae_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.04654657239725792,
+    "mean_probe_mse": 0.1095035436163364,
+    "model": "untrained_qrae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05417156752278037,
+    "mean_probe_mse": 0.05688526923599585,
+    "model": "untrained_qrae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.02225393225992431,
+    "mean_probe_mse": 0.0802519062259201,
+    "model": "untrained_qrae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.034422793479833784,
+    "mean_probe_mse": 0.11907731109900654,
+    "model": "untrained_qrae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.04586609135069731,
+    "mean_probe_mse": 0.045891312823797555,
+    "model": "untrained_qrae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.016135215757299013,
+    "mean_probe_mse": 0.09173995360395881,
+    "model": "untrained_qrae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.04654657239725792,
+    "mean_probe_mse": 0.05951690277362819,
+    "model": "untrained_qrae",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.05417156752278037,
+    "mean_probe_mse": 0.017479601628310512,
+    "model": "untrained_qrae",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.02225393225992431,
+    "mean_probe_mse": 0.020753076875072402,
+    "model": "untrained_qrae",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.034422793479833784,
+    "mean_probe_mse": 0.07395294065314019,
+    "model": "untrained_qrae",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.04586609135069731,
+    "mean_probe_mse": 0.013825694171276324,
+    "model": "untrained_qrae",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.016135215757299013,
+    "mean_probe_mse": 0.031927001735150284,
+    "model": "untrained_qrae",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.04654657239725792,
+    "mean_probe_mse": 0.1095035436163364,
+    "model": "untrained_qrte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.05417156752278037,
+    "mean_probe_mse": 0.05688526923599585,
+    "model": "untrained_qrte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.02225393225992431,
+    "mean_probe_mse": 0.0802519062259201,
+    "model": "untrained_qrte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.034422793479833784,
+    "mean_probe_mse": 0.11907731109900654,
+    "model": "untrained_qrte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.04586609135069731,
+    "mean_probe_mse": 0.045891312823797555,
+    "model": "untrained_qrte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.016135215757299013,
+    "mean_probe_mse": 0.09173995360395881,
+    "model": "untrained_qrte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.04654657239725792,
+    "mean_probe_mse": 0.05951690277362819,
+    "model": "untrained_qrte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.7755575615628914e-16,
+    "mean_descriptor_distance": 0.05417156752278037,
+    "mean_probe_mse": 0.017479601628310512,
+    "model": "untrained_qrte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.02225393225992431,
+    "mean_probe_mse": 0.020753076875072402,
+    "model": "untrained_qrte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.034422793479833784,
+    "mean_probe_mse": 0.07395294065314019,
+    "model": "untrained_qrte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.04586609135069731,
+    "mean_probe_mse": 0.013825694171276324,
+    "model": "untrained_qrte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.016135215757299013,
+    "mean_probe_mse": 0.031927001735150284,
+    "model": "untrained_qrte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00131718747069475,
+    "mean_probe_mse": 0.12447333305974778,
+    "model": "untrained_qte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.00010858494774676051,
+    "mean_probe_mse": 0.059008032507991574,
+    "model": "untrained_qte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 5.551115123125783e-17,
+    "mean_descriptor_distance": 0.0030221021635284204,
+    "mean_probe_mse": 0.07368285692717645,
+    "model": "untrained_qte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012014712983912915,
+    "mean_probe_mse": 0.12690338865108464,
+    "model": "untrained_qte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00021375016082599666,
+    "mean_probe_mse": 0.05441579829946546,
+    "model": "untrained_qte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 6.45968203028296e-05,
+    "mean_probe_mse": 0.07725080976019245,
+    "model": "untrained_qte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.00131718747069475,
+    "mean_probe_mse": 0.0585010627186095,
+    "model": "untrained_qte",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 3.3306690738754696e-16,
+    "mean_descriptor_distance": 0.00010858494774676051,
+    "mean_probe_mse": 0.0033713772064106304,
+    "model": "untrained_qte",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030221021635284204,
+    "mean_probe_mse": 0.005366762086710392,
+    "model": "untrained_qte",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0012014712983912915,
+    "mean_probe_mse": 0.0728720190556983,
+    "model": "untrained_qte",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00021375016082599666,
+    "mean_probe_mse": 0.0022186095215073315,
+    "model": "untrained_qte",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 6.45968203028296e-05,
+    "mean_probe_mse": 0.005193610717855712,
+    "model": "untrained_qte",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 1.6653345369377348e-16,
+    "mean_descriptor_distance": 0.0009339613202048726,
+    "mean_probe_mse": 0.12562416562495612,
+    "model": "untrained_qte_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 9.793861561000713e-05,
+    "mean_probe_mse": 0.05877449929365766,
+    "model": "untrained_qte_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0030490740450035306,
+    "mean_probe_mse": 0.07396141296821736,
+    "model": "untrained_qte_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0012103285775265057,
+    "mean_probe_mse": 0.12660228566950887,
+    "model": "untrained_qte_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.00022426272500062326,
+    "mean_probe_mse": 0.05431524497124109,
+    "model": "untrained_qte_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 1.1102230246251565e-16,
+    "mean_descriptor_distance": 0.0001664755369668721,
+    "mean_probe_mse": 0.07420585717866603,
+    "model": "untrained_qte_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "forecast"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 0.0009339613202048726,
+    "mean_probe_mse": 0.058980688082916455,
+    "model": "untrained_qte_noent",
+    "partition": "test_combined_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 4.440892098500626e-16,
+    "mean_descriptor_distance": 9.793861561000713e-05,
+    "mean_probe_mse": 0.003317679280640082,
+    "model": "untrained_qte_noent",
+    "partition": "test_id",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0030490740450035306,
+    "mean_probe_mse": 0.004338059672224275,
+    "model": "untrained_qte_noent",
+    "partition": "test_mean_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0012103285775265057,
+    "mean_probe_mse": 0.07453251176422683,
+    "model": "untrained_qte_noent",
+    "partition": "test_noise_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 7.771561172376096e-16,
+    "mean_descriptor_distance": 0.00022426272500062326,
+    "mean_probe_mse": 0.0022524535668356984,
+    "model": "untrained_qte_noent",
+    "partition": "test_persistence_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  },
+  {
+    "max_rotation_prediction_difference": 2.220446049250313e-16,
+    "mean_descriptor_distance": 0.0001664755369668721,
+    "mean_probe_mse": 0.009061143650353412,
+    "model": "untrained_qte_noent",
+    "partition": "test_variance_shift",
+    "sequence_records": 1,
+    "task": "reconstruction"
+  }
+]

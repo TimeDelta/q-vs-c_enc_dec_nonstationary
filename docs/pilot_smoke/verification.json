@@ -1,0 +1,39 @@
+{
+  "source_commit": "d9799031279178d31aedc29ae065028006a346c9",
+  "tests_passed": 20,
+  "trained_and_analytic_cases": 17,
+  "untrained_controls": 13,
+  "sequence_task_rows": 360,
+  "repeated_runs": 3,
+  "exact_csv_match": true,
+  "exact_dataset_manifest_match": true,
+  "all_numeric_measurements_finite": true,
+  "quantum_gradient_norms": {
+    "qae": [
+      0.20028941305328957,
+      0.23323166865825948
+    ],
+    "qrae": [
+      0.27824268236308075,
+      0.32142128069350984
+    ],
+    "qte": [
+      0.19671588268295054,
+      0.2297051732509185
+    ],
+    "qrte": [
+      0.2752069834255725,
+      0.3176968872624501
+    ],
+    "qae_noent": [
+      0.4614454797884386,
+      0.4906822103354993
+    ],
+    "qte_noent": [
+      0.4501192995684182,
+      0.486491201420916
+    ]
+  },
+  "sequence_metrics_sha256": "743c2a00a8bb53d3a0bdb5777f69d6dd7e56fb367ed6e8d487e75280ac72ae7d",
+  "scope": "Smoke execution and reproducibility only; no scientific significance claims"
+}
