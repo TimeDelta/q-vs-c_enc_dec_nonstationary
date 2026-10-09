@@ -16,6 +16,8 @@ python -m pilot.run --config configs/cpu_smoke.json --output pilot_runs/smoke
 
 The [checked-in smoke evidence](docs/pilot_smoke/README.md) documents three exactly matching runs. The smoke configuration includes 17 architectures/baselines and 13 untrained controls, two training epochs and six held-out test regimes. It validates execution and finite outputs; it cannot establish architecture rankings, complexity matching or quantum advantage. Use a new output directory for each run. `--no-quantum` provides a faster classical-only check.
 
+The [optimization diagnostic report](docs/optimization_diagnostic/README.md) extends training to eight epochs across two data seeds and identifies the next optimization checks.
+
 The larger exploratory configuration is:
 
 ```bash

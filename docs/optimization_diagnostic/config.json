@@ -1,0 +1,49 @@
+{
+  "bottleneck_size": 2,
+  "data_seeds": [
+    17,
+    41
+  ],
+  "entanglement_gate": "cz",
+  "entanglement_topology": "circular",
+  "epochs": 8,
+  "generating_latent_dimension": 2,
+  "gradient_width": 1e-05,
+  "hidden_width": 8,
+  "include_untrained_controls": true,
+  "learning_rates": [
+    0.02
+  ],
+  "models": [
+    "cae",
+    "cte",
+    "mlp_ae",
+    "mlp_te",
+    "gru_te",
+    "qae",
+    "qte",
+    "qte_noent",
+    "pca",
+    "reduced_rank",
+    "random_linear",
+    "persistence"
+  ],
+  "native_ridge_penalties": [
+    0.001
+  ],
+  "num_blocks": 1,
+  "num_features": 4,
+  "probe_ridge_penalties": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "purpose": "optimization diagnostic; exploratory and insufficient for significance claims",
+  "sequence_length": 128,
+  "test_sequences": 2,
+  "train_sequences": 2,
+  "training_seeds": [
+    101
+  ],
+  "validation_sequences": 2
+}
