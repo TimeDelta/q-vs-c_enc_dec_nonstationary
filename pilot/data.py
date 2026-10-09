@@ -44,7 +44,7 @@ def partition_hash(observations):
     return hashlib.sha256(np.ascontiguousarray(observations).tobytes()).hexdigest()
 
 
-def make_dataset(config, data_seed):
+def make_dataset(config, data_seed, *, include_test=True):
     if config['sequence_length'] < 32:
         raise ValueError('sequence_length must be at least 32')
     feature_count = config['num_features']
@@ -65,6 +65,8 @@ def make_dataset(config, data_seed):
         'test_combined_shift': replace(base_profile, mean_shift=0.8, variance_ratio=3.0,
                                        persistence_low=-0.35, persistence_high=0.95, observation_noise=0.25),
     }
+    if not include_test:
+        profiles = {key: value for key, value in profiles.items() if key in ('train', 'validation')}
     partitions = {}
     metadata = {}
     for split_index, (partition_name, profile) in enumerate(profiles.items(), start=1):

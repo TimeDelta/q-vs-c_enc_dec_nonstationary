@@ -1,0 +1,49 @@
+{
+  "purpose": "paired initialization and budget control; validation only",
+  "num_features": 4,
+  "generating_latent_dimension": 2,
+  "bottleneck_size": 2,
+  "num_blocks": 1,
+  "hidden_width": 8,
+  "entanglement_topology": "circular",
+  "entanglement_gate": "cz",
+  "sequence_length": 64,
+  "train_sequences": 2,
+  "validation_sequences": 2,
+  "test_sequences": 1,
+  "epochs": 16,
+  "gradient_width": 1e-05,
+  "learning_rates": [
+    0.02
+  ],
+  "native_ridge_penalties": [
+    0.001
+  ],
+  "probe_ridge_penalties": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "data_seeds": [
+    17,
+    41
+  ],
+  "training_seeds": [
+    101
+  ],
+  "include_untrained_controls": false,
+  "models": [
+    "qae",
+    "qte",
+    "cae",
+    "cte",
+    "mlp_ae",
+    "gru_te",
+    "pca",
+    "reduced_rank"
+  ],
+  "initialization_modes": [
+    "near_zero",
+    "feature_neutral"
+  ]
+}
