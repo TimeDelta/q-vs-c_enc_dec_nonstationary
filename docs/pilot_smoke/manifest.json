@@ -1,0 +1,99 @@
+{
+  "config": {
+    "bottleneck_size": 2,
+    "data_seeds": [
+      17
+    ],
+    "entanglement_gate": "cz",
+    "entanglement_topology": "circular",
+    "epochs": 2,
+    "generating_latent_dimension": 2,
+    "gradient_width": 1e-05,
+    "hidden_width": 8,
+    "include_untrained_controls": true,
+    "learning_rates": [
+      0.02
+    ],
+    "models": [
+      "cae",
+      "crae",
+      "cte",
+      "crte",
+      "qae",
+      "qrae",
+      "qte",
+      "qrte",
+      "qae_noent",
+      "qte_noent",
+      "mlp_ae",
+      "mlp_te",
+      "gru_te",
+      "pca",
+      "reduced_rank",
+      "random_linear",
+      "persistence"
+    ],
+    "native_ridge_penalties": [
+      0.001
+    ],
+    "num_blocks": 1,
+    "num_features": 4,
+    "probe_ridge_penalties": [
+      0.0001,
+      0.001,
+      0.01
+    ],
+    "purpose": "implementation smoke check; insufficient for scientific conclusions",
+    "sequence_length": 64,
+    "test_sequences": 1,
+    "train_sequences": 2,
+    "training_seeds": [
+      101
+    ],
+    "validation_sequences": 1
+  },
+  "device": "cpu",
+  "elapsed_seconds": 70.66956374299934,
+  "evaluation": "one-step teacher-forced forecast and same-time reconstruction",
+  "git_commit": "d9799031279178d31aedc29ae065028006a346c9",
+  "inference": "descriptive pilot; no significance or quantum-advantage claims",
+  "measurement_shots": null,
+  "native_selection": "validation MSE only; every candidate completes the epoch budget",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "probe_selection": "training-only fit; validation-only ridge selection",
+  "protocol_version": 2,
+  "purpose": "implementation smoke check; insufficient for scientific conclusions",
+  "python": "3.12.14",
+  "quantum_complexity_observation": "retained single-qubit Z expectations",
+  "quantum_simulation": "exact_density_matrix",
+  "sequence_metric_rows": 360,
+  "source_sha256": {
+    "analysis.py": "8a88055ae474dea190c4fce7a41f4368b4430cc8c80bf60cc22181d95be7b2f5",
+    "bottleneck_saver.py": "b30505efb9761726a3db86f51dc7ca086b914ea812c5338593595af6ee5fb838",
+    "count_missing_models.py": "38a97f663716bfa79bae6bc2dca8004876f87588bb2ef000731a20932bf0906c",
+    "data_generation.py": "ccfd80fa6136bec2a28cc3511e5e516cf2b637e7fc5d04a2381d7ec2ca3288fd",
+    "data_importers.py": "8ec80f1d8d756c294a17b53e22d05101af07a25703ee3cac6a12ea212324d24d",
+    "givens-rotation-param-influence.py": "6b9caab35fc8f2081fb8b4b19c1e2924c9df3061054c14a14e26c03129a9c1a3",
+    "loss.py": "d1231f31044d6fe5fad17b9325510bab74a5b7f3257ab1f1d4a826ee9c795198",
+    "lzc_corrections.py": "203b7844e757533961cb51f044e983c2d7c45d2561fddf40f0aaff060e3df58e",
+    "models.py": "550a29d84ac88ef300e1df493bc3d2112df8fde657bc13e922291a4849184be5",
+    "optimize_hyperparams.py": "2099744faaf1a83e3a0865f3ebd61a12b4d287e36f5c0cc41d9c2e2ab5590b5c",
+    "optimizers.py": "136f6df714a8c7ed7e188aae50b3490e6d32de8ab5a6fe2e9436433e026a7fb1",
+    "pilot/__init__.py": "7855329e8f2a41da0872d642515e6fd4133945622a3de7e5e0eadc5483dfa747",
+    "pilot/data.py": "548ac46471d0a171242c29e5950860abcba5a7f082a4798cba4c56ccce7e71bc",
+    "pilot/metrics.py": "7dc72504dec2c961fd54658d4afa59bda25c5c6b7c482082d916afa89de1f09b",
+    "pilot/models.py": "f77518a9923c5982674cbc3cddc68ac3d89e87702eeb15aea8fa53a8a3949907",
+    "pilot/run.py": "ea8a934009de09e92785881d4d19fe32ba138718c3c8f6dbd0a72313e965e2f5",
+    "run_experiment.py": "84100cd84ea77db9fb2b23bac43540517d1d1b6325b564a1c9c9014c70749416",
+    "training.py": "e90392e595e3050d8ccb50ad2f7a7b7e36c83cd125a415425e02f3ea6ae66bab",
+    "utility.py": "5a4339cb1040aea5a736de92da378b29c72f6d3c073b9fc5326130d0960eeefc"
+  },
+  "versions": {
+    "antropy": "0.2.2",
+    "numpy": "2.3.5",
+    "qiskit": "2.5.2",
+    "scipy": "1.17.0",
+    "torch": "2.14.1+cpu"
+  },
+  "working_tree_dirty": false
+}
