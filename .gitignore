@@ -1,2 +1,5 @@
 **/__pycache__
 **/generated_datasets*
+pilot_runs/
+.venv/
+.pytest_cache/

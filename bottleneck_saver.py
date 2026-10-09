@@ -87,13 +87,15 @@ for d_i, (_, validation) in dataset_partitions.items():
         all_mw_entangles = []
         all_vn_entropies = []
         for (s_i, series) in validation:
+            model.reset_hidden_state()
             bottlenecks = []
             mw_entangles = []
             vn_entropies = []
             for state in series:
                 bottleneck, prediction = model.forward(model.prepare_state(state))
                 if model_type.startswith('q'):
-                    mw_entangles.append(meyer_wallach_global_entanglement(bottleneck))
+                    mw_entangles.append(meyer_wallach_global_entanglement(bottleneck)
+                                        if np.isclose(np.real(bottleneck.purity()), 1) else np.nan)
                     vn_entropies.append(von_neumann_entropy(bottleneck))
                 bottlenecks.append(bottleneck)
             if model_type.startswith('q'):

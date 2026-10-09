@@ -46,19 +46,24 @@ def check_for_overfitting(training_costs, validation_costs, threshold=.15):
 def turn_nan_to_zero(values):
     return np.nan_to_num(values, nan=0.0)
 
-def differential_entropy(data, quantizer):
-    discrete_signal = quantizer(data)
-    hist, _ = np.histogram(discrete_signal, density=True)
-    nonzero = hist > 0
-    return -np.sum(hist[nonzero] * np.log(hist[nonzero])) / np.log(len(np.unique(discrete_signal)))
+def symbol_entropy(data, quantizer):
+    """Normalized Shannon entropy of symbols, invariant to their numeric labels."""
+    discrete_signal = np.asarray(quantizer(data))
+    if discrete_signal.size == 0:
+        raise ValueError('Cannot estimate entropy from an empty sequence')
+    _, counts = np.unique(discrete_signal, return_counts=True)
+    if len(counts) == 1:
+        return 0.0
+    probabilities = counts / counts.sum()
+    return float(-np.sum(probabilities * np.log(probabilities)) / np.log(len(counts)))
 
-def differential_entropy_per_feature(data, quantizer):
+def symbol_entropy_per_feature(data, quantizer):
     """
     data (np.ndarray): shape should be (sequence_length, num_features)
     Uses adaptive width per bin to allow for multimodality in underlying series.
     """
     num_features = data.shape[1]
-    return [differential_entropy(data[:, f], quantizer) for f in range(num_features)]
+    return [symbol_entropy(data[:, f], quantizer) for f in range(num_features)]
 
 def von_neumann_entropy(dm, log_base=2) -> float:
     dm_eigenvalues = np.linalg.eigvalsh(dm.data)
@@ -71,6 +76,8 @@ def meyer_wallach_global_entanglement(state):
     (2/n) * sum_{r=1}^{n} [1 - Tr(dm_r^2)]
     where dm_r is the reduced density matrix of qubit r
     """
+    if not np.isclose(np.real(state.purity()), 1, atol=1e-8):
+        raise ValueError('Meyer-Wallach entanglement requires a pure state')
     n = state.num_qubits
     total = 0.0
 
@@ -114,8 +121,8 @@ def quantize_signal_equal_feature_bins(data):
 
 def quantize_signal_bayesian_block_feature_bins(data):
     if data.ndim == 1:
-        edges = bayesian_blocks(data[:, i])
-        quantized = np.digitize(data[:, i], edges) - 1
+        edges = bayesian_blocks(data)
+        quantized = np.digitize(data, edges) - 1
         return quantized.tolist()
     elif data.ndim == 2:
         n_samples, n_features = data.shape
@@ -154,7 +161,9 @@ def quantize_signal_hdbscan(data):
         cluster_selection_method='leaf'
     ).fit_predict(data)
 
-def lempel_ziv_complexity_continuous(data, quantizer):
+def lempel_ziv_complexity_continuous(data, quantizer=None):
+    if quantizer is None:
+        quantizer = quantize_signal_equal_feature_bins
     symbol_seq = quantizer(data)
     phrase_start = 0
     complexity = 0
@@ -189,6 +198,8 @@ def lempel_ziv_complexity_continuous(data, quantizer):
         complexity += 1
         phrase_start += phrase_length
     alphabet_size = len(np.unique(symbol_seq))
+    if len(symbol_seq) < 2 or alphabet_size < 2:
+        return 0.0
     max_complexity = len(symbol_seq) / np.emath.logn(alphabet_size, len(symbol_seq))
     return complexity / max_complexity
 
@@ -303,14 +314,14 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
         'hurst_exponent':            lambda series: np.mean(hurst_exponent(series)),
         'lempel_ziv_complexity':     lambda series: lempel_ziv_complexity_continuous(series, quantizer),
         'optimized_mpe':             lambda series: np.mean(optimized_multiscale_permutation_entropy(series)),
-        'differential_entropy':      lambda series: differential_entropy(series, quantizer),
+        'symbol_entropy':           lambda series: symbol_entropy(series, quantizer),
     }
     MAPPINGS_TO_PLOT = { # {series_attribute: [model_attribute]}
         # ALWAYS PUT METRIC SELF-COMPARISON IN FIRST INDEX
         'hurst_exponent': ['bottleneck_he', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'lempel_ziv_complexity': ['bottleneck_lzc', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
         'optimized_mpe': ['bottleneck_mpe', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
-        'differential_entropy': ['bottleneck_de', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
+        'symbol_entropy': ['bottleneck_de', 'bottleneck_mw_global_entanglement', 'bottleneck_full_vn_entropy'],
     }
     independent_keys = list(SERIES_STATS_CONFIG.keys())
     dependent_keys = []
@@ -353,7 +364,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
             de, lzc, he, mpe = [], [], [], []
             for series_bottlenecks in bottlenecks: # start with state full of associated series index
                 s_i = int(np.real(series_bottlenecks[0][0]))
-                de.append([s_i, differential_entropy(series_bottlenecks[1:], quantizer)])
+                de.append([s_i, symbol_entropy(series_bottlenecks[1:], quantizer)])
                 lzc.append([s_i, lempel_ziv_complexity_continuous(series_bottlenecks[1:], quantizer)])
                 he.append([s_i, np.mean(hurst_exponent(series_bottlenecks[1:]))])
                 mpe.append([s_i, np.mean(optimized_multiscale_permutation_entropy(series_bottlenecks[1:]))])
@@ -390,7 +401,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 mean_validation_costs = np.sum(stats.data['validation_costs'][:,1:], axis=0) / num_validation_series
                 check_for_overfitting(mean_training_costs, mean_validation_costs, overfit_threshold)
             except Exception as e:
-                if args.test:
+                if test:
                     print('  skipping due to exception: ' + str(e))
                     skip_dset = True # skip entire dataset to ensure homogenous array dimensions
                     break
@@ -462,7 +473,7 @@ def run_analysis(datasets, data_dir, overfit_threshold=.15, quantizer='bayesian_
                 mean_history = history_arrays.mean(axis=0)
             elif history_arrays.shape[0] == 1:
                 mean_history = history_arrays[0]
-            elif args.test:
+            elif test:
                 print(f'WARNING: Missing {model_type} {metric_key}')
                 continue
             else:

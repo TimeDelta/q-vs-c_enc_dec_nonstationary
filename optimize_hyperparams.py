@@ -41,24 +41,14 @@ def get_loss(data, model_type, config, allocated_epochs):
     else:
         raise Exception('Unexpected model type: ' + model_type)
 
-    if autoregressive:
-        loss_fn = autoencoder_cost_function(trash_penalty_fn)
-    else:
-        loss_fn = autoregressive_cost_function(trash_penalty_fn)
+    loss_fn = cost_function_for_model_type(model_type, trash_penalty_fn)
 
     trained_model, cost_history, validation_costs = \
         train_adam(training, validation, loss_fn, config, model, allocated_epochs)
 
     print(' ', validation_costs)
-    if allocated_epochs >= 10:
-        mean_training_costs = np.array(cost_history[-1]) / len(training)
-        mean_validation_costs = np.sum(np.array(validation_costs)[:,1:], axis=0) / len(validation)
-        if check_for_overfitting(mean_training_costs, mean_validation_costs, threshold=.5): # throw away any configs that lead to obvious overfitting
-            return float('inf')
-    # scale the cost by the % of max num of blocks used
-    # TODO: incorporate bottleneck size
-    scale = float(config['num_blocks']) / float(MAX_NUM_BLOCKS)
-    return np.sum(np.array(validation_costs)[:,1:]) * scale
+    # Select on feature-space distortion, not a mixture of incompatible penalties.
+    return float(np.mean(np.array(validation_costs)[:, 1]))
 
 def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
     """
@@ -109,13 +99,16 @@ def hyperband_search(data, max_training_epochs=16, reduction_factor=2):
             print(f"  Round {round_index}: {epochs_this_round} epochs; best loss = {min(round_losses):.4f}")
 
             for i, loss in enumerate(round_losses):
-                if loss < optimal_loss:
+                if epochs_this_round == max_training_epochs and loss < optimal_loss:
                     optimal_loss = loss
                     optimal_config = configs[i]
 
-            best_indices = np.argsort(round_losses)[:num_configs_this_round]
+            survivors = max(1, num_configs_this_round // reduction_factor)
+            best_indices = np.argsort(round_losses)[:survivors]
             configs = [configs[i] for i in best_indices]
 
+    if optimal_config is None:
+        raise RuntimeError('No finite configuration completed the full resource budget')
     return optimal_config, optimal_loss
 
 def get_best_config(dataset_partitions, max_training_epochs=16, reduction_factor=4):
@@ -144,7 +137,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     from data_importers import import_generated
-    best_config = get_best_config(import_generated(args.data_directory, args.max_training_epochs, args.reduction_factor))
+    best_config = get_best_config(import_generated(args.data_directory),
+                                  args.max_training_epochs, args.reduction_factor)
     best_config_path = os.path.join(args.data_directory, 'best_config.json')
     with open(best_config_path, 'w') as file:
         json.dump(best_config, file, indent=2)

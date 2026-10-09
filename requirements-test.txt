@@ -1,0 +1,8 @@
+-r requirements-pilot.txt
+# Legacy analysis imports required by its regression checks.
+astropy==8.0.1
+mne==1.13.2
+hdbscan==0.8.44
+pyentrp==2.2.0
+fbm==0.3.0
+matplotlib==3.10.8
