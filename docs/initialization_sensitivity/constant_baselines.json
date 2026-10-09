@@ -1,0 +1,26 @@
+[
+  {
+    "data_seed": 17,
+    "task": "forecast",
+    "zero_output_mse": 0.05737734818054996,
+    "training_mean_mse": 0.07042757258709378
+  },
+  {
+    "data_seed": 17,
+    "task": "reconstruction",
+    "zero_output_mse": 0.05812469866231578,
+    "training_mean_mse": 0.07035567328465364
+  },
+  {
+    "data_seed": 41,
+    "task": "forecast",
+    "zero_output_mse": 0.0872638900585869,
+    "training_mean_mse": 0.09214293095573341
+  },
+  {
+    "data_seed": 41,
+    "task": "reconstruction",
+    "zero_output_mse": 0.08791260479598695,
+    "training_mean_mse": 0.09263348320396689
+  }
+]

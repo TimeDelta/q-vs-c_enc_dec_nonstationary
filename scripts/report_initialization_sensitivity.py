@@ -43,11 +43,13 @@ def report(source, output):
         if history:
             if [h['epoch'] for h in history] != list(range(1,grid['epochs']+1)):
                 raise ValueError('Incomplete native trajectory')
-            if not all(np.isfinite(h[key]) for h in history for key in ['training_mse','validation_mse']):
+            if not all(np.isfinite(h[key]) for h in history for key in ['train_mse','validation_mse']):
                 raise ValueError('Nonfinite trajectory')
             if record['best_validation_mse'] != min(h['validation_mse'] for h in history):
                 raise ValueError('Budget selection mismatch')
     new_manifests = []
+    calibration_errors = []
+    constant_baselines = {}
     for directory in sorted(source.glob('initialization_*_lr_*')):
         if not directory.is_dir():
             continue
@@ -56,13 +58,31 @@ def report(source, output):
             raise ValueError('Uncommitted or mismatched simulation source')
         if cell_manifest['source_sha256'] != manifest['simulation_source_sha256']:
             raise ValueError('Simulation source hashes differ across cells')
+        raw_records = json.loads((directory/'fit_diagnostics.json').read_text())
+        calibration_errors.extend(r['initialization_metadata']['center_max_abs_readout'] for r in raw_records if r['initialization_mode']=='feature_neutral')
         for dataset in directory.glob('data_*/training_validation.npz'):
+            data_manifest = json.loads((dataset.parent/'dataset_manifest.json').read_text())
+            old_data_manifest = json.loads((root/grid['reuse_directory']/f'dataset_manifest_{int(dataset.parent.name.split('_')[-1])}.json').read_text())
+            if data_manifest != old_data_manifest:
+                raise ValueError('Generating-data manifests differ across cells')
             with np.load(dataset) as arrays:
                 if any(key.startswith('test') for key in arrays.files) or not {'train','validation'}.issubset(arrays.files):
                     raise ValueError('Unexpected dataset partition')
                 if not all(np.isfinite(arrays[key]).all() for key in arrays.files):
                     raise ValueError('Nonfinite dataset')
+                for task, shift in [('reconstruction',0),('forecast',1)]:
+                    training = arrays['train'][:,1:] if shift else arrays['train'][:,:-1]
+                    validation = arrays['validation'][:,1:] if shift else arrays['validation'][:,:-1]
+                    center = training.reshape(-1,training.shape[-1]).mean(axis=0)
+                    key = (int(dataset.parent.name.split('_')[-1]),task)
+                    values = dict(zero_output_mse=float(np.mean(validation**2)),
+                                  training_mean_mse=float(np.mean((validation-center)**2)))
+                    if key in constant_baselines and constant_baselines[key] != values:
+                        raise ValueError('Constant prediction references differ across cells')
+                    constant_baselines[key] = values
         new_manifests.append(cell_manifest)
+    if not calibration_errors or max(calibration_errors) >= 1e-8:
+        raise ValueError('Calibration center tolerance failed')
     if len(new_manifests) != manifest['new_grid_cells']:
         raise ValueError('Missing new cell manifests')
     output.mkdir(parents=True,exist_ok=True)
@@ -81,7 +101,10 @@ def report(source, output):
                         paired_initial_encoder_readouts_equal=True,paired_parameter_counts_equal=True,
                         paired_initial_probes_equal=True,finite_complete_trajectories=True,
                         test_partitions_generated=False,new_source_trees_clean=True,
+                        generating_data_manifests_equal=True,
+                        max_new_calibration_center_error=max(calibration_errors),
                         archive_sha256=hashlib.sha256(archive.read_bytes()).hexdigest())
+    (output/'constant_baselines.json').write_text(json.dumps([dict(data_seed=key[0],task=key[1],**value) for key,value in sorted(constant_baselines.items())],indent=2)+'\n')
     (output/'verification.json').write_text(json.dumps(verification,indent=2)+'\n')
     fig, axes = plt.subplots(2,2,figsize=(10,7),sharex=True)
     for row,model in enumerate(['qae','qte']):
@@ -109,7 +132,18 @@ def report(source, output):
         for mode in (['near_zero','feature_neutral'] if model.startswith('q') else ['near_zero']):
             means = [np.mean([r['best_validation_mse'] for r in records if r['model']==model and r['initialization_mode']==mode and r['learning_rate']==rate]) for rate in grid['learning_rates']]
             lines.append(f'| {model} | {mode} | {means[0]:.6f} | {means[1]:.6f} |')
-    lines += ['', '![Native validation learning curves](learning_rate_sensitivity.png)','',
+    lines += ['', '### Starting error and constant prediction references','',
+              'Initial validation values below precede gradient training and are averaged over two data and two initialization seeds. Learning rate does not affect initialization.','',
+              '| Quantum model | Near-zero initial | Feature-neutral initial |','| --- | ---: | ---: |']
+    for model in ['qae','qte']:
+        means = [np.mean([r['initial_validation_mse'] for r in records if r['model']==model and r['initialization_mode']==mode]) for mode in ['near_zero','feature_neutral']]
+        lines.append(f'| {model} | {means[0]:.6f} | {means[1]:.6f} |')
+    lines += ['', 'Constant predictors use zero output or the feature means estimated from training targets only. Values below average validation MSE over the two data realizations. They are references computed from existing data, not additional trained grid cases.','',
+              '| Task | Zero output | Training mean |','| --- | ---: | ---: |']
+    for task in ['reconstruction','forecast']:
+        values = [value for key,value in constant_baselines.items() if key[1]==task]
+        lines.append(f"| {task} | {np.mean([v['zero_output_mse'] for v in values]):.6f} | {np.mean([v['training_mean_mse'] for v in values]):.6f} |")
+    lines += ['', '[Per-data constant reference scores](constant_baselines.json). Most of the paired error reduction is already present before gradient training. Feature-neutral starts remove a large starting-output penalty; the subsequent improvement over eight epochs is smaller. QAE reconstruction improves beyond a zero-output reference on these data. QTE forecasting is much closer to that reference, so the lower paired score alone does not demonstrate strong learned forecasting.','', '![Native validation learning curves](learning_rate_sensitivity.png)','',
               'Shading shows the observed minimum and maximum over fits, not a confidence interval. PCA and reduced-rank references use analytic fitting without epochs; gradient parameter count is not model capacity. Native reconstruction and forecast objectives differ, so compare models within their task.','',
               '## Every paired quantum comparison','',
               'Positive difference means feature-neutral initialization reached lower minimum validation MSE.','',
@@ -119,7 +153,8 @@ def report(source, output):
         lines.append(f"| {p['model']} | {p['data_seed']} | {p['initialization_seed']} | {p['learning_rate']:g} | {p['near_zero']:.6f} | {p['feature_neutral']:.6f} | {p['difference']:+.6f} |")
     wins = sum(p['difference']>0 for p in pairs)
     lines += ['', '## Interpretation and provenance','',
-              f'Feature-neutral initialization has lower minimum validation MSE in {wins} of {len(pairs)} paired fits. The table records any reversals. This is an optimization diagnostic on two previously inspected synthetic data realizations. It cannot establish superiority, calibrated uncertainty or out-of-distribution generalization. A confirmatory study needs fresh data seeds and a fixed protocol before test evaluation.','',
+              f'Feature-neutral initialization has lower minimum validation MSE in {wins} of {len(pairs)} paired fits. This is an optimization diagnostic on two previously inspected synthetic data realizations. It cannot establish superiority, calibrated uncertainty or out-of-distribution generalization. A confirmatory study needs fresh data seeds and a fixed protocol before test evaluation.','',
+              'Increasing the learning rate substantially lowers near-zero error, while feature-neutral outcomes change much less. The initialization effect persists throughout this grid, but its magnitude depends on the learning rate. Classical ring, PCA and reduced-rank references remain competitive or better for their respective native tasks. These results do not demonstrate quantum advantage.','',
               'The initialization changes existing decoder parameter centers using a data-free zero-input reference. Parameter counts and initial encoder readout hashes match in every quantum pair. Initial ridge-probe validation results also match. Post-training probe scores from 16-epoch checkpoints are not presented as eight-epoch results.','',
               f"Source commit for the three new cells: `{manifest['source_commit']}`. Reused seed-101/rate-0.02 trajectories originate at `{manifest['reused_source_commit']}`. Simulation-source hashes and dataset manifests were checked before reuse. Only native histories through epoch eight are reused. The historical archive contains 16-epoch selected checkpoints; it does not contain eight-epoch selected checkpoints for the reused cell.",'',
               f"{manifest['new_grid_cells']} new grid cells and {manifest['reused_grid_cells']} reused trajectory cell yield {len(records)} native records. New computation took {manifest['elapsed_seconds']:.1f} seconds, excluding the earlier control. Every new cell records a clean source tree and its environment manifest.",'',
