@@ -10,6 +10,7 @@ from torch import nn
 
 from models import ClassicalEncoderDecoder, QuantumEncoderDecoder
 from optimizers import adam_update
+from pilot.initialization import feature_neutral_parameters
 
 
 def aligned_targets(observations, objective):
@@ -34,11 +35,19 @@ class LegacyEncoder:
             self.model = QuantumEncoderDecoder(config['num_features'], self.config, recurrent)
         else:
             self.model = ClassicalEncoderDecoder(config['num_features'], self.config, recurrent).double()
+        self.initialization_seed = initialization_seed
+        self.initialization_mode = config.get('quantum_initialization', 'near_zero') if self.quantum else 'near_zero'
+        if self.initialization_mode not in ('near_zero', 'feature_neutral'):
+            raise ValueError('Unknown quantum initialization mode')
+        self.initialization_metadata = {}
         self.parameter_handles = self.model.trainable_params
         generator = np.random.default_rng(initialization_seed)
         self.parameter_values = generator.uniform(-0.15, 0.15, len(self.parameter_handles))
         if recurrent:
             self.parameter_values[0] = 0.0
+        if self.initialization_mode == 'feature_neutral':
+            self.parameter_values, self.initialization_metadata = feature_neutral_parameters(
+                self.model, self.parameter_handles, self.parameter_values)
         self.set_parameter_values(self.parameter_values)
         self.prepared_sequences = {}
         self.state_preparations = 0
@@ -327,5 +336,7 @@ def fit_selected_model(name, config, training, validation, initialization_seed):
     return selected_model, dict(candidates=candidate_records, selected_validation_mse=selected_validation_mse,
                                 fit_seconds=time.perf_counter() - started_at,
                                 parameter_count=selected_model.parameter_count,
+                                initialization_mode=getattr(selected_model, 'initialization_mode', 'default'),
+                                initialization_metadata=getattr(selected_model, 'initialization_metadata', {}),
                                 optimizer='closed_form' if isinstance(selected_model, LinearEncoder) else (
                                     'adam_forward_difference' if selected_model.quantum else 'adam_autograd'))

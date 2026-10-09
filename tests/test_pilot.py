@@ -32,6 +32,45 @@ class PilotTests(unittest.TestCase):
         changed_factors = [key for key in original_profile if original_profile[key] != shifted_profile[key]]
         self.assertEqual(changed_factors, ['mean_shift'])
 
+    def test_training_validation_generation_reserves_tests(self):
+        all_partitions, _ = make_dataset(self.config, 17)
+        limited_partitions, metadata = make_dataset(self.config, 17, include_test=False)
+        self.assertEqual(set(metadata['partitions']), {'train', 'validation'})
+        self.assertFalse(any(key.startswith('test_') for key in limited_partitions))
+        for key, values in limited_partitions.items():
+            np.testing.assert_array_equal(values, all_partitions[key])
+
+    def test_feature_neutral_initialization_preserves_encoder_and_parameter_count(self):
+        self.config['learning_rate'] = .02
+        for name in ('qae', 'qte_noent', 'qrte'):
+            ordinary = build_model(name, self.config, 101)
+            neutral_config = dict(self.config, quantum_initialization='feature_neutral')
+            neutral = build_model(name, neutral_config, 101)
+            self.assertEqual(ordinary.parameter_count, neutral.parameter_count)
+            changed = neutral.initialization_metadata['changed_parameter_indices']
+            for index in range(neutral.parameter_count):
+                if index not in changed:
+                    self.assertEqual(ordinary.parameter_values[index], neutral.parameter_values[index])
+            self.assertLess(neutral.initialization_metadata['center_max_abs_readout'], 1e-8)
+            example = np.random.default_rng(12).uniform(-1, 1, (8, 4))
+            np.testing.assert_array_equal(ordinary.sequence_outputs(example)[0], neutral.sequence_outputs(example)[0])
+            repeated = build_model(name, neutral_config, 101)
+            np.testing.assert_array_equal(neutral.parameter_values, repeated.parameter_values)
+
+    def test_validation_control_has_no_test_partitions(self):
+        from pilot.validation_control import run_control
+        config = dict(self.config, models=['pca', 'reduced_rank'],
+                      initialization_modes=['near_zero', 'feature_neutral'],
+                      include_untrained_controls=False)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)/'run'
+            records = run_control(config, output)
+            self.assertEqual(len(records), 2)
+            arrays = np.load(output/'data_17/training_validation.npz')
+            self.assertFalse(any(key.startswith('test_') for key in arrays.files))
+            manifest = json.loads((output/'manifest.json').read_text())
+            self.assertIn('test partitions are not generated', manifest['evaluation'])
+
     def test_linear_probe_uses_selected_training_fit(self):
         generator = np.random.default_rng(3)
         training = generator.normal(size=(200, 2))
