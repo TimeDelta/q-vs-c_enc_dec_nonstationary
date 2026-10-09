@@ -1,0 +1,62 @@
+{
+  "mixing_matrix": [
+    [
+      -0.4592199766246705,
+      0.005835270633081613
+    ],
+    [
+      0.2251649512096847,
+      -0.7872234773089034
+    ],
+    [
+      0.790045944523402,
+      0.4206521965917954
+    ],
+    [
+      0.33800172093896663,
+      -0.4508845482968057
+    ]
+  ],
+  "partitions": {
+    "train": {
+      "changepoints": [
+        21,
+        42
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        1
+      ],
+      "sequence_count": 2,
+      "sha256": "68108fff4f54292c22b45ac148cd91d076fecd5134092480f526f574cbd93188"
+    },
+    "validation": {
+      "changepoints": [
+        21,
+        42
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        2
+      ],
+      "sequence_count": 2,
+      "sha256": "dfd88a7149599f6482e087688d51f6bbb00ebb7ecab4e2fb8f70da033aba143c"
+    }
+  }
+}

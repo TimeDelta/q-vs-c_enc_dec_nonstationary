@@ -12,12 +12,48 @@
   "validation_sequences": 4,
   "test_sequences": 4,
   "epochs": 16,
-  "gradient_width": 0.00001,
-  "learning_rates": [0.005, 0.02],
-  "native_ridge_penalties": [0.001, 0.01],
-  "probe_ridge_penalties": [0.0001, 0.001, 0.01],
-  "data_seeds": [17, 41, 73],
-  "training_seeds": [101, 202],
+  "gradient_width": 1e-05,
+  "learning_rates": [
+    0.005,
+    0.02
+  ],
+  "native_ridge_penalties": [
+    0.001,
+    0.01
+  ],
+  "probe_ridge_penalties": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "data_seeds": [
+    17,
+    41,
+    73
+  ],
+  "training_seeds": [
+    101,
+    202
+  ],
   "include_untrained_controls": true,
-  "models": ["cae", "crae", "cte", "crte", "qae", "qrae", "qte", "qrte", "qae_noent", "qte_noent", "mlp_ae", "mlp_te", "gru_te", "pca", "reduced_rank", "random_linear", "persistence"]
+  "models": [
+    "cae",
+    "crae",
+    "cte",
+    "crte",
+    "qae",
+    "qrae",
+    "qte",
+    "qrte",
+    "qae_noent",
+    "qte_noent",
+    "mlp_ae",
+    "mlp_te",
+    "gru_te",
+    "pca",
+    "reduced_rank",
+    "random_linear",
+    "persistence"
+  ],
+  "quantum_initialization": "feature_neutral"
 }

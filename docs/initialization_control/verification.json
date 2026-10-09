@@ -1,0 +1,12 @@
+{
+  "all_recorded_numeric_diagnostics_finite": true,
+  "source_commit": "7ad6679a47355f30f87b865d2abadfd302edc6d9",
+  "source_clean_at_run_start": true,
+  "fitted_cases": 20,
+  "no_test_partitions": true,
+  "paired_initial_encoder_readouts_identical": true,
+  "parameter_counts_identical_within_pairs": true,
+  "initial_probe_validation_scores_identical_within_pairs": true,
+  "maximum_calibration_center_error": 1.719827058543899e-10,
+  "archive_sha256": "b8fbf55296413eb75e59749c7b51f5a90a907b0c69da9b53caa6532260813f91"
+}
