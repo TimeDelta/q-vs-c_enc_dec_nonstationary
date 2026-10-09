@@ -1,0 +1,182 @@
+{
+  "mixing_matrix": [
+    [
+      -0.4592199766246705,
+      0.005835270633081613
+    ],
+    [
+      0.2251649512096847,
+      -0.7872234773089034
+    ],
+    [
+      0.790045944523402,
+      0.4206521965917954
+    ],
+    [
+      0.33800172093896663,
+      -0.4508845482968057
+    ]
+  ],
+  "partitions": {
+    "test_combined_shift": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.8,
+        "observation_noise": 0.25,
+        "persistence_high": 0.95,
+        "persistence_low": -0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 3.0
+      },
+      "seed_components": [
+        17,
+        8
+      ],
+      "sequence_count": 2,
+      "sha256": "663c4fb8515691c20fa7b270597cdcedeb5d32cc957fa5e04c54e9f304865dcc"
+    },
+    "test_id": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        3
+      ],
+      "sequence_count": 2,
+      "sha256": "7935b3ac46529443f13ce330523e6594ac11aec69ec565b7110819bbdff5d203"
+    },
+    "test_mean_shift": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.8,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        4
+      ],
+      "sequence_count": 2,
+      "sha256": "c41881b825ba15b5d3332b4ddf2408ffa6381faf117f42cac6e13a7f126b5299"
+    },
+    "test_noise_shift": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.25,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        7
+      ],
+      "sequence_count": 2,
+      "sha256": "22e8b746731fa1d3b1fe65ae3459b58f93265ba34af98ad9db2c0988c017889b"
+    },
+    "test_persistence_shift": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.95,
+        "persistence_low": -0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        6
+      ],
+      "sequence_count": 2,
+      "sha256": "619004253b8c806109a9f3581db28b111e6057bf9488084c467875baf85ccb83"
+    },
+    "test_variance_shift": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 3.0
+      },
+      "seed_components": [
+        17,
+        5
+      ],
+      "sequence_count": 2,
+      "sha256": "f7c81683e9d025239f46858ba70f3a418f33e1cc60847fe58709cb2ee1e3c298"
+    },
+    "train": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        1
+      ],
+      "sequence_count": 2,
+      "sha256": "07e347fedba6f322234a530121fdf81ed07e3c7c49ee61d0582c20b01ae1b76c"
+    },
+    "validation": {
+      "changepoints": [
+        42,
+        85
+      ],
+      "profile": {
+        "mean_shift": 0.15,
+        "observation_noise": 0.04,
+        "persistence_high": 0.75,
+        "persistence_low": 0.35,
+        "state_standard_deviation": 0.35,
+        "variance_ratio": 1.5
+      },
+      "seed_components": [
+        17,
+        2
+      ],
+      "sequence_count": 2,
+      "sha256": "e11d7974845f235cf090dfbaf0842caee49c3c36ddfaddc0b1e8886a47b2acf0"
+    }
+  }
+}

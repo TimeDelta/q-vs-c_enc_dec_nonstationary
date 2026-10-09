@@ -1,0 +1,18 @@
+{
+  "source_commit": "955889814e475f98e23e592c2382bf1c74915227",
+  "source_clean_at_run_start": true,
+  "sequence_task_rows": 960,
+  "data_seeds": [
+    17,
+    41
+  ],
+  "initialization_seeds": [
+    101
+  ],
+  "epochs": 8,
+  "all_numeric_measurements_finite": true,
+  "max_rotation_prediction_difference": 5.773159728050814e-15,
+  "elapsed_seconds": 449.17267559799984,
+  "archive_sha256": "a7cbe532f4c7c0c75d5f3fa6dce9aaad0a018c9b2baa6c5202238b6dcb67feaa",
+  "scope": "Optimization diagnostic; no confidence intervals or significance claims"
+}
