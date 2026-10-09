@@ -1,0 +1,13 @@
+{
+  "native_cases": 80,
+  "paired_quantum_comparisons": 16,
+  "paired_initial_encoder_readouts_equal": true,
+  "paired_parameter_counts_equal": true,
+  "paired_initial_probes_equal": true,
+  "finite_complete_trajectories": true,
+  "test_partitions_generated": false,
+  "new_source_trees_clean": true,
+  "generating_data_manifests_equal": true,
+  "max_new_calibration_center_error": 1.719827058543899e-10,
+  "archive_sha256": "392a517031ec4535e046f99bdac679f337aeca29431e5a362205908db52be227"
+}

@@ -1,0 +1,47 @@
+{
+  "driver_sha256": "571bef46566f17136e2524998749a0e2a80ab9c3b688af3de5d023b026e26b8c",
+  "elapsed_seconds": 814.0943774170009,
+  "evaluation": "training and validation only",
+  "grid": {
+    "base_config": "configs/initialization_control.json",
+    "epochs": 8,
+    "initialization_seeds": [
+      101,
+      202
+    ],
+    "learning_rates": [
+      0.02,
+      0.08
+    ],
+    "purpose": "exploratory sensitivity to initialization seed and learning rate; no test evaluation",
+    "reuse_directory": "docs/initialization_control"
+  },
+  "native_case_records": 80,
+  "new_grid_cells": 3,
+  "reused_grid_cells": 1,
+  "reused_source_commit": "7ad6679a47355f30f87b865d2abadfd302edc6d9",
+  "simulation_source_sha256": {
+    "analysis.py": "8a88055ae474dea190c4fce7a41f4368b4430cc8c80bf60cc22181d95be7b2f5",
+    "bottleneck_saver.py": "b30505efb9761726a3db86f51dc7ca086b914ea812c5338593595af6ee5fb838",
+    "count_missing_models.py": "38a97f663716bfa79bae6bc2dca8004876f87588bb2ef000731a20932bf0906c",
+    "data_generation.py": "ccfd80fa6136bec2a28cc3511e5e516cf2b637e7fc5d04a2381d7ec2ca3288fd",
+    "data_importers.py": "8ec80f1d8d756c294a17b53e22d05101af07a25703ee3cac6a12ea212324d24d",
+    "givens-rotation-param-influence.py": "6b9caab35fc8f2081fb8b4b19c1e2924c9df3061054c14a14e26c03129a9c1a3",
+    "loss.py": "d1231f31044d6fe5fad17b9325510bab74a5b7f3257ab1f1d4a826ee9c795198",
+    "lzc_corrections.py": "203b7844e757533961cb51f044e983c2d7c45d2561fddf40f0aaff060e3df58e",
+    "models.py": "550a29d84ac88ef300e1df493bc3d2112df8fde657bc13e922291a4849184be5",
+    "optimize_hyperparams.py": "2099744faaf1a83e3a0865f3ebd61a12b4d287e36f5c0cc41d9c2e2ab5590b5c",
+    "optimizers.py": "136f6df714a8c7ed7e188aae50b3490e6d32de8ab5a6fe2e9436433e026a7fb1",
+    "pilot/__init__.py": "7855329e8f2a41da0872d642515e6fd4133945622a3de7e5e0eadc5483dfa747",
+    "pilot/data.py": "0f71ebf9fc0635cdbc1b4ece91fa78939c0fd8c8fc5c87351896d3d456504d99",
+    "pilot/initialization.py": "0fc801aeb04790a27a8980b3d0bec40b0a9d71a1826b38fc910d2fbc5bd22b75",
+    "pilot/metrics.py": "7dc72504dec2c961fd54658d4afa59bda25c5c6b7c482082d916afa89de1f09b",
+    "pilot/models.py": "d95d43734c3feb8526c4125f8afa35c6a0ef6c44277c16315f8d9b7dcbe9b3b9",
+    "pilot/run.py": "ea8a934009de09e92785881d4d19fe32ba138718c3c8f6dbd0a72313e965e2f5",
+    "pilot/validation_control.py": "a94d03eb3c5210b7d834e32504765d18330ca60b72042b0b24d0ab02b97b7a08",
+    "run_experiment.py": "84100cd84ea77db9fb2b23bac43540517d1d1b6325b564a1c9c9014c70749416",
+    "training.py": "e90392e595e3050d8ccb50ad2f7a7b7e36c83cd125a415425e02f3ea6ae66bab",
+    "utility.py": "5a4339cb1040aea5a736de92da378b29c72f6d3c073b9fc5326130d0960eeefc"
+  },
+  "source_commit": "eeb6787b3800bd3c508506a84495fe09905b6179"
+}

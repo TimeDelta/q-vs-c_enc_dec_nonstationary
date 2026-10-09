@@ -18,6 +18,8 @@ The [checked-in smoke evidence](docs/pilot_smoke/README.md) documents three exac
 
 The [optimization diagnostic report](docs/optimization_diagnostic/README.md) extends training to eight epochs across two data seeds and identifies the next optimization checks.
 
+The [initialization sensitivity grid](docs/initialization_sensitivity/README.md) checks the native eight-epoch result across two initialization seeds and two learning rates, with training and validation data only.
+
 The [paired initialization control](docs/initialization_control/README.md) isolates the decoder starting-state effect using training and validation only. The larger exploratory configuration explicitly opts into `feature_neutral` quantum initialization; the model default and smoke configuration retain `near_zero`.
 
 The larger exploratory configuration is:
