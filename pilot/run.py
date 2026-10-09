@@ -80,22 +80,34 @@ def flatten_forecast_targets(observations):
     return observations[:, 1:].reshape(-1, observations.shape[-1])
 
 
-def evaluate_model(model, partitions, config, data_seed, training_seed, records, output_directory):
-    training_latents = np.stack([model.sequence_outputs(sequence)[0][:-1] for sequence in partitions['train']])
-    validation_latents = np.stack([model.sequence_outputs(sequence)[0][:-1] for sequence in partitions['validation']])
+def fit_evaluation_probes(model, training, validation, config):
+    training_latents = np.stack([model.sequence_outputs(sequence)[0][:-1] for sequence in training])
+    validation_latents = np.stack([model.sequence_outputs(sequence)[0][:-1] for sequence in validation])
     flattened_training_latents = training_latents.reshape(-1, model.latent_dimension)
     flattened_validation_latents = validation_latents.reshape(-1, model.latent_dimension)
     probes = {}
     probe_metadata = {}
     for task, target_function in [('reconstruction', flatten_inputs), ('forecast', flatten_forecast_targets)]:
         probes[task], probe_metadata[task] = choose_probe(
-            flattened_training_latents, target_function(partitions['train']),
-            flattened_validation_latents, target_function(partitions['validation']),
+            flattened_training_latents, target_function(training),
+            flattened_validation_latents, target_function(validation),
             config['probe_ridge_penalties'],
         )
-    np.savez(output_directory / (model.name + '_probes.npz'),
-             **{task + '_coefficients': probe[0] for task, probe in probes.items()},
-             **{task + '_intercept': probe[1] for task, probe in probes.items()})
+    return probes, probe_metadata
+
+
+def evaluate_model(model, partitions, config, data_seed, training_seed, records, output_directory,
+                   *, locked_probes=None, locked_probe_metadata=None):
+    if (locked_probes is None) != (locked_probe_metadata is None):
+        raise ValueError('Locked probes and their metadata must be supplied together')
+    if locked_probes is None:
+        probes, probe_metadata = fit_evaluation_probes(model, partitions['train'], partitions['validation'], config)
+    else:
+        probes, probe_metadata = locked_probes, locked_probe_metadata
+    if locked_probes is None:
+        np.savez(output_directory / (model.name + '_probes.npz'),
+                 **{task + '_coefficients': probe[0] for task, probe in probes.items()},
+                 **{task + '_intercept': probe[1] for task, probe in probes.items()})
     for partition_index, partition_name in enumerate(partitions):
         if not partition_name.startswith('test_') or partition_name.endswith('_generating_states'):
             continue

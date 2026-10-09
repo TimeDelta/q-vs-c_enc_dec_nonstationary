@@ -1,0 +1,61 @@
+{
+  "bottleneck_size": 2,
+  "data_seeds": [
+    113,
+    127,
+    139,
+    151,
+    163,
+    179,
+    191,
+    211
+  ],
+  "entanglement_gate": "cz",
+  "entanglement_topology": "circular",
+  "epochs": 8,
+  "execution_workers": 4,
+  "generating_latent_dimension": 2,
+  "gradient_width": 1e-05,
+  "hidden_width": 8,
+  "include_untrained_controls": true,
+  "learning_rates": [
+    0.02,
+    0.08
+  ],
+  "models": [
+    "qte",
+    "qte_noent",
+    "cte",
+    "mlp_te",
+    "gru_te",
+    "pca",
+    "reduced_rank",
+    "random_linear",
+    "persistence"
+  ],
+  "native_ridge_penalties": [
+    0.001,
+    0.01
+  ],
+  "num_blocks": 1,
+  "num_features": 4,
+  "primary_comparison": [
+    "qte",
+    "reduced_rank"
+  ],
+  "primary_endpoint": "native forecast MSE averaged equally across the five shifted test conditions, then sequences, separately per data seed",
+  "probe_ridge_penalties": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "purpose": "prespecified fresh-seed one-step forecasting replication; bounded optimization budget",
+  "quantum_initialization": "feature_neutral",
+  "sequence_length": 128,
+  "test_sequences": 4,
+  "train_sequences": 2,
+  "training_seeds": [
+    303
+  ],
+  "validation_sequences": 2
+}
