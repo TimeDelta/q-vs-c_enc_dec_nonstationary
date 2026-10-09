@@ -22,6 +22,6 @@ Probe coefficients are fit on training latents and penalties are selected on val
 python -m pilot.validation_control --config configs/initialization_control.json --output pilot_runs/initialization_control
 ```
 
-The configuration remains exploratory: two data realizations, one initialization and one learning rate do not support calibrated confidence intervals. If calibration fails for another circuit configuration, the initializer raises an error rather than silently accepting a non-neutral center. Defaults are preserved until the paired control is reviewed.
+The configuration remains exploratory: two data realizations, one initialization and one learning rate do not support calibrated confidence intervals. If calibration fails for another circuit configuration, the initializer raises an error rather than silently accepting a non-neutral center. The model default and historical smoke configuration preserve near-zero initialization. The larger exploratory `cpu_pilot.json` explicitly opts into feature-neutral initialization based on this training/validation control; it is a candidate study configuration, not a claim of equal optimization or capacity.
 
 Calibration uses [SciPy's bounded nonlinear least-squares solver](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html). It changes initial values, not the training objective.
