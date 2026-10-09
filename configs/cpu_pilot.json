@@ -1,0 +1,23 @@
+{
+  "purpose": "exploratory replicated pilot; confirm protocol before a publication study",
+  "num_features": 4,
+  "generating_latent_dimension": 2,
+  "bottleneck_size": 2,
+  "num_blocks": 1,
+  "hidden_width": 8,
+  "entanglement_topology": "circular",
+  "entanglement_gate": "cz",
+  "sequence_length": 256,
+  "train_sequences": 8,
+  "validation_sequences": 4,
+  "test_sequences": 4,
+  "epochs": 16,
+  "gradient_width": 0.00001,
+  "learning_rates": [0.005, 0.02],
+  "native_ridge_penalties": [0.001, 0.01],
+  "probe_ridge_penalties": [0.0001, 0.001, 0.01],
+  "data_seeds": [17, 41, 73],
+  "training_seeds": [101, 202],
+  "include_untrained_controls": true,
+  "models": ["cae", "crae", "cte", "crte", "qae", "qrae", "qte", "qrte", "qae_noent", "qte_noent", "mlp_ae", "mlp_te", "gru_te", "pca", "reduced_rank", "random_linear", "persistence"]
+}

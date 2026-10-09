@@ -1,0 +1,7 @@
+# Versions used for the checked CPU pilot (Python 3.12).
+# Install torch from https://download.pytorch.org/whl/cpu on Linux without a GPU.
+numpy==2.3.5
+scipy==1.17.0
+torch==2.14.1
+qiskit==2.5.2
+antropy==0.2.2

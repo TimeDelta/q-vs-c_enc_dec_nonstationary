@@ -12,19 +12,12 @@ from analysis import *
 
 RANDOM_SEED = 89266583
 
-def adam_update(params, gradients, moment1, moment2, t, lr, beta1=0.9, beta2=0.999, epsilon=1e-8):
-    moment1 = beta1 * moment1 + (1 - beta1) * gradients
-    moment2 = beta2 * moment2 + (1 - beta2) * (gradients ** 2)
-    bias_corrected_moment1 = moment1 / (1 - beta1 ** t)
-    bias_corrected_moment2 = moment2 / (1 - beta2 ** t)
-    new_params = params - lr * bias_corrected_moment1 / (np.sqrt(bias_corrected_moment2) + epsilon)
-    return new_params, moment1, moment2
+from optimizers import adam_update
 
 def train_adam(training_data, validation_data, cost_function, config, model, num_epochs=100, store_gradients=False):
     """
-    Train the QTE by minimizing the cost function using ADAM. Note that the QTE will only enforce
-    the bottleneck via the cost function. This is done in order to balance efficiency w/ added
-    flexibility for which qubits get thrown away.
+    Train with finite-difference gradients. Protocol 2 models discard the fixed
+    trash subsystem before decoding; the optional trash penalty is auxiliary.
 
     Parameters:
       - cost_function: the function to use for calculating the cost
@@ -41,12 +34,16 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
     Returns trained_model, cost_history, validation_costs
     """
     cost_history = []
-    gradient_width = 1e-4
+    gradient_width = float(config.get('gradient_width', 1e-4))
+    if gradient_width <= 0 or num_epochs < 0:
+        raise ValueError('gradient_width must be positive and num_epochs nonnegative')
 
     learning_rate = float(config['learning_rate'])
     max_penalty_weight = float(config.get('max_penalty_weight', 1.0))
 
     param_values = np.random.uniform(-np.pi, np.pi, size=len(model.trainable_params))
+    if model.is_recurrent:
+        param_values[0] = 0.0
     moment1 = np.zeros_like(param_values)
     moment2 = np.zeros_like(param_values)
 
@@ -70,8 +67,9 @@ def train_adam(training_data, validation_data, cost_function, config, model, num
         print('     ', initial_cost)
 
         # remove scaling factor from cost history analysis
-        costs_copy = initial_costs
-        costs_copy[-1] /= penalty_weight
+        costs_copy = list(initial_costs)
+        if penalty_weight:
+            costs_copy[-1] /= penalty_weight
         cost_history.append(costs_copy)
 
         gradients = np.zeros_like(param_values)
@@ -149,10 +147,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
             else:
                 raise Exception('Unexpected model type: ' + model_type)
 
-            if autoregressive:
-                loss_fn = autoencoder_cost_function(trash_penalty_fn)
-            else:
-                loss_fn = autoregressive_cost_function(trash_penalty_fn)
+            loss_fn = cost_function_for_model_type(model_type, trash_penalty_fn)
 
             trained_model, cost_history, validation_costs, gradient_norms = \
                 train_adam(training, validation, loss_fn, config, model, num_epochs, store_gradients=True)
@@ -174,7 +169,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
             print('  Saved validation cost per series')
 
             if num_epochs > 0: # avoid index out of range while testing
-                mean_training_costs = cost_history[-1] / len(training)
+                mean_training_costs = cost_history[-1]
                 mean_validation_costs = np.sum(validation_costs[:,1:], axis=0) / len(validation)
                 check_for_overfitting(mean_training_costs, mean_validation_costs)
 
@@ -221,6 +216,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
                 all_marginal_bottlenecks = []
                 all_z_bottlenecks = []
                 for (s_i, series) in validation:
+                    model.reset_hidden_state()
                     enc_mw_entangles = []
                     enc_vn_entropies = []
                     bottlenecks = []
@@ -232,7 +228,8 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
 
                         all_trash_indices.extend(model.get_trash_indices(bottleneck_dm))
 
-                        enc_mw_entangles.append(meyer_wallach_global_entanglement(bottleneck_dm))
+                        enc_mw_entangles.append(meyer_wallach_global_entanglement(bottleneck_dm)
+                                                if np.isclose(np.real(bottleneck_dm.purity()), 1) else np.nan)
                         enc_vn_entropies.append(von_neumann_entropy(bottleneck_dm))
 
                     dataset_enc_mw_entangles.append(np.concatenate(([s_i], enc_mw_entangles)))
@@ -248,6 +245,7 @@ def train_and_analyze_bottlenecks(data_dir, dataset_partitions, num_features, nu
             elif model_type.startswith('c'):
                 all_bottlenecks = []
                 for (s_i, series) in validation:
+                    model.reset_hidden_state()
                     enc_differential_entropies = []
                     num_examples = len(series)
                     if autoregressive:

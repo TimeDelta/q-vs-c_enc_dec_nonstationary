@@ -5,8 +5,6 @@ from qiskit import QuantumCircuit, qpy
 from qiskit.circuit import Parameter
 from qiskit.quantum_info import partial_trace, Statevector, DensityMatrix, Pauli
 
-from utility import dm_to_statevector, fix_dm_array, normalize_classical_vector
-
 ENTANGLEMENT_OPTIONS = ['skip', 'full', 'linear', 'circular']
 ENTANGLEMENT_GATES = ['cx', 'cz', 'rzx']
 ROTATION_GATES = ['rx', 'ry', 'rz']
@@ -21,6 +19,12 @@ class QuantumEncoderDecoder:
         self.entanglement_gate = config.get('entanglement_gate', 'cx')
         self.bottleneck_size = config.get('bottleneck_size', num_qubits//2)
         self.is_recurrent = is_recurrent
+        self.enforce_bottleneck = config.get('enforce_bottleneck', True)
+        self.feature_encoding = config.get('feature_encoding', 'arctan_ry')
+        if not 1 <= self.bottleneck_size <= num_qubits:
+            raise ValueError('bottleneck_size must be between 1 and num_qubits')
+        if self.feature_encoding not in ('arctan_ry', 'bounded_ry'):
+            raise ValueError('feature_encoding must be arctan_ry or bounded_ry')
 
         self.create_embedding_circuit()
         self.full_circuit = self.embedder.compose(self.create_qed_circuit())
@@ -39,20 +43,35 @@ class QuantumEncoderDecoder:
             state = DensityMatrix(state)
         bottleneck_dm = state.evolve(self.encoder_bound)
         if self.is_recurrent:
-            if self.hidden_state is None:
-                self.hidden_state = np.zeros_like(bottleneck_dm.data)
-            # force weight between 0 and 1 w/o creating flat part of loss landscape
-            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight))
-            self.hidden_state = (1-weight)*bottleneck_dm.data + weight*self.hidden_state
-            bottleneck_dm = DensityMatrix(self.hidden_state)
-
-        predicted_state = bottleneck_dm.evolve(self.decoder_bound)
-        if predicted_state.data.ndim > 1:
-            predicted_state = dm_to_statevector(predicted_state)
+            if self.hidden_state is not None:
+                weight = 1.0 / (1.0 + np.exp(-self.hidden_weight))
+                bottleneck_dm = DensityMatrix(
+                    (1-weight)*bottleneck_dm.data + weight*self.hidden_state.data
+                )
+        # Reset is a trace-preserving discard-and-replace channel, not postselection.
+        decoder_input = self.compress_bottleneck(bottleneck_dm)
+        if self.is_recurrent:
+            self.hidden_state = decoder_input
+        predicted_state = decoder_input.evolve(self.decoder_bound)
         return bottleneck_dm, predicted_state
 
+    def compress_bottleneck(self, bottleneck_dm):
+        trash_indices = self.get_trash_indices(bottleneck_dm)
+        if self.enforce_bottleneck and trash_indices:
+            return bottleneck_dm.reset(trash_indices)
+        return bottleneck_dm
+
     def prepare_state(self, state):
-        param_values = {p: state[i] for i, p in enumerate(self.input_params)}
+        features = np.asarray(state, dtype=float)
+        if features.shape != (self.num_qubits,) or not np.all(np.isfinite(features)):
+            raise ValueError('Expected one finite feature per qubit')
+        if self.feature_encoding == 'bounded_ry':
+            if np.any(np.abs(features) > 1 + 1e-12):
+                raise ValueError('bounded_ry requires features in [-1, 1]')
+            angles = np.arccos(np.clip(features, -1, 1))
+        else:
+            angles = np.pi/2 + np.arctan(features)
+        param_values = {parameter: angles[index] for index, parameter in enumerate(self.input_params)}
         return Statevector.from_instruction(self.embedder.assign_parameters(param_values))
 
     def collapse_state(self, state):
@@ -61,27 +80,30 @@ class QuantumEncoderDecoder:
         else:
             dm = DensityMatrix(state)
 
-        x_angles = []
+        z_expectations = []
         for qubit in range(self.num_qubits):
             pauli_list = ['I'] * self.num_qubits
-            pauli_list[self.num_qubits - 1 - qubit] = 'X'
+            pauli_list[self.num_qubits - 1 - qubit] = 'Z'
 
             ex = np.real(dm.expectation_value(Pauli(''.join(pauli_list))))
             ex = max(-1.0, min(1.0, ex))
-            x_angles.append(np.arccos(ex))
+            z_expectations.append(ex)
+        if self.feature_encoding == 'bounded_ry':
+            return np.array(z_expectations)
+        angles = np.arccos(np.clip(z_expectations, -1 + 1e-12, 1 - 1e-12))
+        return np.tan(angles - np.pi/2)
 
-        return np.array(x_angles)
+    def latent_features(self, bottleneck_dm):
+        """Retained single-qubit Z readouts; these are not the full quantum state."""
+        retained_readouts = []
+        for qubit in range(self.bottleneck_size):
+            pauli_label = ['I'] * self.num_qubits
+            pauli_label[self.num_qubits - 1 - qubit] = 'Z'
+            retained_readouts.append(float(np.real(bottleneck_dm.expectation_value(Pauli(''.join(pauli_label))))))
+        return np.asarray(retained_readouts)
 
     def get_trash_indices(self, bottleneck_dm):
-        num_trash = bottleneck_dm.num_qubits - self.bottleneck_size
-        marginals = []
-        for q in range(bottleneck_dm.num_qubits):
-            trace_indices = list(range(bottleneck_dm.num_qubits))
-            trace_indices.remove(q)
-            dm_reduced = partial_trace(bottleneck_dm, trace_indices)
-            p0 = np.real(dm_reduced.data[0, 0])
-            marginals.append((q, p0))
-        return [q for (q, p) in sorted(marginals, key=lambda x: x[1])[:num_trash]]
+        return list(range(self.bottleneck_size, self.num_qubits))
 
     def create_embedding_circuit(self):
         """
@@ -90,14 +112,16 @@ class QuantumEncoderDecoder:
         self.input_params = []
         self.embedder = QuantumCircuit(self.num_qubits)
         for i in range(self.num_qubits):
-            self.input_params.append(self.add_rotation_gates(self.embedder, 'Embedding Rθ ' + str(i), i))
+            parameter = Parameter('Embedding RY ' + str(i))
+            self.input_params.append(parameter)
+            self.embedder.ry(parameter, i)
 
     def add_entanglement_topology(self, qc: QuantumCircuit):
         if self.entanglement_topology == 'none':
             return
         elif self.entanglement_topology == 'skip':
             i = 0
-            while i < self.num_qubits:
+            while i + 1 < self.num_qubits:
                 if self.entanglement_gate.lower() == 'cx':
                     qc.cx(i, i+1)
                 elif self.entanglement_gate.lower() == 'cz':
@@ -168,11 +192,7 @@ class QuantumEncoderDecoder:
                 self.add_rotation_gates(self.encoder, 'Encoder Post-Layer ' + str(layer) + ' Rθ ' + str(i), i, params[i])
         self.trainable_params.extend(self.encoder.parameters)
 
-        # For a proper autoencoder, you want to compress information into a bottleneck but
-        # choosing which qubits to force to |0> reduces the flexibility the AE has in
-        # compressing and reconstructing the data. Instead, in this design, the circuit
-        # structure (and subsequent training loss) is expected to force the encoder to
-        # focus its information into 'bottleneck_size' qubits. This helps mitigate mode collapse.
+        # The last n-k qubits are discarded and replaced with |0> before decoding.
         self.decoder = QuantumCircuit(self.num_qubits)
         for layer in range(self.num_blocks):
             params = []
@@ -186,7 +206,7 @@ class QuantumEncoderDecoder:
 
     def add_rotation_gates(self, circuit, description, qubit_index, param=None):
         parameter = Parameter(f'{description}')
-        if param:
+        if param is not None:
             parameter = param
         circuit.rx(parameter, qubit_index)
         circuit.ry(parameter, qubit_index)
@@ -199,12 +219,7 @@ class QuantumEncoderDecoder:
         self.encoder_bound = self.encoder.assign_parameters(encoder_params)
         self.decoder_bound = self.decoder.assign_parameters(decoder_params)
         if self.hidden_state_weight_param in params_dict:
-            if self.hidden_weight is None:
-                # always start at zero to give better starting gradient, ensuring contribution
-                # from both hidden and current bottleneck
-                self.hidden_weight = 0
-            else:
-                self.hidden_weight = params_dict[self.hidden_state_weight_param]
+            self.hidden_weight = float(params_dict[self.hidden_state_weight_param])
         all_params = {k: v for k,v in params_dict.items() if k in self.full_circuit.parameters}
         self.full_circuit_bound = self.full_circuit.assign_parameters(all_params)
 
@@ -218,6 +233,12 @@ class QuantumEncoderDecoder:
         if not loaded_circuits:
             raise ValueError(f'No circuits found in {fname}.qpy')
         self.full_circuit = loaded_circuits[0]
+        metadata = self.full_circuit.metadata or {}
+        if metadata.get('protocol_version') != 2:
+            raise ValueError('Historical quantum checkpoints require the original code; retrain under protocol 2')
+        expected_config = self.checkpoint_config()
+        if metadata.get('model_config') != expected_config:
+            raise ValueError('Checkpoint model configuration does not match this model')
 
         # instruction counts
         len_embed = len(self.embedder.data)
@@ -238,14 +259,22 @@ class QuantumEncoderDecoder:
         )
 
         if self.is_recurrent:
-            self.hidden_weight = self.full_circuit.metadata['hidden_weight']
+            self.hidden_weight = metadata['hidden_weight']
+        self.reset_hidden_state()
+
+    def checkpoint_config(self):
+        return dict(num_qubits=self.num_qubits, num_blocks=self.num_blocks,
+                    bottleneck_size=self.bottleneck_size, is_recurrent=self.is_recurrent,
+                    entanglement_topology=self.entanglement_topology,
+                    entanglement_gate=self.entanglement_gate,
+                    feature_encoding=self.feature_encoding,
+                    enforce_bottleneck=self.enforce_bottleneck)
 
     def save(self, fname):
-        if self.is_recurrent:
-            self.full_circuit_bound.metadata = { # (metadata must be JSON-serializable)
-                **getattr(self.full_circuit_bound, 'metadata', {}),
-                'hidden_weight': self.hidden_weight
-            }
+        self.full_circuit_bound.metadata = {
+            'protocol_version': 2, 'model_config': self.checkpoint_config(),
+            'hidden_weight': self.hidden_weight,
+        }
         with open(fname + '.qpy', 'wb') as file:
             qpy.dump(self.full_circuit_bound, file)
 
@@ -290,15 +319,16 @@ class ClassicalEncoderDecoder(nn.Module):
         self.decoder = nn.ModuleList()
         for _ in range(self.num_blocks):
             self.encoder.append(RingGivensRotationLayer(num_features))
-            # bottleneck enforced via cost function similar to Quantum version
+            # Decoder receives only fixed retained coordinates.
             self.decoder.append(RingGivensRotationLayer(num_features))
         self.bottleneck_size = config.get('bottleneck_size', self.num_features//2)
+        self.enforce_bottleneck = config.get('enforce_bottleneck', True)
+        if not 1 <= self.bottleneck_size <= num_features:
+            raise ValueError('bottleneck_size must be between 1 and num_features')
         if self.is_recurrent:
             # always start at zero to give better starting gradient
             self.hidden_weight = nn.Parameter(torch.tensor([0.0]))
         self.hidden_state = None
-        # ensure set_params starts w/ 0 for hidden weight
-        self._params_initialized = False
 
     @property
     def trainable_params(self):
@@ -312,47 +342,58 @@ class ClassicalEncoderDecoder(nn.Module):
         self.hidden_state = None
 
     def forward(self, x):
-        if self.hidden_state is None:
-            self.hidden_state = torch.zeros(self.num_features)
+        bottleneck_state, output = self.forward_tensor(x)
+        return bottleneck_state.detach().cpu().numpy(), output.detach().cpu().numpy()
+
+    def forward_tensor(self, x):
+        """Differentiable forward pass with no hidden-state path around compression."""
         bottleneck_state = x
         for block in self.encoder:
             bottleneck_state = block(bottleneck_state)
 
         if self.is_recurrent:
-            # add normalization to avoid infinite growth and have similar dynamics as
-            # fixing of density matrix in quantum version
-            # force weight between 0 and 1 w/o creating flat part of loss landscape
-            weight = 1.0 / (1.0 + np.exp(-self.hidden_weight.detach().numpy()[0]))
-            bottleneck_state = (1-weight)*bottleneck_state + weight*self.hidden_state
-            output = self.hidden_state = bottleneck_state
-        else:
-            output = bottleneck_state
-
+            if self.hidden_state is not None:
+                weight = torch.sigmoid(self.hidden_weight)
+                bottleneck_state = (1-weight)*bottleneck_state + weight*self.hidden_state
+        output = bottleneck_state
+        if self.enforce_bottleneck:
+            output = torch.cat((bottleneck_state[:self.bottleneck_size],
+                                torch.zeros_like(bottleneck_state[self.bottleneck_size:])))
+        if self.is_recurrent:
+            self.hidden_state = output
         for block in self.decoder:
             output = block(output)
-        return bottleneck_state.detach().numpy(), output.detach().numpy()
+        return bottleneck_state, output
+
+    def latent_features(self, bottleneck_state):
+        return np.asarray(bottleneck_state)[:self.bottleneck_size]
 
     def prepare_state(self, state):
-        return torch.Tensor(state)
+        parameter = next(self.parameters())
+        return torch.as_tensor(state, dtype=parameter.dtype, device=parameter.device)
 
     def get_trash_indices(self, bottleneck_state):
-        num_trash = bottleneck_state.shape[0] - self.bottleneck_size
-        indices = []
-        for s in range(len(bottleneck_state)):
-            # use the lowest magnitude features as trash
-            indices.append((s, abs(bottleneck_state[s])))
-        return [i for (i, v) in sorted(indices, key=lambda x: x[1])[:num_trash]]
+        return list(range(self.bottleneck_size, self.num_features))
 
     def set_params(self, params_dict):
         for p, v in params_dict.items():
-            if not self._params_initialized and self.is_recurrent and p == self.hidden_weight:
-                self._params_initialized = True
-                continue # skip first assignment to always start w/ 0
             with torch.no_grad():
-                p.copy_(torch.tensor(v, dtype=torch.float32))
+                p.copy_(torch.as_tensor(v, dtype=p.dtype, device=p.device))
+
+    def checkpoint_config(self):
+        return dict(num_features=self.num_features, num_blocks=self.num_blocks,
+                    bottleneck_size=self.bottleneck_size,
+                    enforce_bottleneck=self.enforce_bottleneck, is_recurrent=self.is_recurrent)
 
     def load(self, fname):
-        self.load_state_dict(torch.load(fname + '.pth'))
+        checkpoint = torch.load(fname + '.pth', weights_only=True)
+        if checkpoint.get('protocol_version') != 2:
+            raise ValueError('Historical checkpoints require the historical implementation')
+        if checkpoint['model_config'] != self.checkpoint_config():
+            raise ValueError('Checkpoint configuration does not match model')
+        self.load_state_dict(checkpoint['state_dict'])
+        self.reset_hidden_state()
 
     def save(self, fname):
-        torch.save(self.state_dict(), fname + '.pth')
+        torch.save(dict(protocol_version=2, model_config=self.checkpoint_config(),
+                        state_dict=self.state_dict()), fname + '.pth')
