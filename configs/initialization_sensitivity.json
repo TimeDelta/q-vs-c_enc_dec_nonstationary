@@ -1,0 +1,8 @@
+{
+  "purpose": "exploratory sensitivity to initialization seed and learning rate; no test evaluation",
+  "base_config": "configs/initialization_control.json",
+  "reuse_directory": "docs/initialization_control",
+  "epochs": 8,
+  "initialization_seeds": [101, 202],
+  "learning_rates": [0.02, 0.08]
+}

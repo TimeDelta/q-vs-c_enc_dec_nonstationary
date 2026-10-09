@@ -25,3 +25,16 @@ python -m pilot.validation_control --config configs/initialization_control.json 
 The configuration remains exploratory: two data realizations, one initialization and one learning rate do not support calibrated confidence intervals. If calibration fails for another circuit configuration, the initializer raises an error rather than silently accepting a non-neutral center. The model default and historical smoke configuration preserve near-zero initialization. The larger exploratory `cpu_pilot.json` explicitly opts into feature-neutral initialization based on this training/validation control; it is a candidate study configuration, not a claim of equal optimization or capacity.
 
 Calibration uses [SciPy's bounded nonlinear least-squares solver](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html). It changes initial values, not the training objective.
+
+## Exploratory sensitivity extension
+
+The eight-epoch comparison expands to initialization seeds 101 and 202 crossed with learning rates 0.02 and 0.08. Data seeds 17 and 41, architectures and all remaining settings stay fixed. The higher rate checks sensitivity to larger optimizer steps. The grid is specified before running its new cells and uses training and validation only.
+
+The existing seed-101/rate-0.02 native trajectories supply their first eight epochs after checks of simulation-source hashes, generating-data manifests and structural configuration. Their stored 16-epoch checkpoints and selected probe scores are not reused as eight-epoch outcomes. Three additional cells run from scratch. All cells select their native checkpoint by the minimum validation MSE through epoch eight.
+
+Report every paired quantum outcome, classical references and variation across the grid. Initialization seeds and learning rates on a shared data realization are not independent data samples. This remains an exploratory diagnostic on two previously inspected realizations, with no confidence interval or generalization claim.
+
+```bash
+python scripts/run_initialization_sensitivity.py --config configs/initialization_sensitivity.json --output pilot_runs/initialization_sensitivity
+python scripts/report_initialization_sensitivity.py --input pilot_runs/initialization_sensitivity --output docs/initialization_sensitivity
+```
