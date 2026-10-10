@@ -1,0 +1,168 @@
+---
+title: "Initialization and temporal-descriptor controls for quantum and classical compressed forecasting"
+date: "Draft for author review, 10 October 2026"
+bibliography: references.bib
+link-citations: true
+geometry: margin=25mm
+fontsize: 11pt
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+---
+
+# Abstract {.unnumbered}
+
+Comparisons of quantum and classical compressed time-series models depend on the information channel, initialization and evaluation procedure. This study enforces fixed bottlenecks and common feature-space scoring on bounded nonstationary synthetic sequences, separates native decoder performance from linear readout of learned representations and audits a candidate temporal-complexity criterion. Exploratory paired controls identify a substantial decoder-initialization effect: feature-neutral parameter centers lower validation error in all 16 tested quantum pairs, with much of the reduction already present before gradient training. A subsequently fixed forecasting protocol evaluates eight fresh generator realizations, with all model and probe selections hash-locked before test generation. Reduced-rank regression has lower native forecast MSE than the quantum transition encoder in all eight realizations; mean shifted-condition errors are 0.091117 and 0.121666 respectively. The primary paired difference is +0.030549 in favor of reduced-rank regression. {{DESCRIPTOR_ABSTRACT}} Compensated orthogonal rotations change coordinatewise descriptors while preserving probe predictions to numerical precision. The evidence supports an initialization correction and a reproducible small-scale negative benchmark for the tested training procedure. It does not establish converged architecture rankings, computational quantum advantage or an invariant complexity-preservation principle.
+
+# Introduction
+
+Compression is useful for prediction when a representation retains the information required by the target. A representation's temporal irregularity may offer a convenient diagnostic, but similarity between input and latent complexity summaries is a separate claim from preservation of predictive information. That distinction is especially relevant when comparing classical coordinate compression with a quantum subsystem: the state spaces, measurement channels and decoder constraints differ.
+
+Quantum autoencoders provide a framework for compressing quantum data [@romero2017autoencoders]. The present experiment instead embeds bounded classical observations in a small quantum circuit and scores classical prediction features. It therefore tests a particular hybrid representation procedure rather than compression of arbitrary quantum information. Benchmark design can strongly affect comparisons with classical learning methods. Bowles, Ahmed and Schuld examine that issue using diverse classification tasks and classical references [@bowles2024benchmarking]. Their methodological concern motivates explicit baselines and ablations here; their classification findings do not determine forecasting performance in this study.
+
+The corrected experiment addresses three questions. First, can a large apparent quantum training deficit arise from the decoder's initial readout after discarded qubits are reset? Second, does the corrected quantum forecast procedure improve on a task-matched reduced-rank predictor under controlled distribution shifts? Third, do validation-only temporal descriptors add predictive value beyond validation distortion and model identity when complete data realizations are held out?
+
+The contribution is a controlled evaluation and an accompanying reproducibility record. It combines an initialization intervention with matched initial encoders, a fresh-data forecasting comparison and a separate exploratory regression analysis. It also demonstrates a concrete coordinate dependence of the descriptor criterion. The experiment is intentionally small and its conclusions concern the implemented procedures within a fixed optimization budget.
+
+# Methods
+
+## Controlled nonstationary sequences
+
+Each realization uses an independently seeded four-by-two mixing matrix with orthonormal columns. A two-dimensional Gaussian autoregressive state evolves through three regimes, with boundaries after time points 41 and 84 in zero-based indexing. For each regime,
+
+$$z_t=\rho_r z_{t-1}+(1-\rho_r)\mu_r+\sqrt{1-\rho_r^2}\,s_r\eta_t,
+\qquad x_t=\tanh(Mz_t+\sigma\epsilon_t).$$
+
+The innovations $\eta_t$ and observation noise $\epsilon_t$ are independent standard Gaussian vectors. Regime means alternate sign and have magnitudes proportional to $(0.5,1.0)$. The base mean-shift amplitude is 0.15. The base state standard deviation is 0.35, multiplied by 1.5 in the middle regime. Persistence is 0.35 in the outer regimes and 0.75 in the middle regime; observation-noise standard deviation is 0.04. Innovation scaling fixes the within-regime stationary variance when persistence changes. Regime transitions retain finite transients, so the full sequence is nonstationary.
+
+Each sequence contains 128 observations. Each realization supplies two training sequences, two validation sequences and four test sequences per condition. Independent random streams generate the partitions, sharing the realization's mixing matrix. Models receive observation features, not the generating states, mixing matrix or regime labels. Forecasting uses 127 teacher-forced pairs per sequence: the observed input prefix predicts its next observations. Evaluation does not roll predictions forward as future inputs.
+
+Test conditions include the base regime and five shifts. The mean shift raises amplitude to 0.8. The variance shift raises the middle-regime standard-deviation multiplier to 3, corresponding to a ninefold middle-to-outer stationary variance ratio instead of 2.25. The persistence shift uses -0.35 and 0.95. The noise shift uses observation-noise standard deviation 0.25. The combined shift applies all changes. These settings are controlled changes within one generator family, not an exhaustive set of real-world shifts.
+
+## Enforced compression and measurement
+
+Classical ring encoders use Givens rotations. Their decoders receive the first two retained coordinates and zeros in the two discarded positions. This rotation-projection-rotation native map has two nonzero singular values equal to one; it is more restricted than a general rank-two forecast matrix with learned shrinkage. The quantum encoder embeds each $x_i\in[-1,1]$ as $R_y(\arccos x_i)|0\rangle$, giving input $Z$ expectation $x_i$. Its four-qubit encoder and decoder each use one block. Each qubit has one shared angle applied in an $R_x,R_y,R_z$ sequence before and after a circular CZ layer. Four encoder and four decoder angles give eight gradient-trained parameters. The no-CZ ablation removes the entangling layers.
+
+Quantum compression traces out the two fixed discarded qubits and replaces them with $|0\rangle$. It is implemented as a trace-preserving density-matrix reset channel. Mixed retained states remain mixed; the operation is not conditional postselection. Native predictions are the four decoder $Z$ expectations and are compared directly with bounded observation targets. All quantum computation uses exact classical density-matrix simulation, with no shot noise or quantum hardware execution.
+
+Common linear probes observe two retained coordinates from classical encoders or two retained single-qubit $Z$ expectations from quantum encoders. The latter do not characterize the full reduced density matrix. Equal readout dimension does not make the underlying quantum state and classical representation equal in capacity.
+
+Additional methods are a two-coordinate MLP encoder with hidden width eight, a two-state GRU encoder with a width-eight feedforward decoder, PCA, random orthogonal projection and reduced-rank regression. The GRU reference supplies recurrent processing [@cho2014encoder]; the primary quantum transition encoder is not recurrent. An uncompressed persistence predictor retains all four coordinates. Untrained controls preserve the seeded architecture and initialization of each gradient-trained method. Zero-output and training-target-mean forecasts provide constant references.
+
+For reduced-rank regression, centered training inputs and next-time targets define $S_{xx}$ and $S_{xy}$. The leading two singular directions of $(S_{xx}+\lambda I)^{-1/2}S_{xy}$ define the encoder and linear forecast decoder. Its native ridge penalty is selected on validation from 0.001 and 0.01. PCA and random projection have native reconstruction objectives; their native errors are excluded from forecast comparisons and their forecasting capability is evaluated using common probes.
+
+## Initialization intervention
+
+Near-zero quantum parameter jitter is uniform on $[-0.15,0.15]$. Discarded qubits reset to $|0\rangle$ have $Z=1$, whereas discarded classical coordinates are zero. A near-identity quantum decoder can therefore start with a large output bias on discarded positions despite small, centered observation features.
+
+The feature-neutral initialization recenters only the existing first-block decoder angles on discarded qubits. A bounded nonlinear least-squares calibration minimizes their readouts for a synthetic all-zero observation vector, holding the other seeded parameters fixed. The center residual must be below $10^{-8}$. The original seeded jitter is then added to those centers, so the actual initialized readouts need not be exactly zero. Calibration uses no training, validation or test observations and adds no parameters or gates. Encoder initialization is unchanged within each paired comparison.
+
+The exploratory sensitivity grid uses previously inspected data seeds 17 and 41, initialization seeds 101 and 202, learning rates 0.02 and 0.08 and eight-epoch budgets on length-64 training and validation sequences. No test partitions are generated in this grid. Only trajectories through epoch eight are reused from an earlier sixteen-epoch control; its later checkpoints are not represented as eight-epoch probe results.
+
+## Fresh-data forecasting protocol
+
+The protocol and runner were committed before fitting data seeds 113, 127, 139, 151, 163, 179, 191 and 211. Initialization seed 303 is fixed. Feature-neutral initialization is used in both quantum variants. Every gradient candidate completes eight epochs at each of two learning rates, 0.02 and 0.08. Native validation MSE selects the checkpoint and learning rate. Quantum gradients use forward differences with width $10^{-5}$ and Adam; classical methods use automatic differentiation and Adam. These are equal epoch budgets, not equal computation or a demonstration of convergence.
+
+For every selected and untrained representation, common ridge probes fit training targets only. Validation selects penalties from 0.0001, 0.001 and 0.01. Native validation error selects encoder checkpoints independently of probe scores. All 112 model/probe cases are fitted and saved before any test partitions are generated. A selection lock hashes 251 configuration, data, checkpoint, probe and selection files. Test evaluation accepts the frozen coefficients and verifies that these hashes remain unchanged.
+
+The primary endpoint averages native forecast MSE over the four sequences in each shifted condition and then equally over the five conditions. The prespecified contrast is quantum transition encoder minus reduced-rank regression within each data realization. The eight independently generated realizations are the replication units. Individual sequences, conditions and models share a realization and are not counted as independent evidence. No power or significance threshold was specified.
+
+## Exploratory descriptor prediction
+
+Input and latent sequences are described by normalized order-three permutation entropy, median-binarized LZ76 and lag-one correlation. Permutation entropy summarizes ordinal patterns [@bandt2002permutation]. For each coordinate it is averaged over coarse-graining scales 1 and 2; scale 4 is excluded because a 127-point prefix leaves fewer than 30 ordinal windows. LZ76 phrase count $c(n)$ is scaled as $c(n)\log_2(n)/n$ for the binary alphabet [@lempel1976complexity; @vallat2026antropy]. Finite-sample values can exceed one. Constant-coordinate lag correlation is defined as zero. Each summary is then averaged over coordinates.
+
+The scalar mismatch is
+
+$$d=\frac{1}{3}\left[(H_x-H_h)^2+(L_x-L_h)^2+
+\left(\frac{r_x-r_h}{2}\right)^2\right].$$
+
+This finite-sample descriptor distance is not an MDL codelength, a sufficient statistic or an information-theoretic compression guarantee. Research on latent generator complexity concerns a different objective [@hu2023complexity]. Entropy-guided time-series classification is also an existing related direction [@lin2026entrots]. The present study audits a diagnostic association rather than introducing entropy-based representation learning.
+
+After inspection of the fresh-data forecast outcomes, an exploratory analysis plan was committed before this regression analysis. Selected checkpoints are restored without retraining and saved probes reproduce validation errors. Descriptors are extracted only from the two validation sequences, averaged over their 127-point input prefixes. Validation features are saved and hashed before the analysis reads test outcome rows. This ordering excludes test descriptors from the predictors, but prior outcome inspection prevents a confirmatory interpretation.
+
+The primary regression target is common-probe forecast MSE averaged across shifted conditions. Model identity and validation forecast-probe MSE form the baseline. The primary extension adds scalar validation mismatch. Model identity absorbs the fixed architecture and training-budget differences among named procedures. Secondary extensions use the three squared component mismatches or three latent descriptors. Native forecasting and in-distribution probe error are secondary targets. Native regressions exclude PCA and random projection and use native validation forecasting error.
+
+Nested leave-one-realization-out prediction withholds all models of each outer data seed. On the remaining seven seeds, an inner leave-one-realization-out loop selects ridge penalties from 0.001, 0.01, 0.1, 1 and 10. Centering, scaling and intercept estimation use fitting rows only at both levels. Each outer loss is mean squared prediction error on forecast MSE across that seed's models; eight outer losses receive equal weight. There are 112 common-probe model/data cells but only eight grouped prediction units. Every committed feature set is reported without substituting a favorable secondary result for the primary extension.
+
+Finally, compensated orthogonal rotations transform latent coordinates and adjust the linear probe accordingly. Predictions should remain unchanged. Descriptor changes under this transformation, positive scaling and time shuffling quantify coordinate sensitivity independently of the prediction regression.
+
+# Results
+
+## Initial output bias explains a substantial optimization deficit
+
+Feature-neutral initialization reaches lower minimum validation MSE in all 16 quantum pairs in the exploratory grid. The magnitude depends on learning rate (Table 1). Raising the near-zero learning rate substantially narrows the gap. Feature-neutral results vary less over the two tested rates.
+
+| Task | Near-zero, 0.02 | Neutral, 0.02 | Near-zero, 0.08 | Neutral, 0.08 |
+| --- | ---: | ---: | ---: | ---: |
+| Reconstruction | 0.440267 | 0.046814 | 0.108503 | 0.046727 |
+| Forecast | 0.466011 | 0.071033 | 0.123432 | 0.067987 |
+
+Table 1. Native validation MSE, averaged over two data and two initialization seeds for each learning rate. The four fits share two data realizations and do not provide four independent data replicates.
+
+Before gradient training, quantum reconstruction validation error drops from 0.530160 to 0.049701 and forecasting error from 0.557219 to 0.075021 under the intervention. The zero-output forecasting reference has validation error 0.072321. Thus a large paired improvement reflects removal of a starting-output penalty; its size alone does not demonstrate strong learned prediction. Paired encoder readout hashes and initial probe errors match, isolating the changed decoder initialization. These validation-only findings motivate the corrected fresh-data procedure rather than a generalization claim.
+
+## Reduced-rank regression improves the prespecified forecast endpoint
+
+Mean shifted-test native forecast MSE is 0.121666 for the quantum transition encoder and 0.091117 for reduced-rank regression. Quantum minus reduced-rank differences are positive in all eight realizations, with mean +0.030549 and observed range +0.014092 to +0.042249. Figure 1 shows every realization and the named native forecasting references. The range is descriptive and is not a confidence interval.
+
+![Fresh-data primary contrast and native forecasting references. Positive paired differences favor reduced-rank regression. Scores average conditions equally within a realization. Error ranges show the observed eight-realization range.](../docs/fresh_seed_forecasting/fresh_seed_forecasting.png){width=100%}
+
+{{FORECAST_TABLE}}
+
+Table 2. Means across the eight realizations. Persistence is an uncompressed reference. PCA's native objective is reconstruction, so only its forecast-probe score is shown. Common-probe decoder capacity is shared, while representation and native decoder capacities differ.
+
+The no-CZ native mean is 0.128927 and its common-probe mean is 0.108760. Entanglement ablation therefore has different native and probe effects; the experiment does not isolate a universal benefit from entanglement. Reduced-rank regression has lower mean native error than the quantum model in each named shifted condition. Persistence has the lowest mean error in the mean-shift condition, emphasizing that aggregate ranking depends on the chosen shift mixture.
+
+The quantum common-probe shifted error is 0.107755 after training versus 0.108299 for its untrained control. Native errors are 0.121666 and 0.131094. The smaller probe change is consistent with much of the native improvement occurring outside a large increase in linearly accessible encoder usefulness. It does not identify a unique mechanism: checkpoint selection uses native loss, the probe observes only two readouts and optimization is limited to eight epochs.
+
+## Validation-descriptor prediction is conditional and exploratory
+
+{{DESCRIPTOR_RESULTS}}
+
+![Exploratory nested prediction of shifted common-probe forecast MSE. Left: all eight baseline-minus-distance loss differences. Right: all committed feature sets on the same outer folds. Loss units are MSE squared.](../docs/descriptor_generalization/descriptor_generalization.png){width=100%}
+
+{{DESCRIPTOR_TABLE}}
+
+Table 3. Mean outer squared prediction losses in units of $10^{-5}$ MSE squared, across eight held-out realizations. Native forecasting includes 12 cases per realization; common probes include 14. Secondary feature sets and targets retain their exploratory status.
+
+The results concern prediction across new realizations of this generator with the same named model set. They do not evaluate prediction for unseen architectures. Model identity alone and validation error alone provide reference losses, while the controlled extension measures incremental value beyond their joint baseline. Prior inspection, few data realizations and a single initialization limit interpretation even when an extension lowers grouped prediction loss.
+
+## Descriptor distance depends on coordinates
+
+{{CONTROL_RESULTS}}
+
+For an orthogonal matrix $R$, latent coordinates $hR$ and compensated coefficients $R^TW$ satisfy $(hR)(R^TW)+b=hW+b$. The prediction invariance follows algebraically; the recorded discrepancy checks numerical implementation. Coordinatewise descriptor changes under this equivalence demonstrate that matching the present summaries is not a necessary invariant of linear predictive information. A different multivariate or task-specific summary would require a new evaluation.
+
+## Computational and reproducibility record
+
+Quantum models use eight gradient-trained angles, the classical ring uses eight parameters, the MLP uses 118 and the GRU uses 108. Analytic methods have no gradient-trained parameters but have fitted coefficient matrices. Mean fitting elapsed times per realization are 122.32 seconds for the quantum model, 104.74 for no-CZ, 5.61 for the classical ring, 0.02 for the MLP and 0.24 for the GRU. Analytic fits take less than 0.01 seconds at this scale. These measurements include the implemented selection procedures and concurrent CPU scheduling; they are not hardware speedup estimates.
+
+The fresh study fits with four independent CPU processes in 491.1 seconds and completes evaluation in 782.4 seconds. Its record contains 5,376 sequence/task metric rows and 384 constant-reference rows. All 251 locked files remain unchanged after evaluation. Saved observation and generating-state arrays independently regenerate exactly. Compensated rotation checks and finite diagnostics are recorded alongside source hashes and package versions.
+
+{{RESTORATION_RESULTS}}
+
+# Discussion
+
+The initialization intervention identifies an avoidable mismatch between reset-qubit readout and zero-padded classical decoding. Its strongest effect occurs before gradient training and its size changes with learning rate. This supports reporting initial predictions, constant baselines and matched untrained representations whenever low training error is interpreted as learning. It also cautions against attributing short-run quantum optimization failure directly to an intrinsic training-landscape pathology.
+
+In particular, flat loss histories or epoch-index curvature do not establish a barren plateau. The relevant literature analyzes gradient suppression and its scaling with system size under specified circuit assumptions [@mcclean2018barren]. This study uses four qubits and does not measure such scaling. A decoder bias, optimization budget or unsuitable inductive bias can explain poor finite-run performance without a barren-plateau conclusion.
+
+The fresh-data comparison provides a negative result for the tested quantum forecasting procedure against a low-rank classical predictor. The generator has two Gaussian AR states mixed into four bounded observations, making a linear low-rank reference especially relevant and potentially favorable. That is a useful control for this task, not proof that linear methods dominate on arbitrary nonlinear dynamics. The reduced-rank comparison should be retained when exploring more difficult generators, rather than replaced after observing its success.
+
+Shared probes help separate decoder effects from representation accessibility, but they cannot fully equate quantum and classical capacity. A two-qubit reduced density matrix can encode structure not captured by its two local $Z$ expectations. Conversely, additional observables would change measurement cost, feature dimension and the evaluation protocol. The current result describes this restricted readout and cannot be extended to the complete quantum state without further work.
+
+The descriptor analysis asks a more modest question than whether complexity matching is essential: whether finite-sample validation summaries improve prediction of error on another generator realization after accounting for distortion and model identity. Nested grouped validation gives that question a reproducible predictive test. It does not erase prior outcome inspection. The rotation control adds a separate mathematical reason to reject an invariant interpretation of the chosen coordinatewise distance, regardless of whether it is useful as a conditional empirical predictor.
+
+The study has several material limits. Only one generator family and one fresh-study initialization are evaluated. Two training sequences per realization and an eight-epoch budget restrict conclusions about convergence and optimization variability. Parameters, state spaces, gradient estimators and computation differ across models. A GRU comparison does not isolate the causal value of recurrence because the architectures differ in other ways. The teacher-forced one-step task does not address multi-step rollout, unknown forms of nonstationarity or clinical/neuroimaging applicability. Eight exploratory descriptor folds do not establish a general predictive law.
+
+Further evidence should address these limits in a fixed extension: multiple initialization seeds, stopping and convergence diagnostics selected without test data, at least one substantially different generator family and a genuinely untouched descriptor-prediction replication. Such work could test the stability of the present mechanisms and associations. It should keep task-matched simple predictors, representation controls and resource accounting visible.
+
+# Code and data availability
+
+Code, configurations, protocols, full sequence-level evidence and saved checkpoint archives are maintained at <https://github.com/TimeDelta/q-vs-c_enc_dec_nonstationary>. The fresh-data protocol and selection lock precede test generation; the descriptor protocol is explicitly exploratory after test inspection. Reproduction commands and source identities appear in the respective evidence reports. Original project material uses Zero-Clause BSD under the repository's license scope. Imported material and dependencies retain the notices recorded in the repository. The historical manuscript is archived and its obsolete numerical conclusions are not used as current evidence.
+
+# References {.unnumbered}
+
+::: {#refs}
+:::

@@ -1,0 +1,7 @@
+{
+  "outer_folds_verified": 144,
+  "inner_group_memberships_verified": 1008,
+  "unique_predictions_verified": 1920,
+  "saved_losses_and_summary_verified": true,
+  "evidence_archive_and_validation_feature_hashes_verified": true
+}

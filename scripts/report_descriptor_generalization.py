@@ -66,6 +66,8 @@ def make_report(directory):
               'From a clean committed checkout with the pinned CPU dependencies:', '', '```bash',
               'OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pilot.descriptor_study --output /tmp/descriptor_generalization',
               'python scripts/report_descriptor_generalization.py /tmp/descriptor_generalization', '```', '',
+              'Check saved fold coverage, loss aggregation and evidence hashes independently:', '', '```bash',
+              'python scripts/verify_descriptor_generalization.py /tmp/descriptor_generalization', '```', '',
               f'Analysis source commit: `{manifest["git_commit"]}`. Original archive SHA-256: `{manifest["evidence_archive_sha256"]}`. Validation features SHA-256: `{manifest["feature_sha256"]}`.', '',
               f'All {verification["validation_features_rows"]} restored validation-probe errors match saved metadata; maximum absolute difference {verification["max_restored_validation_probe_error"]:.3g}. Original selection-lock files and the validation-feature table remain unchanged. All {verification["prediction_rows"]} held-out predictions are finite.', '',
               'Files include `validation_features.csv`, `feature_lock.json`, `analysis_cells.csv`, `heldout_predictions.csv`, `fold_losses.csv`, `fold_audit.json`, `summary.json`, `verification.json` and `manifest.json`. The analysis configuration is `analysis_config.json`; the protocol is [the exploratory analysis plan](../descriptor_generalization_protocol.md). The original checkpoint archive remains in [the fresh-seed benchmark](../fresh_seed_forecasting/README.md).']
