@@ -24,6 +24,11 @@ def file_digest(path):
 def verify_selection_lock(directory):
     directory = Path(directory)
     lock = json.loads((directory/'selection_lock.json').read_text())
+    manifest = json.loads((directory/'manifest.json').read_text())
+    if lock['source_commit'] != manifest['git_commit']:
+        raise RuntimeError('Selection lock source differs from the run manifest')
+    if manifest.get('selection_lock_sha256') and file_digest(directory/'selection_lock.json') != manifest['selection_lock_sha256']:
+        raise RuntimeError('Selection lock file changed')
     for relative_path, expected_digest in lock['file_sha256'].items():
         if file_digest(directory/relative_path) != expected_digest:
             raise RuntimeError('Selection lock changed: '+relative_path)
@@ -31,10 +36,64 @@ def verify_selection_lock(directory):
 
 
 def write_csv(path, records):
+    if not records:
+        raise ValueError('Cannot write empty metric records')
+    for record in records:
+        if any(isinstance(value, (float, np.floating)) and not np.isfinite(value) for value in record.values()):
+            raise FloatingPointError('Nonfinite metric record')
     with Path(path).open('w',newline='') as stream:
         writer = csv.DictWriter(stream,fieldnames=list(records[0]))
         writer.writeheader()
         writer.writerows(records)
+
+
+def restore_and_verify_cases(config, fitted_cases, fitting_records):
+    """Replay saved checkpoints and probes using validation only, before test access."""
+    from pilot.descriptor_study import restore_model
+    from pilot.metrics import predict_probe
+    selection_by_identity = {(row['data_seed'], row['training_seed'], row['model']): row
+                             for row in fitting_records}
+    validation_by_seed = {}
+    restored_cases, errors = [], []
+    for data_seed, training_seed, fitted_model, probes, probe_metadata, model_directory in fitted_cases:
+        if data_seed not in validation_by_seed:
+            with np.load(model_directory.parent/'training_validation.npz') as dataset:
+                validation_by_seed[data_seed] = dataset['validation'].copy()
+        validation = validation_by_seed[data_seed]
+        restored_model = restore_model(fitted_model.name, config, training_seed, model_directory/fitted_model.name)
+        with np.load(model_directory/(fitted_model.name+'_probes.npz')) as checkpoint:
+            saved_probes = {task: (checkpoint[task+'_coefficients'].copy(), checkpoint[task+'_intercept'].copy())
+                            for task in probes}
+        largest_error = 0.0
+        validation_latents = []
+        for sequence in validation:
+            expected_outputs = fitted_model.sequence_outputs(sequence)
+            restored_outputs = restored_model.sequence_outputs(sequence)
+            for expected, actual in zip(expected_outputs, restored_outputs):
+                if expected.shape != actual.shape or not np.all(np.isfinite(actual)):
+                    raise RuntimeError('Invalid restored outputs: '+fitted_model.name)
+                largest_error = max(largest_error, float(np.max(np.abs(expected-actual))))
+            validation_latents.append(restored_outputs[0][:-1])
+        selected = selection_by_identity[(data_seed, training_seed, fitted_model.name)]
+        native_reference = (selected['selected_validation_mse'] if 'selected_validation_mse' in selected
+                            else fitted_model.native_mse(validation))
+        largest_error = max(largest_error, abs(restored_model.native_mse(validation)-native_reference))
+        flattened_latents = np.concatenate(validation_latents)
+        for task, saved_probe in saved_probes.items():
+            for expected, actual in zip(probes[task], saved_probe):
+                if not np.array_equal(expected, actual):
+                    raise RuntimeError('Saved probe differs from the selected coefficients')
+                actual.setflags(write=False)
+            targets = validation[:, 1:] if task == 'forecast' else validation[:, :-1]
+            restored_mse = float(np.mean((predict_probe(flattened_latents, saved_probe)-
+                                         targets.reshape(-1, config['num_features']))**2))
+            largest_error = max(largest_error, abs(restored_mse-probe_metadata[task]['validation_mse']))
+        if not np.isfinite(largest_error) or largest_error > 1e-10:
+            raise RuntimeError('Checkpoint or probe replay differs: '+fitted_model.name)
+        errors.append(largest_error)
+        restored_cases.append((data_seed, training_seed, restored_model, saved_probes, probe_metadata, model_directory))
+    return restored_cases, dict(model_cases=len(restored_cases), validation_only=True,
+                               test_partitions_generated=False, max_absolute_replay_difference=max(errors))
 
 
 def fit_data_seed(config, data_seed, output):
@@ -81,6 +140,10 @@ def fit_data_seed(config, data_seed, output):
 
 def run_study(config, output_directory, *, require_clean_source=True):
     validate_config(config)
+    preflight_result = None
+    if config.get('preflight_required', False):
+        from pilot.preflight import preflight
+        preflight_result = preflight(config, require_clean_source=require_clean_source)
     if set(config['data_seeds']) & {17,41,73}:
         raise ValueError('Fresh-seed study cannot reuse exploratory data seeds')
     output = Path(output_directory)
@@ -92,7 +155,10 @@ def run_study(config, output_directory, *, require_clean_source=True):
     torch.use_deterministic_algorithms(True)
     manifest.update(evaluation='all selections locked before any test partitions are generated',
                     inference=config.get('inference_status','prespecified bounded-budget replication; data realizations are the analysis units'),
+                    phase='fitting',
                     started_at=datetime.now(timezone.utc).isoformat())
+    if preflight_result is not None:
+        manifest['preflight'] = preflight_result
     write_json(output/'manifest.json',manifest)
     write_json(output/'config.json',config)
     started_at = time.perf_counter()
@@ -119,16 +185,28 @@ def run_study(config, output_directory, *, require_clean_source=True):
         constants.extend(data_constants)
     write_json(output/'fit_diagnostics.json',fitting_records)
     write_json(output/'constant_forecast_predictions.json',constants)
+    fitted_cases, checkpoint_verification = restore_and_verify_cases(config, fitted_cases, fitting_records)
+    write_json(output/'checkpoint_verification.json', checkpoint_verification)
+    current_source = source_manifest(config)
+    if current_source['git_commit'] != manifest['git_commit'] or current_source['source_sha256'] != manifest['source_sha256']:
+        raise RuntimeError('Source changed during fitting')
+    if require_clean_source and current_source['working_tree_dirty']:
+        raise RuntimeError('Source became dirty during fitting')
     fitting_seconds = time.perf_counter()-started_at
     locked_paths = [path for path in output.rglob('*') if path.is_file() and path.name!='manifest.json']
     lock = dict(source_commit=manifest['git_commit'],locked_at=datetime.now(timezone.utc).isoformat(),
                 model_cases=len(fitted_cases),test_partitions_generated=False,
                 file_sha256={str(path.relative_to(output)):file_digest(path) for path in sorted(locked_paths)})
     write_json(output/'selection_lock.json',lock)
+    manifest.update(phase='locked', selection_locked_at=lock['locked_at'],
+                    selection_lock_sha256=file_digest(output/'selection_lock.json'))
+    write_json(output/'manifest.json', manifest)
     print(f'Locked {len(fitted_cases)} model/probe selections before test generation',flush=True)
     verify_selection_lock(output)
     test_partitions_by_seed = {}
     test_generation_started_at = datetime.now(timezone.utc).isoformat()
+    manifest.update(phase='evaluating', test_generation_started_at=test_generation_started_at)
+    write_json(output/'manifest.json', manifest)
     for data_seed in config['data_seeds']:
         partitions, metadata = make_dataset(config,data_seed,include_test=True)
         old_metadata = data_metadata_by_seed[data_seed]
@@ -157,7 +235,7 @@ def run_study(config, output_directory, *, require_clean_source=True):
     write_csv(output/'constant_forecast_metrics.csv',constant_records)
     write_json(output/'summary.json',summarize(records))
     verify_selection_lock(output)
-    manifest.update(selection_locked_at=lock['locked_at'],test_generation_started_at=test_generation_started_at,
+    manifest.update(phase='complete', selection_locked_at=lock['locked_at'],test_generation_started_at=test_generation_started_at,
                     fitting_seconds=fitting_seconds,elapsed_seconds=time.perf_counter()-started_at,
                     fitted_model_cases=len(fitted_cases),sequence_metric_rows=len(records),
                     selection_lock_sha256=file_digest(output/'selection_lock.json'))

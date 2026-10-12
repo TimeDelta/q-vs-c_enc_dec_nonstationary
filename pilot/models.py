@@ -316,6 +316,7 @@ def fit_selected_model(name, config, training, validation, initialization_seed):
     candidate_records = []
     selected_model = None
     selected_validation_mse = np.inf
+    selected_candidate_index = None
     if name in ('reduced_rank', 'encoding_ridge', 'encoding_reduced_rank'):
         candidates = config['native_ridge_penalties']
     elif name in ('pca', 'random_linear', 'persistence'):
@@ -343,7 +344,16 @@ def fit_selected_model(name, config, training, validation, initialization_seed):
         if validation_mse < selected_validation_mse:
             selected_model = candidate_model
             selected_validation_mse = validation_mse
+            selected_candidate_index = candidate_index
+    if selected_model is None:
+        raise FloatingPointError('No finite validation candidate for ' + name)
+    selected_candidate = candidate_records[selected_candidate_index]
+    selected_history = selected_candidate['history']
     selection_metadata = dict(candidates=candidate_records, selected_validation_mse=selected_validation_mse,
+                                selected_candidate_index=selected_candidate_index,
+                                selected_candidate_value=selected_candidate['candidate_value'],
+                                selected_epoch=(min(selected_history, key=lambda row: row['validation_mse'])['epoch']
+                                                if selected_history else None),
                                 fit_seconds=time.perf_counter() - started_at,
                                 parameter_count=selected_model.parameter_count,
                                 initialization_mode=getattr(selected_model, 'initialization_mode', 'default'),

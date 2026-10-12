@@ -5,6 +5,7 @@ import csv
 import hashlib
 from importlib.metadata import version
 import json
+import os
 from pathlib import Path
 import platform
 import subprocess
@@ -26,26 +27,50 @@ MODEL_NAMES = ('cae', 'crae', 'cte', 'crte', 'qae', 'qrae', 'qte', 'qrte',
 
 
 def validate_config(config):
-    for key in ('sequence_length', 'num_features', 'bottleneck_size', 'epochs', 'hidden_width',
+    for key in ('sequence_length', 'num_features', 'bottleneck_size', 'num_blocks',
+                'generating_latent_dimension', 'epochs', 'hidden_width',
                 'train_sequences', 'validation_sequences', 'test_sequences'):
-        if not isinstance(config[key], int) or config[key] < 1:
+        if type(config[key]) is not int or config[key] < 1:
             raise ValueError(key + ' must be a positive integer')
     if config['sequence_length'] < 64:
         raise ValueError('sequence_length must be at least 64 for the descriptor checks')
     if not 1 <= config['bottleneck_size'] < config['num_features']:
         raise ValueError('The pilot requires a bottleneck smaller than the input')
-    if config['gradient_width'] <= 0:
-        raise ValueError('gradient_width must be positive')
+    if config['generating_latent_dimension'] > config['num_features']:
+        raise ValueError('Generating dimension must not exceed the input dimension')
+    if not np.isfinite(config['gradient_width']) or config['gradient_width'] <= 0:
+        raise ValueError('gradient_width must be finite and positive')
     for key in ('learning_rates', 'probe_ridge_penalties', 'native_ridge_penalties'):
         if not config[key] or any(value <= 0 or not np.isfinite(value) for value in config[key]):
             raise ValueError(key + ' must contain finite positive values')
     for key in ('data_seeds', 'training_seeds'):
         if not config[key] or len(set(config[key])) != len(config[key]):
             raise ValueError(key + ' must contain distinct seeds')
-        if any(not isinstance(seed, int) or seed < 0 for seed in config[key]):
+        if any(type(seed) is not int or seed < 0 for seed in config[key]):
             raise ValueError(key + ' must contain nonnegative integers')
     if not config['models'] or set(config['models']) - set(MODEL_NAMES):
         raise ValueError('Unknown or empty model selection')
+    if len(set(config['models'])) != len(config['models']):
+        raise ValueError('Model names must be distinct to prevent checkpoint overwrites')
+    if type(config.get('execution_workers', 1)) is not int or config.get('execution_workers', 1) < 1:
+        raise ValueError('execution_workers must be a positive integer')
+    if type(config['include_untrained_controls']) is not bool:
+        raise ValueError('include_untrained_controls must be a boolean')
+    if type(config.get('preflight_required', False)) is not bool:
+        raise ValueError('preflight_required must be a boolean')
+    if config.get('quantum_initialization', 'near_zero') not in ('near_zero', 'feature_neutral'):
+        raise ValueError('Unknown quantum initialization mode')
+    if config.get('entanglement_topology') not in ('none', 'skip', 'full', 'linear', 'circular'):
+        raise ValueError('Unknown entanglement topology')
+    if config.get('entanglement_gate') not in ('cx', 'cz', 'rzx'):
+        raise ValueError('Unknown entanglement gate')
+    if any(name.startswith('encoding_') for name in config['models']) and config['num_features'] > 6:
+        raise ValueError('Explicit feature controls support at most six input features')
+    excluded_seeds = config.get('excluded_data_seeds', [])
+    if any(type(seed) is not int or seed < 0 for seed in excluded_seeds):
+        raise ValueError('excluded_data_seeds must contain nonnegative integers')
+    if set(config['data_seeds']) & set(excluded_seeds):
+        raise ValueError('Scientific replication cannot reuse excluded data seeds')
 
 
 def write_json(path, value):
@@ -54,7 +79,11 @@ def write_json(path, value):
 
 def source_manifest(config):
     repository_root = Path(__file__).resolve().parents[1]
-    source_files = list(repository_root.glob('*.py')) + list((repository_root / 'pilot').glob('*.py'))
+    source_files = (list(repository_root.glob('*.py')) + list((repository_root / 'pilot').glob('*.py'))
+                    + list((repository_root / 'scripts').glob('*.py'))
+                    + list(repository_root.glob('requirements*.txt')))
+    if config.get('protocol_path'):
+        source_files.append(repository_root / config['protocol_path'])
     source_hashes = {str(path.relative_to(repository_root)): hashlib.sha256(path.read_bytes()).hexdigest()
                      for path in sorted(source_files)}
     commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repository_root, check=True,
@@ -64,6 +93,10 @@ def source_manifest(config):
     return dict(protocol_version=2, purpose=config['purpose'], config=config, git_commit=commit,
                 working_tree_dirty=bool(status), source_sha256=source_hashes,
                 versions={package: version(package) for package in ('numpy', 'scipy', 'torch', 'qiskit', 'antropy')},
+                dependency_versions={package: version(package) for package in
+                                     ('numba', 'llvmlite', 'scikit-learn', 'rustworkx', 'sympy', 'dill')},
+                thread_environment={key: os.environ.get(key) for key in
+                                    ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS')},
                 python=platform.python_version(), platform=platform.platform(), device='cpu',
                 quantum_simulation='exact_density_matrix', measurement_shots=None,
                 quantum_complexity_observation='retained single-qubit Z expectations',

@@ -10,6 +10,8 @@ The [transformation controls](docs/transformation_controls_protocol.md) add enco
 
 The [verified control smoke](docs/transformation_controls_smoke/README.md) covers all 19 trained/untrained model cases, checks feature-span equivalence and preserves every selection hash through test evaluation.
 
+The next scientific run is fixed in the [prospective transformation replication protocol](docs/transformation_replication_protocol.md) and [configuration](configs/transformation_replication.json): eight fresh data realizations, three initialization seeds, 64 epochs per learning-rate candidate and `qte_shared - cte_shared` as the primary shifted-forecast contrast. Run `python -m pilot.preflight` for data-free checks. The full experiment and its dedicated replay report are separate commands in that protocol and have not started during final review.
+
 Tested with Python 3.12 on CPU. Create a fresh virtual environment, then install:
 
 ```bash
