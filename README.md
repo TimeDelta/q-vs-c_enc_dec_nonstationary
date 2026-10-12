@@ -2,7 +2,7 @@
 
 A reproducible research pipeline comparing quantum and classical encoder/decoder models on synthetic nonstationary time series. The corrected study asks whether temporal descriptors of compressed representations predict performance under distribution shifts beyond validation distortion.
 
-**Status: protocol 2 implemented and smoke-tested. Publication claims require replicated experiments and further analysis.** The [historical manuscript](docs/historical_manuscript.md) records the original study but its results are superseded by corrections to task routing, scoring, compression and quantum state handling.
+**Status: corrected benchmark, exploratory descriptor analysis and manuscript draft available.** The [current manuscript](paper/README.md) presents the verified results and identifies the remaining work before submission. The [historical manuscript](docs/historical_manuscript.md) records the original study but its results are superseded by corrections to task routing, scoring, compression and quantum state handling.
 
 ## Run the corrected experiment
 
@@ -19,6 +19,8 @@ The [checked-in smoke evidence](docs/pilot_smoke/README.md) documents three exac
 The [optimization diagnostic report](docs/optimization_diagnostic/README.md) extends training to eight epochs across two data seeds and identifies the next optimization checks.
 
 The [fresh-seed forecasting report](docs/fresh_seed_forecasting/README.md) evaluates eight independent data realizations under a [fixed protocol](docs/fresh_seed_forecasting_protocol.md). Reduced-rank regression has lower shifted-test native forecast MSE than the quantum transition encoder in all eight realizations at this training budget. All model and probe selections were locked before test generation.
+
+The [descriptor prediction analysis](docs/descriptor_generalization/README.md) restores the frozen checkpoints and computes validation-only temporal summaries. Adding descriptor mismatch to model identity and validation forecast error raises nested held-out prediction loss by 1.4% and improves only two of eight realization folds. This follow-up is exploratory after inspection of the forecasting results. Coordinate rotations preserve probe predictions while changing the descriptors.
 
 The [initialization sensitivity grid](docs/initialization_sensitivity/README.md) checks the native eight-epoch result across two initialization seeds and two learning rates, with training and validation data only.
 

@@ -1,0 +1,64 @@
+{
+  "endpoints": {
+    "id_probe": {
+      "distance_improved_realizations": 3,
+      "independent_realizations": 8,
+      "mean_baseline_minus_distance": -6.909766387970696e-07,
+      "mean_loss": {
+        "baseline": 2.182674661598602e-05,
+        "components": 2.2806359119481987e-05,
+        "distance": 2.251772325478309e-05,
+        "identity": 2.409837792396242e-05,
+        "latent": 2.1046948888524956e-05,
+        "validation": 2.3363360066032108e-05
+      },
+      "model_cases_per_realization": 14
+    },
+    "shifted_native": {
+      "distance_improved_realizations": 4,
+      "independent_realizations": 8,
+      "mean_baseline_minus_distance": -5.641806883190051e-06,
+      "mean_loss": {
+        "baseline": 0.00011697643366961167,
+        "components": 0.00012424297237205163,
+        "distance": 0.00012261824055280173,
+        "identity": 0.00014835935825639743,
+        "latent": 0.00012800468602443526,
+        "validation": 0.00014399223100698715
+      },
+      "model_cases_per_realization": 12
+    },
+    "shifted_probe": {
+      "distance_improved_realizations": 2,
+      "independent_realizations": 8,
+      "mean_baseline_minus_distance": -1.0153439913162587e-06,
+      "mean_loss": {
+        "baseline": 7.353801672458463e-05,
+        "components": 7.354606245071081e-05,
+        "distance": 7.455336071590089e-05,
+        "identity": 0.0001166794296523198,
+        "latent": 7.957326422628657e-05,
+        "validation": 0.00010477227899332888
+      },
+      "model_cases_per_realization": 14
+    }
+  },
+  "transformation_controls": {
+    "rotation_descriptor_change": {
+      "maximum": 0.044531901242832794,
+      "mean": 0.0019344012119974258
+    },
+    "rotation_prediction_max_difference": {
+      "maximum": 1.8318679906315083e-15,
+      "mean": 2.860586762298503e-16
+    },
+    "scale_descriptor_change": {
+      "maximum": 1.0271626370065259e-31,
+      "mean": 5.1698173445126414e-33
+    },
+    "shuffled_descriptor_change": {
+      "maximum": 0.3243748229488686,
+      "mean": 0.04710756587620075
+    }
+  }
+}

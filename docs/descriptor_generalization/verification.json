@@ -1,0 +1,10 @@
+{
+  "analysis_status": "exploratory after test inspection",
+  "finite_predictions": true,
+  "independent_data_realizations": 8,
+  "max_restored_validation_probe_error": 1.3877787807814457e-17,
+  "original_selection_lock_unchanged": true,
+  "prediction_rows": 1920,
+  "validation_features_rows": 112,
+  "validation_features_unchanged": true
+}

@@ -1,0 +1,11 @@
+{
+  "purpose": "exploratory follow-up after fresh-seed test outcomes were inspected",
+  "evidence_directory": "docs/fresh_seed_forecasting",
+  "ridge_penalties": [0.001, 0.01, 0.1, 1.0, 10.0],
+  "primary_features": "model identity, validation forecast-probe MSE and validation descriptor distance",
+  "primary_target": "common forecast-probe MSE averaged equally over five shifted conditions",
+  "analysis_unit": "independent data realization",
+  "outer_split": "leave one complete data realization out",
+  "inner_split": "leave one complete training data realization out",
+  "descriptor_keys": ["permutation_entropy", "binary_lz76", "lag1_correlation"]
+}

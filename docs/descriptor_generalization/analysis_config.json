@@ -1,0 +1,21 @@
+{
+  "analysis_unit": "independent data realization",
+  "descriptor_keys": [
+    "permutation_entropy",
+    "binary_lz76",
+    "lag1_correlation"
+  ],
+  "evidence_directory": "docs/fresh_seed_forecasting",
+  "inner_split": "leave one complete training data realization out",
+  "outer_split": "leave one complete data realization out",
+  "primary_features": "model identity, validation forecast-probe MSE and validation descriptor distance",
+  "primary_target": "common forecast-probe MSE averaged equally over five shifted conditions",
+  "purpose": "exploratory follow-up after fresh-seed test outcomes were inspected",
+  "ridge_penalties": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0
+  ]
+}
