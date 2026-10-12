@@ -28,6 +28,8 @@ class LegacyEncoder:
         self.config['enforce_bottleneck'] = True
         if name.endswith('_noent'):
             self.config['entanglement_topology'] = 'none'
+        if name in ('qte_ry', 'qte_ry_noent'):
+            self.config['quantum_rotation_family'] = 'ry'
         base_model_name = name.split('_')[0]
         recurrent = 'r' in base_model_name
         torch.manual_seed(initialization_seed)
@@ -55,6 +57,11 @@ class LegacyEncoder:
         self.parameter_count = len(self.parameter_handles)
         self.latent_dimension = config['bottleneck_size']
         self.initial_parameter_values = self.parameter_values.copy()
+        if name in ('qte_ry', 'qte_ry_noent'):
+            self.control_metadata = dict(rotation_family='ry',angle_count=self.parameter_count,
+                        ablation='remove Rx and Rz while retaining tied pre/post angles',
+                        entanglement_topology=self.config['entanglement_topology'],
+                        interpretation='real-amplitude circuit ablation; remains a quantum model')
 
     def set_parameter_values(self, parameter_values):
         self.parameter_values = np.asarray(parameter_values).copy()
@@ -294,6 +301,9 @@ class LinearEncoder:
 
 
 def build_model(name, config, initialization_seed, ridge_penalty=0.001):
+    if name in ('encoding_ridge', 'encoding_reduced_rank', 'cte_affine', 'cte_shared', 'qte_shared'):
+        from pilot.transform_controls import build_control
+        return build_control(name, config, initialization_seed, ridge_penalty)
     if name in ('pca', 'reduced_rank', 'random_linear', 'persistence'):
         return LinearEncoder(name, config, initialization_seed, ridge_penalty)
     if name.startswith(('mlp', 'gru')):
@@ -306,7 +316,7 @@ def fit_selected_model(name, config, training, validation, initialization_seed):
     candidate_records = []
     selected_model = None
     selected_validation_mse = np.inf
-    if name == 'reduced_rank':
+    if name in ('reduced_rank', 'encoding_ridge', 'encoding_reduced_rank'):
         candidates = config['native_ridge_penalties']
     elif name in ('pca', 'random_linear', 'persistence'):
         candidates = [0.001]
@@ -333,10 +343,15 @@ def fit_selected_model(name, config, training, validation, initialization_seed):
         if validation_mse < selected_validation_mse:
             selected_model = candidate_model
             selected_validation_mse = validation_mse
-    return selected_model, dict(candidates=candidate_records, selected_validation_mse=selected_validation_mse,
+    selection_metadata = dict(candidates=candidate_records, selected_validation_mse=selected_validation_mse,
                                 fit_seconds=time.perf_counter() - started_at,
                                 parameter_count=selected_model.parameter_count,
                                 initialization_mode=getattr(selected_model, 'initialization_mode', 'default'),
                                 initialization_metadata=getattr(selected_model, 'initialization_metadata', {}),
                                 optimizer='closed_form' if isinstance(selected_model, LinearEncoder) else (
                                     'adam_forward_difference' if selected_model.quantum else 'adam_autograd'))
+    if hasattr(selected_model, 'control_metadata'):
+        selection_metadata['control_metadata'] = selected_model.control_metadata
+        if name in ('cte_shared', 'qte_shared'):
+            selection_metadata['optimizer'] = 'adam_forward_difference_encoder_analytic_head'
+    return selected_model, selection_metadata

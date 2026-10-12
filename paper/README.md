@@ -13,6 +13,8 @@ The fresh-data forecast comparison was specified before fitting and test generat
 
 ## Before submission
 
+Additional [transformation controls](../docs/transformation_controls_protocol.md) are implemented alongside the original Givens model. Their implementation smoke is separate from the manuscript's existing experiments. A future replication must evaluate them with fixed data/initialization seeds and convergence checks before new scientific findings are entered into the draft.
+
 This is an evidence-backed draft for author review, with authorship and institutional details intentionally absent until supplied by the author. No submission or journal selection has been made.
 
 Author review must establish the author list and contributions, affiliations, contact information, funding and competing-interest declarations. These facts cannot be inferred from a repository handle. Any use of automated assistance should be described according to the eventual venue's policy.

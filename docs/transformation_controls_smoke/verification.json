@@ -1,0 +1,28 @@
+{
+  "all_outputs_finite": true,
+  "archive_sha256": "564dabc4961c6c8690f4e729c56c559fdd4025eeb188d65ac38402a1319ee82f",
+  "basis_columns": 81,
+  "complete_epoch_budgets": true,
+  "feature_span_max_absolute_errors": {
+    "qte": 1.2212453270876722e-15,
+    "qte_noent": 9.992007221626409e-16,
+    "qte_ry": 1.3322676295501878e-15,
+    "qte_ry_noent": 9.992007221626409e-16,
+    "qte_shared": 8.881784197001252e-16
+  },
+  "heldout_points": 17,
+  "implementation_only": true,
+  "interpolation_points": 81,
+  "locked_files": 44,
+  "max_restored_native_validation_difference": 0.0,
+  "model_cases": 19,
+  "original_givens_initial_output_max_difference": 1.1102230246251565e-16,
+  "original_selection_lock_unchanged": true,
+  "sequence_task_rows": 228,
+  "shared_initial_heads_identical": true,
+  "shared_parameter_counts": [
+    16,
+    16
+  ],
+  "validation_minimum_selection": true
+}

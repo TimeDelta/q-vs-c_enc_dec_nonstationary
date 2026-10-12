@@ -17,11 +17,12 @@ from pilot.data import make_dataset
 from pilot.metrics import (choose_probe, descriptor_distance, predict_probe,
                            temporal_descriptors, transformation_controls)
 from pilot.models import build_model, fit_selected_model, LinearEncoder
+from pilot.transform_controls import CONTROL_MODEL_NAMES
 
 
 MODEL_NAMES = ('cae', 'crae', 'cte', 'crte', 'qae', 'qrae', 'qte', 'qrte',
                'qae_noent', 'qte_noent', 'mlp_ae', 'mlp_te', 'gru_te',
-               'pca', 'reduced_rank', 'random_linear', 'persistence')
+               'pca', 'reduced_rank', 'random_linear', 'persistence') + CONTROL_MODEL_NAMES
 
 
 def validate_config(config):

@@ -24,6 +24,9 @@ def restore_model(name, config, initialization_seed, checkpoint_prefix):
     base_name = name.removeprefix('untrained_')
     model = build_model(base_name, dict(config, learning_rate=config['learning_rates'][0]), initialization_seed)
     model.name = name
+    if base_name in ('qte_shared', 'cte_shared'):
+        model.load(checkpoint_prefix)
+        return model
     if isinstance(model, LegacyEncoder) and model.quantum:
         model.model.load(str(checkpoint_prefix))
     elif isinstance(model, (LegacyEncoder, NeuralEncoder)):
