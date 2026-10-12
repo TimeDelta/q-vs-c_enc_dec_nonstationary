@@ -1,0 +1,979 @@
+[
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06119881183134375,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.01702326068329181,
+            "train_mse": 0.06564562937806617,
+            "validation_mse": 0.06183285941353059
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.015202348431732956,
+            "train_mse": 0.06508735960469628,
+            "validation_mse": 0.06119881183134375
+          }
+        ],
+        "initial_training_mse": 0.06629972689500795,
+        "loss_evaluations": 5,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.05839476786761379,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.01702326068329181,
+            "train_mse": 0.06457513117132034,
+            "validation_mse": 0.06091175560959731
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.01408559892156076,
+            "train_mse": 0.06264809484960907,
+            "validation_mse": 0.05839476786761379
+          }
+        ],
+        "initial_training_mse": 0.06629972689500795,
+        "loss_evaluations": 5,
+        "state_preparations": 0
+      }
+    ],
+    "data_seed": 97,
+    "fit_seconds": 1.398286659000405,
+    "initialization_metadata": {},
+    "initialization_mode": "near_zero",
+    "model": "cte",
+    "native_objective": "forecast",
+    "optimizer": "adam_autograd",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0476682609090321
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.006477561020780909
+      }
+    },
+    "selected_validation_mse": 0.05839476786761379,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_cte",
+    "native_objective": "forecast",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0477617386677185
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0040345997334019735
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06161090931737068,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.03628803953914232,
+            "train_mse": 0.06587119388921546,
+            "validation_mse": 0.06245882330628139
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.02764764215952402,
+            "train_mse": 0.06505079557577816,
+            "validation_mse": 0.06161090931737068
+          }
+        ],
+        "initial_training_mse": 0.06696111605807419,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      },
+      {
+        "best_validation_mse": 0.06014839136898876,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.03628803953914232,
+            "train_mse": 0.0642201290290393,
+            "validation_mse": 0.06083897945241095
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.02465236436035046,
+            "train_mse": 0.06288387056473446,
+            "validation_mse": 0.06014839136898876
+          }
+        ],
+        "initial_training_mse": 0.06696111605807419,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      }
+    ],
+    "data_seed": 97,
+    "fit_seconds": 24.789710312999887,
+    "initialization_metadata": {
+      "calibration_centers": [
+        1.382159836039551,
+        1.3360938804659086
+      ],
+      "calibration_evaluations": 35,
+      "calibration_seconds": 0.18562463199987178,
+      "center_max_abs_readout": 2.7755575615628914e-17,
+      "changed_parameter_indices": [
+        6,
+        7
+      ],
+      "changed_parameter_names": [
+        "Decoder Pre-Layer 0 R\u03b8 2",
+        "Decoder Pre-Layer 0 R\u03b8 3"
+      ],
+      "initial_reference_readout": [
+        0.9992554206718341,
+        0.9777683457214504
+      ],
+      "jittered_reference_readout": [
+        0.0014078771985971406,
+        -0.0032953761078615695
+      ],
+      "reference": "zero observation vector; no dataset access"
+    },
+    "initialization_mode": "feature_neutral",
+    "model": "qte",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.047813835881863435
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.00442435668429901
+      }
+    },
+    "selected_validation_mse": 0.06014839136898876,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_qte",
+    "native_objective": "forecast",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04756257727857056
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004272881324948405
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06474044194928501,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.5113538484918353,
+            "train_mse": 0.08141291887246029,
+            "validation_mse": 0.0730769000471889
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.36342887666135726,
+            "train_mse": 0.07176415061885562,
+            "validation_mse": 0.06474044194928501
+          }
+        ],
+        "initial_training_mse": 0.09621028236258004,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      },
+      {
+        "best_validation_mse": 0.08014812681062138,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.5113538484918353,
+            "train_mse": 0.09065260930535007,
+            "validation_mse": 0.08623084656358965
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.429884899692754,
+            "train_mse": 0.0807739189146853,
+            "validation_mse": 0.08014812681062138
+          }
+        ],
+        "initial_training_mse": 0.09621028236258004,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      }
+    ],
+    "data_seed": 97,
+    "fit_seconds": 26.168423338999673,
+    "initialization_metadata": {
+      "calibration_centers": [
+        0.5883126359181358,
+        0.5883126359181357
+      ],
+      "calibration_evaluations": 17,
+      "calibration_seconds": 0.07359694799970384,
+      "center_max_abs_readout": 3.3306690738754696e-16,
+      "changed_parameter_indices": [
+        6,
+        7
+      ],
+      "changed_parameter_names": [
+        "Decoder Pre-Layer 0 R\u03b8 2",
+        "Decoder Pre-Layer 0 R\u03b8 3"
+      ],
+      "initial_reference_readout": [
+        0.9985445034202931,
+        0.9591188704800864
+      ],
+      "jittered_reference_readout": [
+        0.045669072689992374,
+        -0.23262553324581242
+      ],
+      "reference": "zero observation vector; no dataset access"
+    },
+    "initialization_mode": "feature_neutral",
+    "model": "qte_noent",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.047689074310662015
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004641621608708202
+      }
+    },
+    "selected_validation_mse": 0.06474044194928501,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_qte_noent",
+    "native_objective": "forecast",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04761791075129185
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0045477763101119265
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.047681413436059326,
+        "candidate_index": 0,
+        "candidate_value": 0.001,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.04842400456935024,
+        "candidate_index": 1,
+        "candidate_value": 0.01,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      }
+    ],
+    "data_seed": 97,
+    "fit_seconds": 0.001092361999781133,
+    "initialization_metadata": {},
+    "initialization_mode": "default",
+    "model": "reduced_rank",
+    "native_objective": "forecast",
+    "optimizer": "closed_form",
+    "parameter_count": 0,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04765068404216764
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.01,
+        "validation_mse": 0.00260385686958694
+      }
+    },
+    "selected_validation_mse": 0.047681413436059326,
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.050214124262584814,
+        "candidate_index": 0,
+        "candidate_value": 0.001,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.05070629651695872,
+        "candidate_index": 1,
+        "candidate_value": 0.01,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      }
+    ],
+    "control_metadata": {
+      "basis_dimension": 81,
+      "coefficient_capacity": "not parameter-matched to the circuit",
+      "compressed": false,
+      "feature_basis": "tensor products of 1, x and sqrt(1-x**2)",
+      "gradient_parameters": 0,
+      "readout_dimension": 81,
+      "scope": "single embedding, nonrecurrent expectation predictions"
+    },
+    "data_seed": 97,
+    "fit_seconds": 0.0017122419999395788,
+    "initialization_metadata": {},
+    "initialization_mode": "default",
+    "model": "encoding_ridge",
+    "native_objective": "forecast",
+    "optimizer": "closed_form",
+    "parameter_count": 0,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.001,
+        "validation_mse": 0.0502141242625848
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 8.503219793618528e-06
+      }
+    },
+    "selected_validation_mse": 0.050214124262584814,
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.05004853729760679,
+        "candidate_index": 0,
+        "candidate_value": 0.001,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.05062809198467556,
+        "candidate_index": 1,
+        "candidate_value": 0.01,
+        "history": [],
+        "initial_training_mse": null,
+        "loss_evaluations": 1,
+        "state_preparations": 0
+      }
+    ],
+    "control_metadata": {
+      "basis_dimension": 81,
+      "coefficient_capacity": "not parameter-matched to the circuit",
+      "compressed": true,
+      "feature_basis": "tensor products of 1, x and sqrt(1-x**2)",
+      "gradient_parameters": 0,
+      "readout_dimension": 2,
+      "scope": "single embedding, nonrecurrent expectation predictions"
+    },
+    "data_seed": 97,
+    "fit_seconds": 0.006614861999878485,
+    "initialization_metadata": {},
+    "initialization_mode": "default",
+    "model": "encoding_reduced_rank",
+    "native_objective": "forecast",
+    "optimizer": "closed_form",
+    "parameter_count": 0,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.01,
+        "validation_mse": 0.050094377974609354
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.01,
+        "validation_mse": 0.012238719672317523
+      }
+    },
+    "selected_validation_mse": 0.05004853729760679,
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.0586866225481724,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.03843320201643375,
+            "train_mse": 0.06489340779676007,
+            "validation_mse": 0.06058588814108243
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.03280333071087553,
+            "train_mse": 0.06349427399398466,
+            "validation_mse": 0.0586866225481724
+          }
+        ],
+        "initial_training_mse": 0.06629972689500795,
+        "loss_evaluations": 5,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.05510910560631594,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.03843320201643375,
+            "train_mse": 0.06752836951540395,
+            "validation_mse": 0.06295738234578209
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.07767787261580818,
+            "train_mse": 0.06013347006310491,
+            "validation_mse": 0.05510910560631594
+          }
+        ],
+        "initial_training_mse": 0.06629972689500795,
+        "loss_evaluations": 5,
+        "state_preparations": 0
+      }
+    ],
+    "control_metadata": {
+      "additional_gains": 2,
+      "additional_offsets": 4,
+      "gains_location": "decoder input; latent readouts remain the original encoder coordinates",
+      "initialization": "unit gains and zero offsets reproduce original cte",
+      "original_givens_angles": 8
+    },
+    "data_seed": 97,
+    "fit_seconds": 0.040381418999913876,
+    "initialization_metadata": {},
+    "initialization_mode": "near_zero",
+    "model": "cte_affine",
+    "native_objective": "forecast",
+    "optimizer": "adam_autograd",
+    "parameter_count": 14,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04766214575535556
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.006300789896650576
+      }
+    },
+    "selected_validation_mse": 0.05510910560631594,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_cte_affine",
+    "native_objective": "forecast",
+    "parameter_count": 14,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04776173866771849
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0040345997334019735
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06949334649305765,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.06963523048856132,
+            "train_mse": 0.06901569794888956,
+            "validation_mse": 0.0749103070484136
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.05271834291098422,
+            "train_mse": 0.06655876906694377,
+            "validation_mse": 0.06949334649305765
+          }
+        ],
+        "initial_training_mse": 0.07257378129869492,
+        "loss_evaluations": 13,
+        "state_preparations": 0
+      },
+      {
+        "best_validation_mse": 0.05547157718406331,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.06963523048856132,
+            "train_mse": 0.06490260861655958,
+            "validation_mse": 0.06226364213912675
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.05116886754717125,
+            "train_mse": 0.061026016991457,
+            "validation_mse": 0.05547157718406331
+          }
+        ],
+        "initial_training_mse": 0.07257378129869492,
+        "loss_evaluations": 13,
+        "state_preparations": 0
+      }
+    ],
+    "control_metadata": {
+      "decoder_access": "two real readouts; no density-matrix or discarded-subsystem access",
+      "encoder_parameters": 4,
+      "head": "affine on retained real coordinates or single-qubit Z expectations only",
+      "head_parameters": 12,
+      "initial_head_sha256": "8af2669c788635cede5aee0fc3ab0c0cff9ebd0a964ca099630702f626c0da84",
+      "optimizer": "same forward-difference encoder and analytic affine-head gradients in both families"
+    },
+    "data_seed": 97,
+    "fit_seconds": 0.01531717599982585,
+    "initialization_metadata": {},
+    "initialization_mode": "near_zero_encoder_shared_affine_head",
+    "model": "cte_shared",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference_encoder_analytic_head",
+    "parameter_count": 16,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.047589670857007785
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0025466362029879816
+      }
+    },
+    "selected_validation_mse": 0.05547157718406331,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_cte_shared",
+    "native_objective": "forecast",
+    "parameter_count": 16,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04776173866771849
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0040345997334019735
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.0696696319095337,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.07430981789474955,
+            "train_mse": 0.06899511735759317,
+            "validation_mse": 0.07508178165817864
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.05436646217873221,
+            "train_mse": 0.06663994640983374,
+            "validation_mse": 0.0696696319095337
+          }
+        ],
+        "initial_training_mse": 0.07266653818541594,
+        "loss_evaluations": 13,
+        "state_preparations": 189
+      },
+      {
+        "best_validation_mse": 0.05580600082086141,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.07430981789474955,
+            "train_mse": 0.06537741133874385,
+            "validation_mse": 0.06289428902656319
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.05452443503709686,
+            "train_mse": 0.06084111734841269,
+            "validation_mse": 0.05580600082086141
+          }
+        ],
+        "initial_training_mse": 0.07266653818541594,
+        "loss_evaluations": 13,
+        "state_preparations": 189
+      }
+    ],
+    "control_metadata": {
+      "decoder_access": "two real readouts; no density-matrix or discarded-subsystem access",
+      "encoder_parameters": 4,
+      "head": "affine on retained real coordinates or single-qubit Z expectations only",
+      "head_parameters": 12,
+      "initial_head_sha256": "8af2669c788635cede5aee0fc3ab0c0cff9ebd0a964ca099630702f626c0da84",
+      "optimizer": "same forward-difference encoder and analytic affine-head gradients in both families"
+    },
+    "data_seed": 97,
+    "fit_seconds": 10.880471532000229,
+    "initialization_metadata": {},
+    "initialization_mode": "near_zero_encoder_shared_affine_head",
+    "model": "qte_shared",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference_encoder_analytic_head",
+    "parameter_count": 16,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04747585202501646
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004043395291877736
+      }
+    },
+    "selected_validation_mse": 0.05580600082086141,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_qte_shared",
+    "native_objective": "forecast",
+    "parameter_count": 16,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04756257727857056
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004272881324948405
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06146837733482754,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.039173096107216,
+            "train_mse": 0.06566915438557075,
+            "validation_mse": 0.06225194158975709
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.028107224586848313,
+            "train_mse": 0.06489707466015783,
+            "validation_mse": 0.06146837733482754
+          }
+        ],
+        "initial_training_mse": 0.06685123188540223,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      },
+      {
+        "best_validation_mse": 0.06057241376564921,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.039173096107216,
+            "train_mse": 0.06474182695219306,
+            "validation_mse": 0.06152028059330963
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.030056315021301565,
+            "train_mse": 0.06404217620229476,
+            "validation_mse": 0.06057241376564921
+          }
+        ],
+        "initial_training_mse": 0.06685123188540223,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      }
+    ],
+    "control_metadata": {
+      "ablation": "remove Rx and Rz while retaining tied pre/post angles",
+      "angle_count": 8,
+      "entanglement_topology": "circular",
+      "interpretation": "real-amplitude circuit ablation; remains a quantum model",
+      "rotation_family": "ry"
+    },
+    "data_seed": 97,
+    "fit_seconds": 14.018720136999946,
+    "initialization_metadata": {
+      "calibration_centers": [
+        1.5346286457364895,
+        1.5152356540841059
+      ],
+      "calibration_evaluations": 32,
+      "calibration_seconds": 0.09104647300000579,
+      "center_max_abs_readout": 2.0233814623793478e-14,
+      "changed_parameter_indices": [
+        6,
+        7
+      ],
+      "changed_parameter_names": [
+        "Decoder Pre-Layer 0 R\u03b8 2",
+        "Decoder Pre-Layer 0 R\u03b8 3"
+      ],
+      "initial_reference_readout": [
+        0.999627488987053,
+        0.9888221602630821
+      ],
+      "jittered_reference_readout": [
+        0.004132033282761266,
+        -0.002591073093658053
+      ],
+      "reference": "zero observation vector; no dataset access"
+    },
+    "initialization_mode": "feature_neutral",
+    "model": "qte_ry",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04777699724575562
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.00438703511734175
+      }
+    },
+    "selected_validation_mse": 0.06057241376564921,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_qte_ry",
+    "native_objective": "forecast",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0475685703288751
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004272843004666774
+      }
+    },
+    "training_seed": 303
+  },
+  {
+    "candidates": [
+      {
+        "best_validation_mse": 0.06416048464481894,
+        "candidate_index": 0,
+        "candidate_value": 0.02,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.40259265779740644,
+            "train_mse": 0.07920288483854658,
+            "validation_mse": 0.07156548413568603
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.30402442661069073,
+            "train_mse": 0.07062638837784667,
+            "validation_mse": 0.06416048464481894
+          }
+        ],
+        "initial_training_mse": 0.09036592155725144,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      },
+      {
+        "best_validation_mse": 0.07988613269025206,
+        "candidate_index": 1,
+        "candidate_value": 0.08,
+        "history": [
+          {
+            "epoch": 1,
+            "gradient_norm": 0.40259265779740644,
+            "train_mse": 0.08835545383847372,
+            "validation_mse": 0.08444644511445996
+          },
+          {
+            "epoch": 2,
+            "gradient_norm": 0.35807358111930754,
+            "train_mse": 0.08105038113205873,
+            "validation_mse": 0.07988613269025206
+          }
+        ],
+        "initial_training_mse": 0.09036592155725144,
+        "loss_evaluations": 23,
+        "state_preparations": 192
+      }
+    ],
+    "control_metadata": {
+      "ablation": "remove Rx and Rz while retaining tied pre/post angles",
+      "angle_count": 8,
+      "entanglement_topology": "none",
+      "interpretation": "real-amplitude circuit ablation; remains a quantum model",
+      "rotation_family": "ry"
+    },
+    "data_seed": 97,
+    "fit_seconds": 10.600461149999774,
+    "initialization_metadata": {
+      "calibration_centers": [
+        0.7853981633974483,
+        0.7853981633974483
+      ],
+      "calibration_evaluations": 5,
+      "calibration_seconds": 0.010411355000087497,
+      "center_max_abs_readout": 5.551115123125783e-17,
+      "changed_parameter_indices": [
+        6,
+        7
+      ],
+      "changed_parameter_names": [
+        "Decoder Pre-Layer 0 R\u03b8 2",
+        "Decoder Pre-Layer 0 R\u03b8 3"
+      ],
+      "initial_reference_readout": [
+        0.9992720517306835,
+        0.9794057690708944
+      ],
+      "jittered_reference_readout": [
+        0.03814926775116789,
+        -0.20190180660571083
+      ],
+      "reference": "zero observation vector; no dataset access"
+    },
+    "initialization_mode": "feature_neutral",
+    "model": "qte_ry_noent",
+    "native_objective": "forecast",
+    "optimizer": "adam_forward_difference",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0476859022280872
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.0045800793246401576
+      }
+    },
+    "selected_validation_mse": 0.06416048464481894,
+    "training_seed": 303
+  },
+  {
+    "candidates": [],
+    "control": "same seeded architecture and initialization without gradient training",
+    "data_seed": 97,
+    "model": "untrained_qte_ry_noent",
+    "native_objective": "forecast",
+    "parameter_count": 8,
+    "probes": {
+      "forecast": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.04761763668480278
+      },
+      "reconstruction": {
+        "ridge_penalty": 0.0001,
+        "validation_mse": 0.004529511955392732
+      }
+    },
+    "training_seed": 303
+  }
+]
