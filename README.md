@@ -6,6 +6,8 @@ A reproducible research pipeline comparing quantum and classical encoder/decoder
 
 ## Run the corrected experiment
 
+The [transformation controls](docs/transformation_controls_protocol.md) add encoding-matched ridge/rank-two references, end-to-end shared affine decoders, a Givens gain/offset extension and RY-only phase ablations alongside the original Givens and quantum models. The two shared-head models each train 16 parameters and expose only two real readouts to their heads. These controls are distinct from the results already recorded in the manuscript; their smoke configuration validates implementation rather than architectural rankings.
+
 Tested with Python 3.12 on CPU. Create a fresh virtual environment, then install:
 
 ```bash

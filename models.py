@@ -21,6 +21,9 @@ class QuantumEncoderDecoder:
         self.is_recurrent = is_recurrent
         self.enforce_bottleneck = config.get('enforce_bottleneck', True)
         self.feature_encoding = config.get('feature_encoding', 'arctan_ry')
+        self.quantum_rotation_family = config.get('quantum_rotation_family', 'xyz')
+        if self.quantum_rotation_family not in ('xyz', 'ry'):
+            raise ValueError('quantum_rotation_family must be xyz or ry')
         if not 1 <= self.bottleneck_size <= num_qubits:
             raise ValueError('bottleneck_size must be between 1 and num_qubits')
         if self.feature_encoding not in ('arctan_ry', 'bounded_ry'):
@@ -175,9 +178,9 @@ class QuantumEncoderDecoder:
         """
         Build a parameterized encoder using multiple layers.
 
-        For each block, we perform:
-          - A layer of single-qubit rotations (we use Ry for simplicity).
-          - An entangling layer whose connectivity is determined by entanglement_topology.
+        Each block applies tied single-qubit angles before and after its
+        entangling layer. The default family uses Rx, Ry and Rz; the real
+        circuit ablation uses Ry only with the same angle count.
         """
         self.encoder = QuantumCircuit(self.num_qubits)
         self.trainable_params = []
@@ -208,9 +211,11 @@ class QuantumEncoderDecoder:
         parameter = Parameter(f'{description}')
         if param is not None:
             parameter = param
-        circuit.rx(parameter, qubit_index)
+        if self.quantum_rotation_family == 'xyz':
+            circuit.rx(parameter, qubit_index)
         circuit.ry(parameter, qubit_index)
-        circuit.rz(parameter, qubit_index)
+        if self.quantum_rotation_family == 'xyz':
+            circuit.rz(parameter, qubit_index)
         return parameter
 
     def set_params(self, params_dict):
@@ -263,12 +268,16 @@ class QuantumEncoderDecoder:
         self.reset_hidden_state()
 
     def checkpoint_config(self):
-        return dict(num_qubits=self.num_qubits, num_blocks=self.num_blocks,
+        configuration = dict(num_qubits=self.num_qubits, num_blocks=self.num_blocks,
                     bottleneck_size=self.bottleneck_size, is_recurrent=self.is_recurrent,
                     entanglement_topology=self.entanglement_topology,
                     entanglement_gate=self.entanglement_gate,
                     feature_encoding=self.feature_encoding,
                     enforce_bottleneck=self.enforce_bottleneck)
+        # Preserve the metadata schema of existing default-family checkpoints.
+        if self.quantum_rotation_family != 'xyz':
+            configuration['quantum_rotation_family'] = self.quantum_rotation_family
+        return configuration
 
     def save(self, fname):
         self.full_circuit_bound.metadata = {

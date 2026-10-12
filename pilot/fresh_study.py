@@ -91,7 +91,7 @@ def run_study(config, output_directory, *, require_clean_source=True):
     torch.set_num_threads(1)
     torch.use_deterministic_algorithms(True)
     manifest.update(evaluation='all selections locked before any test partitions are generated',
-                    inference='prespecified bounded-budget replication; data realizations are the analysis units',
+                    inference=config.get('inference_status','prespecified bounded-budget replication; data realizations are the analysis units'),
                     started_at=datetime.now(timezone.utc).isoformat())
     write_json(output/'manifest.json',manifest)
     write_json(output/'config.json',config)
