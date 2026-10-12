@@ -12,6 +12,8 @@ The [verified control smoke](docs/transformation_controls_smoke/README.md) cover
 
 The next scientific run is fixed in the [prospective transformation replication protocol](docs/transformation_replication_protocol.md) and [configuration](configs/transformation_replication.json): eight fresh data realizations, three initialization seeds, 64 epochs per learning-rate candidate and `qte_shared - cte_shared` as the primary shifted-forecast contrast. Run `python -m pilot.preflight` for data-free checks. The full experiment and its dedicated replay report are separate commands in that protocol and have not started during final review.
 
+The [final experiment review](docs/final_experiment_review.md) records corrected blockers, validation evidence and interpretation limits. Its [clean-source preflight](docs/transformation_replication_preflight.json) generated no study data or fitted models. Quantum compression remains the specified discard-and-replace channel, which preserves the retained marginal while removing correlations with discarded qubits.
+
 Tested with Python 3.12 on CPU. Create a fresh virtual environment, then install:
 
 ```bash

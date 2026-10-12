@@ -1,0 +1,135 @@
+{
+  "git_commit": "e479891ab6f38981a030d3889f20e508ecb21087",
+  "working_tree_dirty": false,
+  "versions": {
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "torch": "2.14.1+cpu",
+    "qiskit": "2.5.2",
+    "antropy": "0.2.2"
+  },
+  "generated_datasets": 0,
+  "fitted_models": 0,
+  "data_realizations": 8,
+  "initialization_groups": 24,
+  "planned_model_cases": 624,
+  "planned_sequence_task_rows": 29952,
+  "planned_gradient_updates": 61440,
+  "planned_constant_rows": 384,
+  "native_calibrations_verified": 12,
+  "identical_shared_heads_verified": true,
+  "models": [
+    {
+      "model": "cte",
+      "gradient_parameters": 8,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "qte",
+      "gradient_parameters": 8,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "qte_noent",
+      "gradient_parameters": 8,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "cte_affine",
+      "gradient_parameters": 14,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "cte_shared",
+      "gradient_parameters": 16,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "qte_shared",
+      "gradient_parameters": 16,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "qte_ry",
+      "gradient_parameters": 8,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "qte_ry_noent",
+      "gradient_parameters": 8,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "encoding_ridge",
+      "gradient_parameters": 0,
+      "readout_dimension": 81,
+      "analytic": true,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "encoding_reduced_rank",
+      "gradient_parameters": 0,
+      "readout_dimension": 2,
+      "analytic": true,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "reduced_rank",
+      "gradient_parameters": 0,
+      "readout_dimension": 2,
+      "analytic": true,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "mlp_te",
+      "gradient_parameters": 118,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "gru_te",
+      "gradient_parameters": 108,
+      "readout_dimension": 2,
+      "analytic": false,
+      "native_objective": "forecast"
+    },
+    {
+      "model": "pca",
+      "gradient_parameters": 0,
+      "readout_dimension": 2,
+      "analytic": true,
+      "native_objective": "reconstruction"
+    },
+    {
+      "model": "random_linear",
+      "gradient_parameters": 0,
+      "readout_dimension": 2,
+      "analytic": true,
+      "native_objective": "reconstruction"
+    },
+    {
+      "model": "persistence",
+      "gradient_parameters": 0,
+      "readout_dimension": 4,
+      "analytic": true,
+      "native_objective": "forecast"
+    }
+  ]
+}
