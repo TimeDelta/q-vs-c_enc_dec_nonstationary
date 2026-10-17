@@ -23,6 +23,8 @@ from pilot.transform_controls import CONTROL_MODEL_NAMES
 
 MODEL_NAMES = ('cae', 'crae', 'cte', 'crte', 'qae', 'qrae', 'qte', 'qrte',
                'qae_noent', 'qte_noent', 'mlp_ae', 'mlp_te', 'gru_te',
+               'cae_rylift', 'crae_rylift', 'cte_rylift', 'crte_rylift',
+               'cae_rylift_noent', 'cte_rylift_noent',
                'pca', 'reduced_rank', 'random_linear', 'persistence') + CONTROL_MODEL_NAMES
 
 

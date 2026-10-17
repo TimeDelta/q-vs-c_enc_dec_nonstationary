@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from models import ClassicalEncoderDecoder, QuantumEncoderDecoder
+from models import BlochLiftedGivensEncoderDecoder, ClassicalEncoderDecoder, QuantumEncoderDecoder
 from optimizers import adam_update
 from pilot.initialization import feature_neutral_parameters
 
@@ -22,6 +22,8 @@ class LegacyEncoder:
         self.name = name
         self.objective = 'forecast' if name.split('_')[0].endswith('te') else 'reconstruction'
         self.quantum = name.startswith('q')
+        # '<base>_rylift' names the Givens counterpart that receives the bounded RY lift.
+        self.bounded_ry_lift = not self.quantum and '_rylift' in name
         self.learning_rate = config['learning_rate']
         self.config = dict(config)
         self.config['feature_encoding'] = 'bounded_ry'
@@ -35,10 +37,16 @@ class LegacyEncoder:
         torch.manual_seed(initialization_seed)
         if self.quantum:
             self.model = QuantumEncoderDecoder(config['num_features'], self.config, recurrent)
+        elif self.bounded_ry_lift:
+            self.model = BlochLiftedGivensEncoderDecoder(config['num_features'], self.config, recurrent).double()
         else:
             self.model = ClassicalEncoderDecoder(config['num_features'], self.config, recurrent).double()
         self.initialization_seed = initialization_seed
-        self.initialization_mode = config.get('quantum_initialization', 'near_zero') if self.quantum else 'near_zero'
+        # The lifted counterpart resets discarded units to |0> exactly as the quantum
+        # model does, so it shares the quantum decoder-calibration option.
+        shares_quantum_initialization = self.quantum or self.bounded_ry_lift
+        self.initialization_mode = (config.get('quantum_initialization', 'near_zero')
+                                    if shares_quantum_initialization else 'near_zero')
         if self.initialization_mode not in ('near_zero', 'feature_neutral'):
             raise ValueError('Unknown quantum initialization mode')
         self.initialization_metadata = {}
@@ -57,6 +65,15 @@ class LegacyEncoder:
         self.parameter_count = len(self.parameter_handles)
         self.latent_dimension = config['bottleneck_size']
         self.initial_parameter_values = self.parameter_values.copy()
+        if self.bounded_ry_lift:
+            self.control_metadata = dict(
+                feature_encoding='bounded RY lift: each feature becomes the Bloch vector of RY(arccos f)|0>',
+                rotation_family=self.model.rotation_family, angle_count=self.parameter_count,
+                coupling='fixed Givens rotations of transverse components over the entangling-gate pairs',
+                coupling_angle=self.model.coupling_angle, entanglement_topology=self.model.entanglement_topology,
+                reset='discarded units set to the |0> Bloch vector (0, 0, 1)', readout='z components',
+                interpretation='classical counterpart of the bounded-RY quantum model; '
+                               'identical to it when the coupling is removed')
         if name in ('qte_ry', 'qte_ry_noent'):
             self.control_metadata = dict(rotation_family='ry',angle_count=self.parameter_count,
                         ablation='remove Rx and Rz while retaining tied pre/post angles',
