@@ -406,3 +406,252 @@ class ClassicalEncoderDecoder(nn.Module):
     def save(self, fname):
         torch.save(dict(protocol_version=2, model_config=self.checkpoint_config(),
                         state_dict=self.state_dict()), fname + '.pth')
+
+
+BOUNDED_RY_ROTATION_FAMILIES = ('xyz', 'ry')
+
+
+def bounded_ry_bloch_vectors(features: torch.Tensor) -> torch.Tensor:
+    """Bloch vectors (x, y, z) of RY(arccos f)|0> for bounded features f in [-1, 1].
+
+    This is the single-qubit state QuantumEncoderDecoder prepares with
+    feature_encoding='bounded_ry'. Its z component (the Z expectation) equals the
+    feature itself, and its x component is sqrt(1 - f**2).
+    """
+    clipped_features = torch.clamp(features, -1.0, 1.0)
+    transverse_components = torch.sqrt(torch.clamp(1.0 - clipped_features**2, min=0.0))
+    return torch.stack((transverse_components, torch.zeros_like(clipped_features), clipped_features), dim=-1)
+
+
+def bloch_rotation_matrices(angles: torch.Tensor, rotation_family: str) -> torch.Tensor:
+    """SO(3) action on Bloch vectors of the tied single-qubit gates in create_qed_circuit.
+
+    The circuit applies Rx(angle), then Ry(angle), then Rz(angle) to a qubit for the
+    'xyz' family, or Ry(angle) alone for the 'ry' family. Each gate exp(-i angle P / 2)
+    rotates the Bloch vector by the angle about axis P, so the composite rotation is
+    R_z R_y R_x. Returns one 3 x 3 matrix per angle.
+    """
+    cosines, sines = torch.cos(angles), torch.sin(angles)
+    zeros, ones = torch.zeros_like(angles), torch.ones_like(angles)
+    rotation_about_y = torch.stack((torch.stack((cosines, zeros, sines), dim=-1),
+                                    torch.stack((zeros, ones, zeros), dim=-1),
+                                    torch.stack((-sines, zeros, cosines), dim=-1)), dim=-2)
+    if rotation_family == 'ry':
+        return rotation_about_y
+    rotation_about_x = torch.stack((torch.stack((ones, zeros, zeros), dim=-1),
+                                    torch.stack((zeros, cosines, -sines), dim=-1),
+                                    torch.stack((zeros, sines, cosines), dim=-1)), dim=-2)
+    rotation_about_z = torch.stack((torch.stack((cosines, -sines, zeros), dim=-1),
+                                    torch.stack((sines, cosines, zeros), dim=-1),
+                                    torch.stack((zeros, zeros, ones), dim=-1)), dim=-2)
+    return rotation_about_z @ rotation_about_y @ rotation_about_x
+
+
+def entanglement_topology_edges(num_units, entanglement_topology):
+    """Unit pairs in the order QuantumEncoderDecoder.add_entanglement_topology places its gates."""
+    if entanglement_topology == 'none':
+        edges = []
+    elif entanglement_topology == 'skip':
+        edges = [(unit, unit + 1) for unit in range(0, num_units - 1, 2)]
+    elif entanglement_topology == 'full':
+        edges = [(first, second) for first in range(num_units) for second in range(first + 1, num_units)]
+    elif entanglement_topology == 'linear':
+        edges = [(unit, unit + 1) for unit in range(num_units - 1)]
+    elif entanglement_topology == 'circular':
+        edges = [(unit, unit + 1) for unit in range(num_units - 1)] + [(num_units - 1, 0)]
+    else:
+        raise ValueError('Unknown entanglement topology: ' + str(entanglement_topology))
+    return [(first, second) for first, second in edges if first != second]
+
+
+class NamedAngleHandle:
+    """Hashable handle for one scalar of a parameter tensor.
+
+    Handles carry the same names as the quantum circuit parameters, so code written
+    for QuantumEncoderDecoder parameter handles, such as feature-neutral decoder
+    calibration, can address the matching angles of the classical counterpart.
+    """
+    def __init__(self, parameter_tensor, flat_index, name):
+        self.parameter_tensor = parameter_tensor
+        self.flat_index = flat_index
+        self.name = name
+
+    def assign(self, value):
+        with torch.no_grad():
+            self.parameter_tensor.view(-1)[self.flat_index] = float(value)
+
+    def detach(self):
+        return self.parameter_tensor.detach().view(-1)[self.flat_index]
+
+    def __repr__(self):
+        return f'NamedAngleHandle({self.name!r})'
+
+
+class BlochLiftedGivensEncoderDecoder(nn.Module):
+    """Classical Givens counterpart of QuantumEncoderDecoder with bounded RY encoding.
+
+    Each feature is lifted to the Bloch vector of its bounded RY encoding (see
+    bounded_ry_bloch_vectors), so this model receives the same single-qubit
+    representation as the quantum model. Every block mirrors create_qed_circuit: tied
+    per-unit rotations, a coupling ring where the entangling gates sit and the same
+    tied rotations again. On one qubit's Bloch vector the tied Rx, Ry and Rz gates act
+    as exact SO(3) rotations, so those steps are identical in both models.
+
+    The coupling is the only replaced operation: fixed Givens rotations by
+    coupling_angle between the transverse (x and y) components of neighbouring units,
+    over the same unit pairs and in the same order as the entangling gates. Like CZ, it
+    has no trainable parameters and leaves every z component unchanged. Discarded units
+    are reset to (0, 0, 1), the Bloch vector of |0>, and predictions are the z
+    components, matching the quantum reset and Z readouts.
+
+    With entanglement_topology='none' this model reproduces the non-entangling quantum
+    model exactly, because product states evolve as independent single-qubit rotations.
+    Each retained unit carries three real numbers: the single-qubit part of the
+    retained quantum state without its multi-qubit correlations. Mixing transverse
+    components does not keep each unit at unit Bloch norm, so readouts are not
+    confined to [-1, 1] as quantum expectations are.
+    """
+    feature_encoding = 'bounded_ry'
+
+    def __init__(self, num_features, config, is_recurrent=False):
+        super().__init__()
+        self.num_features = num_features
+        self.is_recurrent = is_recurrent
+        self.num_blocks = config.get('num_blocks', 1)
+        self.bottleneck_size = config.get('bottleneck_size', num_features//2)
+        self.enforce_bottleneck = config.get('enforce_bottleneck', True)
+        self.rotation_family = config.get('quantum_rotation_family', 'xyz')
+        self.entanglement_topology = config.get('entanglement_topology', 'full')
+        self.coupling_angle = float(config.get('classical_coupling_angle', np.pi/4))
+        if self.rotation_family not in BOUNDED_RY_ROTATION_FAMILIES:
+            raise ValueError('quantum_rotation_family must be xyz or ry')
+        if not 1 <= self.bottleneck_size <= num_features:
+            raise ValueError('bottleneck_size must be between 1 and num_features')
+        if not np.isfinite(self.coupling_angle):
+            raise ValueError('classical_coupling_angle must be finite')
+        if self.is_recurrent:
+            # Registered first so the hidden-state weight leads the trainable
+            # parameters, as it does in QuantumEncoderDecoder.
+            self.hidden_weight = nn.Parameter(torch.tensor([0.0]))
+        self.encoder_angles = nn.Parameter(torch.randn(self.num_blocks, num_features))
+        self.decoder_angles = nn.Parameter(torch.randn(self.num_blocks, num_features))
+        self.coupling_edges = entanglement_topology_edges(num_features, self.entanglement_topology)
+        self.register_buffer('transverse_coupling_matrix', self.build_transverse_coupling_matrix(),
+                             persistent=False)
+        self.hidden_state = None
+
+    @property
+    def num_qubits(self):
+        """Unit count under the quantum model's attribute name, for shared calibration code."""
+        return self.num_features
+
+    @property
+    def trainable_params(self):
+        """Named scalar handles in the quantum model's order: hidden weight, encoder angles, decoder angles."""
+        handles = []
+        if self.is_recurrent:
+            handles.append(NamedAngleHandle(self.hidden_weight, 0, 'Hidden State Weight'))
+        for angles, prefix in ((self.encoder_angles, 'Encoder'), (self.decoder_angles, 'Decoder')):
+            for block_index in range(self.num_blocks):
+                for unit_index in range(self.num_features):
+                    handles.append(NamedAngleHandle(angles, block_index*self.num_features + unit_index,
+                                                    f'{prefix} Pre-Layer {block_index} Rθ {unit_index}'))
+        return handles
+
+    def build_transverse_coupling_matrix(self):
+        coupling_matrix = torch.eye(self.num_features, dtype=torch.get_default_dtype())
+        cosine, sine = float(np.cos(self.coupling_angle)), float(np.sin(self.coupling_angle))
+        for first_unit, second_unit in self.coupling_edges:
+            givens_rotation = torch.eye(self.num_features, dtype=torch.get_default_dtype())
+            givens_rotation[first_unit, first_unit] = cosine
+            givens_rotation[first_unit, second_unit] = -sine
+            givens_rotation[second_unit, first_unit] = sine
+            givens_rotation[second_unit, second_unit] = cosine
+            coupling_matrix = givens_rotation @ coupling_matrix
+        return coupling_matrix
+
+    def reset_hidden_state(self):
+        self.hidden_state = None
+
+    def set_params(self, params_dict):
+        for handle, value in params_dict.items():
+            handle.assign(value)
+
+    def prepare_state(self, state):
+        parameter = next(self.parameters())
+        features = torch.as_tensor(np.asarray(state, dtype=float), dtype=parameter.dtype, device=parameter.device)
+        if features.shape[-1] != self.num_features or not bool(torch.all(torch.isfinite(features))):
+            raise ValueError('Expected one finite feature per unit')
+        if bool(torch.any(torch.abs(features) > 1 + 1e-12)):
+            raise ValueError('The bounded RY lift requires features in [-1, 1]')
+        return bounded_ry_bloch_vectors(features)
+
+    def rotate_units(self, unit_bloch_vectors, block_angles):
+        rotation_matrices = bloch_rotation_matrices(block_angles, self.rotation_family)
+        return torch.einsum('uab,...ub->...ua', rotation_matrices, unit_bloch_vectors)
+
+    def couple_units(self, unit_bloch_vectors):
+        coupled_transverse_components = torch.einsum('uv,...vc->...uc', self.transverse_coupling_matrix,
+                                                     unit_bloch_vectors[..., :2])
+        return torch.cat((coupled_transverse_components, unit_bloch_vectors[..., 2:]), dim=-1)
+
+    def apply_blocks(self, unit_bloch_vectors, angles):
+        for block_index in range(self.num_blocks):
+            unit_bloch_vectors = self.rotate_units(unit_bloch_vectors, angles[block_index])
+            unit_bloch_vectors = self.couple_units(unit_bloch_vectors)
+            unit_bloch_vectors = self.rotate_units(unit_bloch_vectors, angles[block_index])
+        return unit_bloch_vectors
+
+    def compress_bottleneck(self, unit_bloch_vectors):
+        if not self.enforce_bottleneck or self.bottleneck_size == self.num_features:
+            return unit_bloch_vectors
+        reset_units = torch.zeros_like(unit_bloch_vectors[..., self.bottleneck_size:, :])
+        reset_units[..., 2] = 1.0
+        return torch.cat((unit_bloch_vectors[..., :self.bottleneck_size, :], reset_units), dim=-2)
+
+    def forward_tensor(self, unit_bloch_vectors):
+        """Differentiable pass; returns the encoder output and the z readouts of the decoder output."""
+        bottleneck_state = self.apply_blocks(unit_bloch_vectors, self.encoder_angles)
+        if self.is_recurrent and self.hidden_state is not None:
+            hidden_weight = torch.sigmoid(self.hidden_weight)
+            bottleneck_state = (1 - hidden_weight)*bottleneck_state + hidden_weight*self.hidden_state
+        decoder_input = self.compress_bottleneck(bottleneck_state)
+        if self.is_recurrent:
+            self.hidden_state = decoder_input
+        decoded_state = self.apply_blocks(decoder_input, self.decoder_angles)
+        return bottleneck_state, decoded_state[..., 2]
+
+    def forward(self, unit_bloch_vectors):
+        bottleneck_state, predictions = self.forward_tensor(unit_bloch_vectors)
+        return bottleneck_state.detach().cpu().numpy(), predictions.detach().cpu().numpy()
+
+    def collapse_state(self, predictions):
+        """Predictions are already z readouts; kept for interface parity with the quantum model."""
+        return np.asarray(predictions)
+
+    def latent_features(self, bottleneck_state):
+        """Z components of the retained units, matching the quantum model's retained Z readouts."""
+        return np.asarray(bottleneck_state)[..., :self.bottleneck_size, 2]
+
+    def get_trash_indices(self, bottleneck_state):
+        return list(range(self.bottleneck_size, self.num_features))
+
+    def checkpoint_config(self):
+        return dict(num_features=self.num_features, num_blocks=self.num_blocks,
+                    bottleneck_size=self.bottleneck_size, enforce_bottleneck=self.enforce_bottleneck,
+                    is_recurrent=self.is_recurrent, feature_encoding='bounded_ry_bloch_lift',
+                    rotation_family=self.rotation_family, entanglement_topology=self.entanglement_topology,
+                    coupling_angle=self.coupling_angle)
+
+    def load(self, fname):
+        checkpoint = torch.load(fname + '.pth', weights_only=True)
+        if checkpoint.get('protocol_version') != 2:
+            raise ValueError('Historical checkpoints require the historical implementation')
+        if checkpoint['model_config'] != self.checkpoint_config():
+            raise ValueError('Checkpoint configuration does not match model')
+        self.load_state_dict(checkpoint['state_dict'])
+        self.reset_hidden_state()
+
+    def save(self, fname):
+        torch.save(dict(protocol_version=2, model_config=self.checkpoint_config(),
+                        state_dict=self.state_dict()), fname + '.pth')
